@@ -20,3 +20,5 @@ The authors claiming copyright, if they wish to be known, can list their names h
 * Chidinma Amogu
 * Aivan Dolor
 * Reimark Ronabio
+* Matthew Neufeld
+* Martin Mullappallil Johney
