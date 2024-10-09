@@ -61,7 +61,11 @@ class MixinApp(models.Model):
 
 
 class Post(MixinApp):
-    visibility_choices = {"p": "public", "u": "unlisted", "fo": "friends-only"}
+    visibility_choices =  [
+        ("p", "public"),
+        ("u", "unlisted"),
+        ("fo", "friends-only")
+    ]
     content = models.TextField(null=True)
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
@@ -69,7 +73,10 @@ class Post(MixinApp):
 
 
 class Comment(MixinApp):
-    visibility_choices = {"p": "public", "fo": "friends-only"}
+    visibility_choices =  [
+        ("p", "public"),
+        ("fo", "friends-only")
+    ]
     content = models.TextField(null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
