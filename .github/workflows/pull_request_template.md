@@ -1,7 +1,7 @@
 ## Pull Request Title
 
 <!-- Please provide a short description of your changes -->
-heroku setup
+
 ### Related Issues
 
 <!-- If this PR addresses any issues, please list them here -->
@@ -11,10 +11,6 @@ heroku setup
 ### Description of Changes
 
 <!-- Describe the changes you made, why you made them, and any relevant context -->
-- removed the other requirements.txt that is not in the root (need it to be in the root based on the instruction for setting up heroku)
-- updated root requirements.txt
-- created procfile
-- modded settings.py based on heroku instruction (lab3)
 ### Reviewers
 <!-- Tagg people to review-->
 @
