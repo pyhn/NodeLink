@@ -1,0 +1,23 @@
+<!-- create_post.html -->
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <!-- Input for post title -->
+    <input type="text" name="title" placeholder="Enter the post title" required>
+    
+    <!-- Textarea for post content -->
+    <textarea name="content" placeholder="Write your post..." required></textarea>
+    
+    <!-- Input for image file -->
+    <input type="file" name="img">
+    
+    <!-- Select for post visibility -->
+    <select name="visibility">
+        <option value="p">Public</option>
+        <option value="u">Unlisted</option>
+        <option value="fo">Friends-Only</option>
+    </select>
+    
+    <!-- Submit button -->
+    <button type="submit">Submit Post</button>
+</form>

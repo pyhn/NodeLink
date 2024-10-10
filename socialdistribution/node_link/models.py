@@ -2,8 +2,6 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 
-# We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
-# ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
 
 # class User(AbstractUser):
 #     first_name = models.CharField(max_length=20, null=False)
@@ -16,14 +14,17 @@ from django.contrib.auth.models import AbstractUser
 #     join_date = models.DateField(null=False, default=datetime.now)
 #     email = models.EmailField(max_length=20, null=False, unique=True)
 
+
+# We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
+# ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
+
 # The user model already has attributes: username, first_name, last_name, email, password, date_joined
 # we can remove all the previous redundant fields because we can still set them are were already defined by User
 # ^ also has a custom set_password() method that takes in a raw password and auto hashes it
 # ^ from: https://docs.djangoproject.com/en/5.1/ref/contrib/auth/#user-model
 
 
-class NodeUser(AbstractUser): # name change not to confuse with django User model
-    
+class User(AbstractUser): 
 
     date_of_birth = models.DateField(null=True, blank=True) # date of brith
 
@@ -43,7 +44,7 @@ class NodeUser(AbstractUser): # name change not to confuse with django User mode
     def __str__(self):
         return self.display_name or self.username
 
-class Admin(NodeUser):
+class Admin(User):
     def __str__(self):
         return f"{self.user.username} (Node Admin)"
 
@@ -64,7 +65,7 @@ class Node(models.Model):
     )
 
 
-class Author(NodeUser):
+class Author(User):
     github_url = models.CharField(null=True, max_length=255)
     github_token = models.CharField(null=True, max_length=255)
     github_user = models.CharField(null=True, max_length=255)
@@ -95,11 +96,12 @@ class Post(MixinApp):
         ("u", "unlisted"),
         ("fo", "friends-only")
     ]
+    title = models.TextField(default="New Post")
     content = models.TextField(null=True)
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
-
+    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="posts")
 
 class Comment(MixinApp):
     visibility_choices =  [

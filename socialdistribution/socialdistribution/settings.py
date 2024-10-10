@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-import os, dj_database_url
+import os  #, dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
-AUTH_USER_MODEL = "node_link.NodeUser" # name change to reflect name change in model
+AUTH_USER_MODEL = "node_link.User" 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -79,13 +79,14 @@ WSGI_APPLICATION = "socialdistribution.wsgi.application"
 
 if os.environ.get("DATABASE_URL") != None:
     # Running on Heroku
-    DATABASES = {
-        "default": dj_database_url.config(
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True
-        )
-    }
+    pass
+    # DATABASES = {
+    #     "default": dj_database_url.config(
+    #         conn_max_age=600,
+    #         conn_health_checks=True,
+    #         ssl_require=True
+    #     )
+    # }
 else:
     # Running locally.
     DATABASES = {
