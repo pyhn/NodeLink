@@ -6,7 +6,8 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     first_name = models.CharField(max_length=20, null=False)
     last_name = models.CharField(max_length=20, null=False)
-    date_ob = models.DateField(null=False)
+    # make it optional or else you cant create a superuser
+    date_ob = models.DateField(null=True, blank=True)
     profile_img = models.FilePathField(null=True)
     screen_name = models.CharField(max_length=20, null=False)
     description = models.TextField(null=False)
