@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
-AUTH_USER_MODEL = "node_link.User"
+AUTH_USER_MODEL = "node_link.NodeUser" # name change to reflect name change in model
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
