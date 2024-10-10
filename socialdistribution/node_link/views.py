@@ -10,6 +10,7 @@ def home(request):
   
 def create_post(request):
     if request.method == "POST":
+        title = request.POST.get("title")
         content = request.POST.get("content")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility")
@@ -19,6 +20,7 @@ def create_post(request):
 
         # Create a new post
         new_post = Post.objects.create(
+            title=title,
             content=content,
             img=img,
             visibility=visibility,
