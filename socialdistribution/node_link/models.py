@@ -6,7 +6,8 @@ from django.contrib.auth.models import AbstractUser
 class User(AbstractUser):
     first_name = models.CharField(max_length=20, null=False)
     last_name = models.CharField(max_length=20, null=False)
-    date_ob = models.DateField(null=False)
+    # make it optional or else you cant create a superuser
+    date_ob = models.DateField(null=True, blank=True)
     profile_img = models.FilePathField(null=True)
     screen_name = models.CharField(max_length=20, null=False)
     description = models.TextField(null=False)
@@ -61,7 +62,11 @@ class MixinApp(models.Model):
 
 
 class Post(MixinApp):
-    visibility_choices = {"p": "public", "u": "unlisted", "fo": "friends-only"}
+    visibility_choices =  [
+        ("p", "public"),
+        ("u", "unlisted"),
+        ("fo", "friends-only")
+    ]
     content = models.TextField(null=True)
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
@@ -69,7 +74,10 @@ class Post(MixinApp):
 
 
 class Comment(MixinApp):
-    visibility_choices = {"p": "public", "fo": "friends-only"}
+    visibility_choices =  [
+        ("p", "public"),
+        ("fo", "friends-only")
+    ]
     content = models.TextField(null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")

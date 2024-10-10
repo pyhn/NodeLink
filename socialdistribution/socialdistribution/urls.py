@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+
 urlpatterns = [
     path("node_link/", include("node_link.urls")),
     path("admin/", admin.site.urls),
+    path("", include("node_link.urls")),
 ]
