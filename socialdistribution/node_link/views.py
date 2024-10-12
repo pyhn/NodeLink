@@ -5,48 +5,59 @@ from django.shortcuts import render, HttpResponse
 #     return render(request, "home.html")
   
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+
+from .forms import SignUpForm, LoginForm
+
+User = get_user_model()
 
 def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        password_confirm = request.POST['password_confirm']
-        
-        if password == password_confirm:
-            if User.objects.filter(username=username).exists():
-                messages.error(request, 'Username already taken')
-            else:
-                user = User.objects.create_user(username=username, password=password)
-                user.save()
-                messages.success(request, 'Account created successfully')
-                return redirect('login')
-        else:
-            messages.error(request, 'Passwords do not match')
-
-    return render(request, 'signup.html')
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            login(request, user)
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # Set additional fields
+            user.email = form.cleaned_data['email']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            # user.username = form.cleaned_data['username']
+            user.description = form.cleaned_data['description']
+            user.save()
+            auth_login(request, user)
+            messages.success(request, f'Welcome {user.username}, your account has been created.')
             return redirect('home')
         else:
-            messages.error(request, 'Invalid username or password')
-            
-    return render(request, 'login.html')
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = SignUpForm()
+    return render(request, 'signup.html', {'form': form})
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            auth_login(request, form.get_user())
+            messages.success(request, f'Welcome back, {form.get_user().username}!')
+            return redirect('home')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    else:
+        form = LoginForm()
+    return render(request, 'login.html', {'form': form})
 
 def home_view(request):
-    if not request.user.is_authenticated:
-        return redirect('login')
     return render(request, 'home.html')
 
 def logout_view(request):
-    logout(request)
+    auth_logout(request)
+    messages.info(request, 'You have successfully logged out.')
     return redirect('login')
