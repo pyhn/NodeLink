@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ post.title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .post-container {
+            background-color: #fff;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 5px;
+        }
+        h1 {
+            margin-top: 0;
+        }
+        .post-meta {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .post-content {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        .back-link {
+            display: block;
+            margin-top: 30px;
+            text-align: center;
+        }
+        .back-link a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="post-container">
+        <h1>{{ post.title }}</h1>
+        <div class="post-meta">
+            By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+            | Visibility: {{ post.get_visibility_display }}
+        </div>
+        <div class="post-content">
+            {% if post.content %}
+                {{ post.content|linebreaks }}
+            {% else %}
+                <p>No content provided for this post.</p>
+            {% endif %}
+        </div>
+        {% if post.img %}
+            <img src="{{ post.img.url }}" alt="Post Image">
+        {% endif %}
+        <div class="back-link">
+            <a href="{% url 'post_list' %}">&larr; Back to Post List</a>
+        </div>
+    </div>
+</body>
+</html>

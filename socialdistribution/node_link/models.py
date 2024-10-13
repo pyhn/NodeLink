@@ -97,7 +97,7 @@ class Post(MixinApp):
         ("fo", "friends-only")
     ]
     title = models.TextField(default="New Post")
-    content = models.TextField(null=True)
+    content = models.TextField(blank=True, default='')
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
