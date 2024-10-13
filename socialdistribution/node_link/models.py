@@ -26,7 +26,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser): 
 
-    date_of_birth = models.DateField(null=True, blank=True) # date of brith
+    date_ob = models.DateField(null=True, blank=True) # date of brith
 
     profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True) 
     # ^switched from filepathfield to ImageField
