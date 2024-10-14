@@ -9,10 +9,9 @@ class User(AbstractUser):
     # make it optional or else you cant create a superuser
     date_ob = models.DateField(null=True, blank=True)
     profile_img = models.FilePathField(null=True)
-    screen_name = models.CharField(max_length=20, null=False)
     description = models.TextField(null=False)
     join_date = models.DateField(null=False, default=datetime.now)
-    email = models.EmailField(max_length=20, null=False, unique=True)
+    email = models.EmailField(max_length=50, null=False, unique=True)
 
 
 class Admin(User):
