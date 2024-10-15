@@ -97,20 +97,26 @@ class Post(MixinApp):
         ("u", "unlisted"),
         ("fo", "friends-only")
     ]
-    content = models.TextField(null=True)
+    title = models.TextField(default="New Post")
+    content = models.TextField(blank=True, default='')
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
+    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="posts")
 
 
 class Comment(MixinApp):
-    visibility_choices =  [
+    visibility_choices = [
         ("p", "public"),
         ("fo", "friends-only")
     ]
-    content = models.TextField(null=True)
+    content = models.TextField(null=False, default="")
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="comments")
+
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.post.title}"
 
 
 class Like(MixinApp):
