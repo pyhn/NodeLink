@@ -1,0 +1,35 @@
+<!-- Replace word with icons later -->
+
+<div class="post info">
+    <span class="user_icon"></span>
+    <span class="img_icon">Friend-only</span>
+    <h3 class="user_name">{username}</h3>
+    <h2>{post_title}</h2>
+</div>
+<div class="post body">
+
+    {% if post.content %}
+    <div class="post content">
+
+        {{ post_content|linebreaks }}
+
+
+    </div>
+    {% endif %}
+    <!-- Post Image -->
+    {% if post.img %}
+    <div class="post img">
+        <img src="{{ post_img }}" alt="Post Image">
+    </div>
+    {% endif %}
+
+</div>
+<div class="post bottom_bar">
+    <p class="like_count">{likes_num} Likes</p>
+    <button class="icon">Like</button>
+    <button class="icon">Share</button>
+</div>
+<div class="post bottom_bar">
+    <p class="comment_count">{comment_num} Comments</p>
+    <button class="icon">Comment</button>
+</div>
