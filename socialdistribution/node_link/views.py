@@ -12,6 +12,10 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.shortcuts import render, HttpResponse
+from django.shortcuts import render, redirect
+from .models import Post, Author, Admin, Node
+
 from .forms import SignUpForm, LoginForm
 
 User = get_user_model()
@@ -239,9 +243,6 @@ def logout_view(request):
     auth_logout(request)
     messages.info(request, 'You have successfully logged out.')
     return redirect('login')
-from django.shortcuts import render, HttpResponse
-from django.shortcuts import render, redirect
-from .models import Post, Author
 
 
 # Create your views here.
@@ -254,23 +255,67 @@ def create_post(request):
         content = request.POST.get("content")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility")
-        
-        # Assuming the logged-in user is an Author and stored in request.user
-        author = request.user  # request.user should be an instance of Author
 
-        # Create a new post
+        # Create or get a dummy admin
+        admin, _ = Admin.objects.get_or_create(
+            username="dummy_admin",
+            defaults={
+                'password': 'dummy_password',
+                'email': 'dummy_admin@example.com'
+            }
+        )
+
+        # Create or get a dummy node
+        node, _ = Node.objects.get_or_create(
+            url='http://dummy_node_url.com',
+            defaults={
+                'admin': admin,
+                'created_by': admin,
+                'updated_by': admin,
+                'deleted_by': admin
+            }
+        )
+
+        # Check if the user is authenticated and try to get the corresponding Author
+        if request.user.is_authenticated:
+            try:
+                author = Author.objects.get(pk=request.user.pk)
+            except Author.DoesNotExist:
+                # If not, create an Author linked to the request.user
+                author = Author.objects.create(
+                    username=request.user.username,
+                    password=request.user.password,
+                    email=request.user.email,
+                    local_node=node
+                )
+        else:
+            # Create or get a dummy author
+            author, _ = Author.objects.get_or_create(
+                username="dummy_author",
+                defaults={
+                    'password': 'dummy_password',
+                    'email': 'dummy_author@example.com',
+                    'local_node': node
+                }
+            )
+
+        # Create the post with the necessary fields
         new_post = Post.objects.create(
             content=content,
             img=img,
             visibility=visibility,
             author=author,
-            node=author.local_node  # Associate the post with the author's node
+            node=node,
+            created_by=author,
+            updated_by=author
         )
 
-        # Access author's username
+        # Optional: Print the author's username for verification
         author_username = new_post.author.username
         print(f"Post created by {author_username}")
 
-        return redirect("post_success")  # Redirect after successful post creation
+        # Redirect to a success page after creating the post
+        return redirect("post_success")
 
+    # Render the form template if the request method is not POST
     return render(request, "create_post.html")
