@@ -14,7 +14,6 @@ from django.contrib.auth.models import AbstractUser
 #     join_date = models.DateField(null=False, default=datetime.now)
 #     email = models.EmailField(max_length=20, null=False, unique=True)
 
-
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
 # ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
 
