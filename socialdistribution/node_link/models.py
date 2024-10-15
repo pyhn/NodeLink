@@ -74,7 +74,6 @@ class Author(User):
     def __str__(self):
         return f"{self.user.username} (Author)"
 
-
 class MixinApp(models.Model):
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
@@ -88,7 +87,6 @@ class MixinApp(models.Model):
 
     class Meta:
         abstract = True
-
 
 class Post(MixinApp):
     visibility_choices =  [
