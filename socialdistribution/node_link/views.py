@@ -6,14 +6,12 @@ from .models import Post, Author, Admin, Node, Comment, Like
 from django.shortcuts import render, redirect
 from .models import Post, Author, Admin, Node
 import uuid  # If using uuid for unique dummy usernames
-  
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-
 from .forms import SignUpForm, LoginForm
 
 User = get_user_model()
