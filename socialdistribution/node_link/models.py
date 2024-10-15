@@ -2,6 +2,8 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 
+# We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
+# ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
 
 
 # class User(AbstractUser):
@@ -73,6 +75,7 @@ class Author(User):
     def __str__(self):
         return f"{self.user.username} (Author)"
 
+
 class MixinApp(models.Model):
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
@@ -87,31 +90,28 @@ class MixinApp(models.Model):
     class Meta:
         abstract = True
 
+
 class Post(MixinApp):
     visibility_choices =  [
         ("p", "public"),
         ("u", "unlisted"),
         ("fo", "friends-only")
     ]
-    title = models.TextField(default="New Post")
-    content = models.TextField(blank=True, default='')
+    content = models.TextField(null=True)
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
-    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="posts")
+
 
 class Comment(MixinApp):
-    visibility_choices = [
+    visibility_choices =  [
         ("p", "public"),
         ("fo", "friends-only")
     ]
-    content = models.TextField(null=False, default="")
+    content = models.TextField(null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="comments")
 
-    def __str__(self):
-        return f"Comment by {self.author.username} on {self.post.title}"
 
 class Like(MixinApp):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
@@ -126,8 +126,6 @@ class Like(MixinApp):
 
     def __str__(self):
         return f"{self.author.username} liked '{self.post.title}'"
-    
-
 
 class Friends(MixinApp):
     user1 = models.ForeignKey(
