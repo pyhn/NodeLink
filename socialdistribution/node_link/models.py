@@ -2,6 +2,9 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 
+# We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
+# ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
+
 
 # class User(AbstractUser):
 #     first_name = models.CharField(max_length=20, null=False)
@@ -43,7 +46,28 @@ class User(AbstractUser):
     def __str__(self):
         return self.display_name or self.username
 
-class Admin(User):
+class NodeUser(AbstractUser): # name change not to confuse with django User model
+    
+
+    date_of_birth = models.DateField(null=True, blank=True) # date of brith
+
+    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True) 
+    # ^switched from filepathfield to ImageField
+    # FilePathField only stores the path location of a file and can only be used if the file already exists in the system
+    # ImageField is a file upload field (inherited from FileField) but validates the uploaded object is a valid image
+    # ^from: https://docs.djangoproject.com/en/5.1/ref/models/fields/#django.db.models.ImageField
+
+    display_name = models.CharField(max_length=50, null=True, blank=True) 
+    # ^username is unique and required for log in / user set up
+    # ^display_name is optional and works as display names in instagram (can be the same as other people) 
+    # ^(we don't need to implement if we don't want to and just have everyone as unique)
+
+    description = models.TextField(null=True, blank=True) # profile bio
+
+    def __str__(self):
+        return self.display_name or self.username
+
+class Admin(NodeUser):
     def __str__(self):
         return f"{self.user.username} (Node Admin)"
 
@@ -64,7 +88,7 @@ class Node(models.Model):
     )
 
 
-class Author(User):
+class Author(NodeUser):
     github_url = models.CharField(null=True, max_length=255)
     github_token = models.CharField(null=True, max_length=255)
     github_user = models.CharField(null=True, max_length=255)
