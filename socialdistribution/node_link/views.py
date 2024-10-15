@@ -15,6 +15,12 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import render, HttpResponse
 from django.shortcuts import render, redirect
 from .models import Post, Author, Admin, Node
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Post, Author, Admin, Node
+from django.shortcuts import render, redirect
+from django.contrib.auth import get_user_model
+from .models import Post, Author, Admin, Node
+
 
 from .forms import SignUpForm, LoginForm
 
@@ -244,15 +250,17 @@ def logout_view(request):
     messages.info(request, 'You have successfully logged out.')
     return redirect('login')
 
-
 # Create your views here.
 def home(request):
     return render(request, "home.html")
 
   
+
+
 def create_post(request):
     if request.method == "POST":
-        content = request.POST.get("content")
+        title = request.POST.get("title")
+        content = request.POST.get("content", "")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility")
 
@@ -271,7 +279,6 @@ def create_post(request):
             defaults={
                 'admin': admin,
                 'created_by': admin,
-                'updated_by': admin,
                 'deleted_by': admin
             }
         )
@@ -310,12 +317,22 @@ def create_post(request):
             updated_by=author
         )
 
-        # Optional: Print the author's username for verification
+        # Access author's username
         author_username = new_post.author.username
         print(f"Post created by {author_username}")
 
-        # Redirect to a success page after creating the post
-        return redirect("post_success")
+        # Redirect to the post list page
+        return redirect("post_list")  # Updated to redirect to 'post_list'
 
-    # Render the form template if the request method is not POST
     return render(request, "create_post.html")
+
+
+def post_list(request):
+    # Retrieve all posts
+    posts = Post.objects.all()
+    return render(request, 'post_list.html', {'posts': posts})
+
+def post_detail(request, id):
+    # Retrieve the post by id
+    post = get_object_or_404(Post, id=id)
+    return render(request, 'post_detail.html', {'post': post})
