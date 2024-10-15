@@ -64,14 +64,18 @@ class Node(models.Model):
     updated_at = models.DateTimeField(default=datetime.now)
     deleted_at = models.DateTimeField(default=datetime.now)
     deleted_by = models.ForeignKey(
-        Admin, on_delete=models.PROTECT, related_name="deleted_nodes"
+        Admin,
+        on_delete=models.PROTECT,
+        related_name="deleted_nodes",
+        null=True,
+        blank=True,
     )
 
 
 class Author(User):
-    github_url = models.CharField(null=True, max_length=255)
-    github_token = models.CharField(null=True, max_length=255)
-    github_user = models.CharField(null=True, max_length=255)
+    github_url = models.CharField(null=True, max_length=255, blank=True)
+    github_token = models.CharField(null=True, max_length=255, blank=True)
+    github_user = models.CharField(null=True, max_length=255, blank=True)
     local_node = models.ForeignKey(Node, null=False, on_delete=models.PROTECT)
 
     def __str__(self):
@@ -83,11 +87,19 @@ class MixinApp(models.Model):
     created_by = models.ForeignKey(
         Author, on_delete=models.PROTECT, related_name="%(class)s_created"
     )
-    updated_at = models.DateTimeField(default=datetime.now)
+
+    updated_at = models.DateTimeField(default=datetime.now, null=True, blank=True)
+
     updated_by = models.ForeignKey(
-        Author, on_delete=models.PROTECT, related_name="%(class)s_updated"
+        Author,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="%(class)s_updated",
+        default=None,
     )
-    deleted_at = models.DateTimeField(default=datetime.now)
+
+    deleted_at = models.DateTimeField(default=datetime.now, null=True, blank=True)
 
     class Meta:
         abstract = True
