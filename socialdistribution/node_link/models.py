@@ -5,7 +5,6 @@ from django.contrib.auth.models import AbstractUser
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
 # ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
 
-
 # class User(AbstractUser):
 #     first_name = models.CharField(max_length=20, null=False)
 #     last_name = models.CharField(max_length=20, null=False)

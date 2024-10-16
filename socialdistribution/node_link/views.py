@@ -230,4 +230,3 @@ def logout_view(request):
     auth_logout(request)
     messages.info(request, 'You have successfully logged out.')
     return redirect('login')
-
