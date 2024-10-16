@@ -10,13 +10,18 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.urls import reverse
+import base64
+
 
 from django.contrib.auth import get_user_model
 from django.views.generic import TemplateView
-from node_link.models import Post
+from node_link.models import Post, Friends, Follower, Comment, Like
 
 
 from .forms import SignUpForm, LoginForm
+import random
 
 User = get_user_model()
 
@@ -63,38 +68,84 @@ def login_view(request):
     return render(request, "login.html", {"form": form})
 
 
+def post_card(request, e_id):
+    """reders a single card
+
+    Args:
+        request (_type_): _description_
+        id (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    post = Post.objects.filter(pk=e_id).first()
+    # check is user has permission to see post
+    if post.visibility == "p" or (
+        post.visibility == "fo"
+        and Friends.objects.filter(
+            Q(user1=request.user, user2=post.user)
+            | Q(user2=request.user, user1=post.user)
+        ).exists()
+    ):
+
+        comment_num = Comment.objects.filter(post=post).count()
+        like_num = Like.objects.filter(post=post).count()
+
+        context = {
+            "username": post.author.username,
+            "post_title": post.title,
+            "post_img": post.img.url if post.img else False,
+            "post_content": post.content if post.content else False,
+            "likes_num": like_num,
+            "comments_num": comment_num,
+        }
+        return render(request, "post_card.html", context)
+    return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?
+
+
 class Home(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
-    def post(self, request):
+    def get(self, request):
         user = request.user
+        friends = list(
+            Friends.objects.filter(
+                Q(user1=user, status=True) | Q(user2=user, status=True)
+            ).values_list("user1", "user2")
+        )
+        friends = list(set(u_id for tup in friends for u_id in tup))
+        following = list(Follower.objects.filter(Q(user2=user)).values_list())
 
         # Get public posts
-        public_posts = Post.objects.filter(visibility="p").distinct()
+        public_posts = list(
+            Post.objects.filter(visibility="p", created_at__gt=user.last_login)
+            .distinct()
+            .values_list("pk", flat=True)
+        )
 
         # Get friends-only posts from the user's friends
-        fo_posts = Post.objects.filter(
-            visibility="fo", author__in=user.friends.all()
-        ).distinct()
+        fo_posts = list(
+            Post.objects.filter(
+                visibility="fo", author__in=friends, created_at__gt=user.last_login
+            )
+            .distinct()
+            .values_list("pk", flat=True)
+        )
+
+        fl_posts = list(
+            Post.objects.filter(
+                visibility="fo", author__in=following, created_at__gt=user.last_login
+            )
+            .distinct()
+            .values_list("pk", flat=True)
+        )
 
         # Combine and sort all posts by creation date
-        all_posts = (public_posts | fo_posts).order_by("created_at")
+        all_posts = public_posts + fo_posts + fl_posts
+        all_posts = list(set(all_posts))
+        random.shuffle(all_posts)
 
-        # Collect post details into cards
-        all_info = []
-        for p in all_posts:
-            card = {
-                "username": p.author.display_name,
-                "post_title": p.title,
-                "post_img": p.img.url if p.img else False,
-                "post_content": p.content if p.content else False,
-                "likes_num": p.like.count(),
-                "comments_num": p.comment.count(),
-            }
-            all_info.append(card)
-
-        # Prepare the context with the posts data
-        context = {"all_cards": all_info}
+        context = {"all_ids": all_posts}
 
         # Return the rendered template
         return render(request, self.template_name, context)

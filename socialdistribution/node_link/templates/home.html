@@ -7,80 +7,16 @@
     </head>
     <body>
         {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
-        <!-- Header section -->
-        <!-- <header>
-            <h1 style="display: inline-block">SocialDistribution</h1>
-            <button style="float: right">DMS</button>
-        </header> -->
 
-        <!-- Sidebar and main content container -->
         <div>
-            <!-- Sidebar section -->
-            <!-- <aside style="display: inline-block; vertical-align: top">
-                <button>Home</button><br />
-                <button>Create</button><br />
-                <button>Profile</button>
-            </aside> -->
 
-            <!-- Main content (Posts) section -->
-            <main style="display: inline-block; width: 70%; margin-left: 20px">
-                <article>
-                    <p>Username</p>
-                    <h2>Post Title</h2>
-                    <p>Post body content goes here...</p>
-                    <br />
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                    <br /><br />
-                    <button>Comments</button>
-                </article>
-                <article>
-                    <p>Username</p>
-                    <h2>Post Title</h2>
-                    <p>Post body content goes here...</p>
-                    <br />
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                    <br /><br />
-                    <button>Comments</button>
-                </article>
-                <article>
-                    <p>Username</p>
-                    <h2>Post Title</h2>
-                    <p>Post body content goes here...</p>
-                    <br />
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                    <br /><br />
-                    <button>Comments</button>
-                </article>
-                <article>
-                    <p>Username</p>
-                    <h2>Post Title</h2>
-                    <p>Post body content goes here...</p>
-                    <br />
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                    <br /><br />
-                    <button>Comments</button>
-                </article>
-                <article>
-                    <p>Username</p>
-                    <h2>Post Title</h2>
-                    <p>Post body content goes here...</p>
-                    <br />
-                    <button>Like</button>
-                    <button>Comment</button>
-                    <button>Share</button>
-                    <br /><br />
-                    <button>Comments</button>
-                </article>
+            <main >
+                {%for p in all_ids%}
+                <div class="post-container" hx-get="{%url 'one_post' p %}" hx-trigger="load" hx-target="#number-{{p}}" hx-swap="innerHTML">
+                    <div id = 'number-{{ p }}'>Loading</div>
+                </div>
 
-                <!-- Duplicate the <article> section to show multiple posts -->
+                {% endfor %}
             </main>
         </div>
         {% endblock %}
