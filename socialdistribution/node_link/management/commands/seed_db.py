@@ -2,7 +2,7 @@ import logging
 from django.core.management.base import BaseCommand
 from faker import Faker
 from random import choice
-from node_link.models import Author, Node, Post, Like, Comment, Admin
+from node_link.models import Author, Node, Post, Like, Comment, Admin, Friends, Follower
 from django.contrib.auth.hashers import make_password
 
 # Set up logger
@@ -95,5 +95,35 @@ class Command(BaseCommand):
                     created_by=author,
                 )
         logger.info("Comments created for posts.")
+        # Create fake friends
+        logger.info("Creating fake friends...")
+        for author in authors:
+            for _ in range(5):  # Each author will get 5 friends
+                user2 = choice(authors)
+                if (
+                    user2 != author
+                    and not Friends.objects.filter(user1=author, user2=user2).exists()
+                ):
+                    Friends.objects.create(
+                        user1=author,
+                        status=choice([True, False]),
+                        user2=user2,
+                        created_by=author,
+                    )
+        logger.info("Friends created for Authors.")
+        logger.info("Creating fake followers...")
+        for author in authors:
+            for _ in range(2):  # Each author will get 2 followers
+                user1 = choice(authors)  # does not ensure they are not friends
+                if (
+                    user1 != author
+                    and not Friends.objects.filter(user1=user1, user2=author).exists()
+                ):
+                    Friends.objects.create(
+                        user1=user1,
+                        user2=author,
+                        created_by=author,
+                    )
+        logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
