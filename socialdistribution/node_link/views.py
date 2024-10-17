@@ -2,9 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
-from .models import Post, Author, Admin, Node, Comment, Like
+from .models import Post, Author, Comment, Like
 from .forms import SignUpForm, LoginForm
 import uuid  # If using uuid for unique dummy usernames
 
@@ -51,8 +50,8 @@ def post_list(request):
     return render(request, "post_list.html", {"posts": posts})
 
 
-def post_detail(request, id):
-    post = get_object_or_404(Post, id=id)
+def post_detail(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
     if request.user.is_authenticated:
         author = Author.objects.get(pk=request.user.pk)
 
