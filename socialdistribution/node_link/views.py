@@ -98,6 +98,7 @@ def post_card(request, e_id):
             "post_content": post.content if post.content else False,
             "likes_num": like_num,
             "comments_num": comment_num,
+            "fo": True if post.visibility == "fo" else False,
         }
         return render(request, "post_card.html", context)
     return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?
