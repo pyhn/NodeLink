@@ -25,24 +25,27 @@ from django.contrib.auth.models import AbstractUser
 # ^ from: https://docs.djangoproject.com/en/5.1/ref/contrib/auth/#user-model
 
 
-class User(AbstractUser): 
-    date_ob = models.DateField(null=True, blank=True) # date of brith
+class User(AbstractUser):
+    date_ob = models.DateField(null=True, blank=True)  # date of brith
 
-    profile_image = models.ImageField(upload_to='profile_images/', null=True, blank=True) 
+    profile_image = models.ImageField(
+        upload_to="profile_images/", null=True, blank=True
+    )
     # ^switched from filepathfield to ImageField
     # FilePathField only stores the path location of a file and can only be used if the file already exists in the system
     # ImageField is a file upload field (inherited from FileField) but validates the uploaded object is a valid image
     # ^from: https://docs.djangoproject.com/en/5.1/ref/models/fields/#django.db.models.ImageField
 
-    display_name = models.CharField(max_length=50, null=True, blank=True) 
+    display_name = models.CharField(max_length=50, null=True, blank=True)
     # ^username is unique and required for log in / user set up
-    # ^display_name is optional and works as display names in instagram (can be the same as other people) 
+    # ^display_name is optional and works as display names in instagram (can be the same as other people)
     # ^(we don't need to implement if we don't want to and just have everyone as unique)
 
-    description = models.TextField(null=True, blank=True) # profile bio
+    description = models.TextField(null=True, blank=True)  # profile bio
 
     def __str__(self):
-        return self.display_name or self.username
+        return str(self.display_name) or str(self.username)
+
 
 class Admin(User):
     def __str__(self):
@@ -91,13 +94,9 @@ class MixinApp(models.Model):
 
 
 class Post(MixinApp):
-    visibility_choices =  [
-        ("p", "public"),
-        ("u", "unlisted"),
-        ("fo", "friends-only")
-    ]
+    visibility_choices = [("p", "public"), ("u", "unlisted"), ("fo", "friends-only")]
     title = models.TextField(default="New Post")
-    content = models.TextField(blank=True, default='')
+    content = models.TextField(blank=True, default="")
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
@@ -105,14 +104,13 @@ class Post(MixinApp):
 
 
 class Comment(MixinApp):
-    visibility_choices = [
-        ("p", "public"),
-        ("fo", "friends-only")
-    ]
+    visibility_choices = [("p", "public"), ("fo", "friends-only")]
     content = models.TextField(null=False, default="")
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="comments")
+    author = models.ForeignKey(
+        Author, on_delete=models.PROTECT, related_name="comments"
+    )
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.title}"
@@ -120,9 +118,7 @@ class Comment(MixinApp):
 
 class Like(MixinApp):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
-    author = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="likes"
-    )
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="likes")
 
     class Meta:
         constraints = [
@@ -131,6 +127,7 @@ class Like(MixinApp):
 
     def __str__(self):
         return f"{self.author.username} liked '{self.post.title}'"
+
 
 class Friends(MixinApp):
     user1 = models.ForeignKey(

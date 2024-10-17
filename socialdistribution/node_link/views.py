@@ -14,16 +14,14 @@ def home(request):
     return render(request, "home.html")
 
 
+@login_required
 def create_post(request):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
         content = request.POST.get("content", "")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
-
-        # Check if the user is authenticated
-        if request.user.is_authenticated:
-            author = Author.objects.get(pk=request.user.pk)
+        author = Author.objects.get(pk=request.user.pk)
 
         # Create the post with the necessary fields
         new_post = Post.objects.create(
@@ -52,8 +50,17 @@ def post_list(request):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
+    user_has_liked = False
+
     if request.user.is_authenticated:
-        author = Author.objects.get(pk=request.user.pk)
+        try:
+            author = Author.objects.get(pk=request.user.pk)
+            user_has_liked = post.likes.filter(author=author).exists()
+        except Author.DoesNotExist:
+            # Handle the case where the Author profile does not exist
+            messages.error(request, "Author profile not found.")
+            # Optionally, redirect or set user_has_liked to False
+            redirect("post_list")
 
     user_has_liked = post.likes.filter(author=author).exists()
 
@@ -67,15 +74,14 @@ def post_detail(request, post_id):
     )
 
 
+@login_required
 def create_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
     if request.method == "POST":
         content = request.POST.get("content")
 
-        # Check if the user is authenticated
-        if request.user.is_authenticated:
-            author = Author.objects.get(pk=request.user.pk)
+        author = Author.objects.get(pk=request.user.pk)
 
         # Create the comment
         new_comment = Comment.objects.create(
@@ -93,13 +99,11 @@ def create_comment(request, post_id):
     return render(request, "create_comment.html", {"post": post})
 
 
+@login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
+    author = Author.objects.get(pk=request.user.pk)
 
-    if request.user.is_authenticated:
-        author = Author.objects.get(pk=request.user.pk)
-
-    # Check if the dummy author has already liked the post
     existing_like = Like.objects.filter(post=post, author=author)
     if existing_like.exists():
         existing_like.delete()
