@@ -24,7 +24,7 @@ def create_post(request):
         author = Author.objects.get(pk=request.user.pk)
 
         # Create the post with the necessary fields
-        new_post = Post.objects.create(
+        Post.objects.create(
             title=title,
             content=content,
             img=img,
@@ -84,7 +84,7 @@ def create_comment(request, post_id):
         author = Author.objects.get(pk=request.user.pk)
 
         # Create the comment
-        new_comment = Comment.objects.create(
+        Comment.objects.create(
             content=content,
             visibility="p",
             post=post,
@@ -92,7 +92,6 @@ def create_comment(request, post_id):
             created_by=author,
             updated_by=author,
         )
-        print(new_comment)
         # Redirect back to the post detail page
         return redirect("post_detail", id=post.id)
 
