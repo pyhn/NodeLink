@@ -14,27 +14,6 @@ User = get_user_model()
 def home(request):
     return render(request, "home.html")
 
-def get_or_create_dummy_node():
-    # Create or get a dummy admin
-    admin, _ = Admin.objects.get_or_create(
-        username="dummy_admin",
-        defaults={
-            'password': 'dummy_password',
-            'email': 'dummy_admin@example.com'
-        }
-    )
-
-    # Create or get a dummy node
-    node, _ = Node.objects.get_or_create(
-        url='http://dummy_node_url.com',
-        defaults={
-            'admin': admin,
-            'created_by': admin,
-            'deleted_by': admin
-        }
-    )
-
-    return node
 
 def create_post(request):
     if request.method == "POST":
@@ -45,27 +24,7 @@ def create_post(request):
 
         # Check if the user is authenticated
         if request.user.is_authenticated:
-            try:
-                # Try to get the Author associated with the logged-in user
-                author = Author.objects.get(pk=request.user.pk)
-            except Author.DoesNotExist:
-                # Create an Author linked to the request.user
-                author = Author.objects.create(
-                    username=request.user.username,
-                    password='dummy_password',
-                    email=request.user.email,
-                    local_node=get_or_create_dummy_node()
-                )
-        else:
-            # Create or get a dummy author
-            author, _ = Author.objects.get_or_create(
-                username="dummy_author",
-                defaults={
-                    'password': 'dummy_password',
-                    'email': 'dummy_author@example.com',
-                    'local_node': get_or_create_dummy_node()
-                }
-            )
+            author = Author.objects.get(pk=request.user.pk)
 
         # Create the post with the necessary fields
         new_post = Post.objects.create(
@@ -76,10 +35,11 @@ def create_post(request):
             author=author,
             node=author.local_node,  # Associate the post with the author's node
             created_by=author,
-            updated_by=author
+            updated_by=author,
         )
+        print(new_post)
 
-        # Redirect to the post list page
+        # Redirect to the post list page SEdBo49hPQ4
         return redirect("post_list")
 
     return render(request, "create_post.html")
@@ -88,28 +48,24 @@ def create_post(request):
 def post_list(request):
     # Retrieve all posts
     posts = Post.objects.all()
-    return render(request, 'post_list.html', {'posts': posts})
+    return render(request, "post_list.html", {"posts": posts})
+
 
 def post_detail(request, id):
     post = get_object_or_404(Post, id=id)
+    if request.user.is_authenticated:
+        author = Author.objects.get(pk=request.user.pk)
 
-    # Use a dummy author
-    author, _ = Author.objects.get_or_create(
-        username="dummy_author",
-        defaults={
-            'password': 'dummy_password',
-            'email': 'dummy_author@example.com',
-            'local_node': get_or_create_dummy_node()
-        }
-    )
-
-    # Check if the dummy author has liked the post
     user_has_liked = post.likes.filter(author=author).exists()
 
-    return render(request, 'post_detail.html', {
-        'post': post,
-        'user_has_liked': user_has_liked,
-    })
+    return render(
+        request,
+        "post_detail.html",
+        {
+            "post": post,
+            "user_has_liked": user_has_liked,
+        },
+    )
 
 
 def create_comment(request, post_id):
@@ -120,55 +76,29 @@ def create_comment(request, post_id):
 
         # Check if the user is authenticated
         if request.user.is_authenticated:
-            try:
-                # Try to get the Author associated with the logged-in user
-                author = Author.objects.get(pk=request.user.pk)
-            except Author.DoesNotExist:
-                # Create an Author linked to the request.user
-                author = Author.objects.create(
-                    username=request.user.username,
-                    password='dummy_password',
-                    email=request.user.email,
-                    local_node=get_or_create_dummy_node()
-                )
-        else:
-            # Create or get a dummy author
-            author, _ = Author.objects.get_or_create(
-                username="dummy_author",
-                defaults={
-                    'password': 'dummy_password',
-                    'email': 'dummy_author@example.com',
-                    'local_node': get_or_create_dummy_node()
-                }
-            )
+            author = Author.objects.get(pk=request.user.pk)
 
         # Create the comment
         new_comment = Comment.objects.create(
             content=content,
-            visibility='p',
+            visibility="p",
             post=post,
             author=author,
             created_by=author,
-            updated_by=author
+            updated_by=author,
         )
-
+        print(new_comment)
         # Redirect back to the post detail page
-        return redirect('post_detail', id=post.id)
+        return redirect("post_detail", id=post.id)
 
-    return render(request, 'create_comment.html', {'post': post})
+    return render(request, "create_comment.html", {"post": post})
+
 
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
 
-    # Use a dummy author
-    author, _ = Author.objects.get_or_create(
-        username="dummy_author",
-        defaults={
-            'password': 'dummy_password',
-            'email': 'dummy_author@example.com',
-            'local_node': get_or_create_dummy_node()
-        }
-    )
+    if request.user.is_authenticated:
+        author = Author.objects.get(pk=request.user.pk)
 
     # Check if the dummy author has already liked the post
     existing_like = Like.objects.filter(post=post, author=author)
@@ -177,56 +107,61 @@ def like_post(request, post_id):
     else:
         Like.objects.create(
             post=post,
-            author=author,          # Include the author field
+            author=author,  # Include the author field
             created_by=author,
-            updated_by=author
+            updated_by=author,
         )
 
-    return redirect('post_detail', id=post.id)
+    return redirect("post_detail", id=post.id)
+
 
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
-    if request.method == 'POST':
+        return redirect("home")
+    if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
             # Set additional fields
-            user.email = form.cleaned_data['email']
-            user.first_name = form.cleaned_data['first_name']
-            user.last_name = form.cleaned_data['last_name']
+            user.email = form.cleaned_data["email"]
+            user.first_name = form.cleaned_data["first_name"]
+            user.last_name = form.cleaned_data["last_name"]
             # user.username = form.cleaned_data['username']
-            user.description = form.cleaned_data['description']
+            user.description = form.cleaned_data["description"]
             user.save()
             auth_login(request, user)
-            messages.success(request, f'Welcome {user.username}, your account has been created.')
-            return redirect('home')
+            messages.success(
+                request, f"Welcome {user.username}, your account has been created."
+            )
+            return redirect("home")
         else:
-            messages.error(request, 'Please correct the errors below.')
+            messages.error(request, "Please correct the errors below.")
     else:
         form = SignUpForm()
-    return render(request, 'signup.html', {'form': form})
+    return render(request, "signup.html", {"form": form})
 
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('home')
-    if request.method == 'POST':
+        return redirect("home")
+    if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             auth_login(request, form.get_user())
-            messages.success(request, f'Welcome back, {form.get_user().username}!')
-            return redirect('home')
+            messages.success(request, f"Welcome back, {form.get_user().username}!")
+            return redirect("home")
         else:
-            messages.error(request, 'Invalid username or password.')
+            messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
-    return render(request, 'login.html', {'form': form})
+    return render(request, "login.html", {"form": form})
+
 
 def home_view(request):
-    return render(request, 'home.html')
+    return render(request, "home.html")
+
 
 def logout_view(request):
     auth_logout(request)
-    messages.info(request, 'You have successfully logged out.')
-    return redirect('login')
+    messages.info(request, "You have successfully logged out.")
+    return redirect("login")
