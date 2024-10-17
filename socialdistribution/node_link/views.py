@@ -18,10 +18,6 @@ import random
 
 User = get_user_model()
 
-# Create your views here.
-def home(request):
-    return render(request, "home.html")
-
 
 @login_required
 def create_post(request):
@@ -100,7 +96,7 @@ def create_comment(request, post_id):
             updated_by=author,
         )
         # Redirect back to the post detail page
-        return redirect("post_detail", id=post.id)
+        return redirect("post_detail", post_id=post.id)
 
     return render(request, "create_comment.html", {"post": post})
 
@@ -121,7 +117,7 @@ def like_post(request, post_id):
             updated_by=author,
         )
 
-    return redirect("post_detail", id=post.id)
+    return redirect("post_detail", post_id=post.id)
 
 
 def signup_view(request):
@@ -166,7 +162,8 @@ def login_view(request):
     return render(request, "login.html", {"form": form})
 
 
-def post_card(request, e_id):
+@login_required
+def post_card(request, u_id):
     """reders a single card
 
     Args:
@@ -176,7 +173,7 @@ def post_card(request, e_id):
     Returns:
         _type_: _description_
     """
-    post = Post.objects.filter(pk=e_id).first()
+    post = get_object_or_404(Post, uuid=u_id)
     # check is user has permission to see post
     if post.visibility == "p" or (
         post.visibility == "fo"
@@ -190,6 +187,7 @@ def post_card(request, e_id):
         like_num = Like.objects.filter(post=post).count()
 
         context = {
+            "id": post.id,
             "username": post.author.username,
             "post_title": post.title,
             "post_img": post.img.url if post.img else False,
@@ -202,10 +200,11 @@ def post_card(request, e_id):
     return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?
 
 
-class Home(LoginRequiredMixin, TemplateView):
-    template_name = "home.html"
+@login_required
+def home(request):
 
-    def get(self, request):
+    if request.method == "GET":
+        template_name = "home.html"
         user = request.user
         friends = list(
             Friends.objects.filter(
@@ -219,7 +218,7 @@ class Home(LoginRequiredMixin, TemplateView):
         public_posts = list(
             Post.objects.filter(visibility="p", created_at__gt=user.last_login)
             .distinct()
-            .values_list("pk", flat=True)
+            .values_list("uuid", flat=True)
         )
 
         # Get friends-only posts from the user's friends
@@ -228,7 +227,7 @@ class Home(LoginRequiredMixin, TemplateView):
                 visibility="fo", author__in=friends, created_at__gt=user.last_login
             )
             .distinct()
-            .values_list("pk", flat=True)
+            .values_list("uuid", flat=True)
         )
 
         fl_posts = list(
@@ -236,18 +235,25 @@ class Home(LoginRequiredMixin, TemplateView):
                 visibility="fo", author__in=following, created_at__gt=user.last_login
             )
             .distinct()
-            .values_list("pk", flat=True)
+            .values_list("uuid", flat=True)
         )
 
         # Combine and sort all posts by creation date
-        all_posts = public_posts + fo_posts + fl_posts
-        all_posts = list(set(all_posts))
-        random.shuffle(all_posts)
+        newest = list(set(public_posts + fo_posts + fl_posts))
+        random.shuffle(newest)
+
+        rest_post = list(
+            Post.objects.filter(visibility="p", created_at__lt=user.last_login)
+            .distinct()
+            .values_list("uuid", flat=True)
+        )
+        random.shuffle(rest_post)
+        all_posts = set(newest + rest_post)
 
         context = {"all_ids": all_posts}
 
         # Return the rendered template
-        return render(request, self.template_name, context)
+        return render(request, template_name, context)
 
 
 def logout_view(request):

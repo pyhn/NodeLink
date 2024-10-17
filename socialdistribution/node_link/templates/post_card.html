@@ -13,10 +13,7 @@
 
     {% if post.content %}
     <div class="post content">
-
         {{ post_content|linebreaks }}
-
-
     </div>
     {% endif %}
     <!-- Post Image -->
@@ -29,7 +26,7 @@
 </div>
 <div class="post bottom_bar">
     <p class="like_count" >{{likes_num}} Likes</p>
-    <form action="{% url 'like_post' post.id %}" method="post">
+    <form action="{% url 'like_post' post_id=id %}" method="post">
         {% csrf_token %}
         <button class="icon" type="submit">Like</button>
     </form>
@@ -40,7 +37,7 @@
 </div>
 <div class="post bottom_bar">
     <p class="comment_count">{{comment_num}} Comments</p>
-    <form action="{% url 'create_comment' post_id=post.id %}" method="post">
+    <form action="{% url 'create_comment' post_id=id %}" method="post">
         {% csrf_token %}
         <button class="icon" type="submit">Add Comment</button>
     </form>
