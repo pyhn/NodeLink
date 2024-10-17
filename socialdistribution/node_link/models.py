@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+import uuid
 
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
 # ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
@@ -99,6 +100,7 @@ class Post(MixinApp):
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
     author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="posts")
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
 
 class Comment(MixinApp):
