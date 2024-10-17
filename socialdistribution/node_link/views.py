@@ -34,8 +34,6 @@ def create_post(request):
             created_by=author,
             updated_by=author,
         )
-        print(f"new post: {new_post}")
-
         # Redirect to the post list page SEdBo49hPQ4
         return redirect("post_list")
 
