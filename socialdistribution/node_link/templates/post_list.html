@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Post List</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .post-list-container {
+            background-color: #fff;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .create-post-button a {
+            text-decoration: none;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        .create-post-button a:hover {
+            background-color: #218838;
+        }
+        .post-item {
+            border-bottom: 1px solid #ddd;
+            padding: 15px 0;
+            overflow: hidden; /* Clears floats if any */
+        }
+        .post-title {
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            word-wrap: break-word; /* Ensures long words break */
+        }
+        .post-meta {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .post-excerpt {
+            font-size: 16px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .read-more {
+            display: inline-block;
+            margin-top: 10px;
+            color: #007BFF;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .read-more:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="post-list-container">
+        <div class="header">
+            <h1>All Posts</h1>
+            <div class="create-post-button">
+                <a href="{% url 'create_post' %}">Create New Post</a>
+            </div>
+        </div>
+        {% for post in posts %}
+            <div class="post-item">
+                <h2 class="post-title">{{ post.title }}</h2>
+                <div class="post-meta">
+                    By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+                </div>
+                <a href="{% url 'post_detail' post.id %}" class="read-more">View Post</a>
+            </div>
+        {% empty %}
+            <p>No posts available.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
