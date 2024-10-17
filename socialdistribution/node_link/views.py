@@ -51,32 +51,6 @@ def post_list(request):
     return render(request, "post_list.html", {"posts": posts})
 
 
-def post_detail(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    user_has_liked = False
-
-    if request.user.is_authenticated:
-        try:
-            author = Author.objects.get(pk=request.user.pk)
-            user_has_liked = post.likes.filter(author=author).exists()
-        except Author.DoesNotExist:
-            # Handle the case where the Author profile does not exist
-            messages.error(request, "Author profile not found.")
-            # Optionally, redirect or set user_has_liked to False
-            redirect("post_list")
-
-    user_has_liked = post.likes.filter(author=author).exists()
-
-    return render(
-        request,
-        "post_detail.html",
-        {
-            "post": post,
-            "user_has_liked": user_has_liked,
-        },
-    )
-
-
 @login_required
 def create_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -185,19 +159,40 @@ def post_card(request, u_id):
 
         comment_num = Comment.objects.filter(post=post).count()
         like_num = Like.objects.filter(post=post).count()
+        user_has_liked = post.likes.filter(author=request.user).exists()
 
         context = {
-            "id": post.id,
-            "username": post.author.username,
-            "post_title": post.title,
-            "post_img": post.img.url if post.img else False,
-            "post_content": post.content if post.content else False,
-            "likes_num": like_num,
-            "comments_num": comment_num,
-            "fo": True if post.visibility == "fo" else False,
+            "post": post,
+            "user_has_liked": user_has_liked,
         }
         return render(request, "post_card.html", context)
     return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?
+
+
+def post_detail(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    user_has_liked = False
+
+    if request.user.is_authenticated:
+        try:
+            author = Author.objects.get(pk=request.user.pk)
+            user_has_liked = post.likes.filter(author=author).exists()
+        except Author.DoesNotExist:
+            # Handle the case where the Author profile does not exist
+            messages.error(request, "Author profile not found.")
+            # Optionally, redirect or set user_has_liked to False
+            redirect("post_list")
+
+    user_has_liked = post.likes.filter(author=author).exists()
+
+    return render(
+        request,
+        "post_detail.html",
+        {
+            "post": post,
+            "user_has_liked": user_has_liked,
+        },
+    )
 
 
 @login_required

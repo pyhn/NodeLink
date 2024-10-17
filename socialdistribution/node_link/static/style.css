@@ -1,0 +1,45 @@
+:root {
+    --border: #b0b0b0;
+    --white: #ffffff;
+    --subcolor:#959595;
+  }
+
+
+.post-container {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    margin: 2.5vh;
+}
+.post>div{
+    padding: 3vh 2vw 2vh 2vw;
+}
+
+.post.info {
+    border-bottom: 1px solid  var(--border);
+
+}
+.post.info h1{
+    font-size:1.25rem ;
+}
+
+.post-meta{
+    font-size : 1rem;
+    color:var(--subcolor)
+
+}
+
+.post.body {
+    border-bottom: 1px solid  var(--border);
+    display: flex;
+    flex-direction: row;
+    font-size: 1rem;
+
+}
+
+.post.bottom_bar {
+    display: flex;
+    flex-direction: row;
+
+}

@@ -12,7 +12,7 @@
 
             <main >
                 {%for p in all_ids%}
-                <div class="post-container" hx-get="{%url 'one_post' p %}" hx-trigger="load" hx-target="#number-{{p}}" hx-swap="innerHTML">
+                <div  hx-get="{%url 'one_post' p %}" hx-trigger="load" hx-target="#number-{{p}}" hx-swap="innerHTML">
                     <div id = 'number-{{ p }}'>Loading</div>
                 </div>
 

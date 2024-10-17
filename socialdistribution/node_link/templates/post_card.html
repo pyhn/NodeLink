@@ -1,44 +1,62 @@
 <!-- Replace word with icons later -->
+<div class="post-container">
+    <div class="post info">
+        <!-- Post Meta Information -->
+        <!-- Post Title -->
+        <div class=" user_info">
+            <h1>{{post.title}}</h1>
 
-<div class="post info">
-    <div class=" user_info">
-        <span class="user_icon"></span><!--!!!ass anchor to user account-->
-        <h3 class="user_name">{{username}}</h3>
+            <span class="user_icon"></span><!--!!!add anchor to user account-->
+            <div class="post-meta"><!--!!!add link yo user profile-->
+                By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+                | Visibility: {{ post.get_visibility_display }}
+            </div>
+
+        </div>
     </div>
-    <h2>{{post_title}}</h2>
-    <span class="img_icon"  {% if not fo %}style='visibility:hidden'{% endif %}>Friend-only</span>
+    <div class="post body">
 
-</div>
-<div class="post body">
+        {% if post.content %}
+        <div class="post content">
+            {{ post.content|linebreaks }}
+        </div>
+        {% endif %}
 
-    {% if post.content %}
-    <div class="post content">
-        {{ post_content|linebreaks }}
+
+        <!-- Post Image -->
+        {% if post.img %}
+        <div class="post img">
+            <img src="{{ post.img }}" alt="Post Image">
+        </div>
+        {% endif %}
+
     </div>
-    {% endif %}
-    <!-- Post Image -->
-    {% if post.img %}
-    <div class="post img">
-        <img src="{{ post_img }}" alt="Post Image">
-    </div>
-    {% endif %}
+    <div class="post bottom_bar">
+        <!-- Display the number of likes -->
+        <div class="like-count">
+            {{ post.likes.count }} {{ post.likes.count|pluralize:"Like,Likes" }}
+        </div>
+        <!-- Like/Unlike Button -->
+        <div class="icon-button">
+            {% if user_has_liked %}
+            <form action="{% url 'like_post' post.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Unlike</button>
+            </form>
+            {% else %}
+            <form action="{% url 'like_post' post.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Like</button>
+            </form>
+            {% endif %}
+        </div>
 
-</div>
-<div class="post bottom_bar">
-    <p class="like_count" >{{likes_num}} Likes</p>
-    <form action="{% url 'like_post' post_id=id %}" method="post">
-        {% csrf_token %}
-        <button class="icon" type="submit">Like</button>
-    </form>
-    <form action="" method="post"><!--!!! url-->
-        {% csrf_token %}
-        <button class="icon" type="submit">Share</button>
-    </form>
-</div>
-<div class="post bottom_bar">
-    <p class="comment_count">{{comment_num}} Comments</p>
-    <form action="{% url 'create_comment' post_id=id %}" method="post">
-        {% csrf_token %}
-        <button class="icon" type="submit">Add Comment</button>
-    </form>
+
+        <div class="icon-button">
+        <form action="" method="post"><!--!!! url-->
+            {% csrf_token %}
+            <button class="icon" type="submit">Share</button>
+        </form>
+        </div>
+    </div>
 </div>
