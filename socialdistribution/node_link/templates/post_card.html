@@ -1,13 +1,10 @@
 <!-- Replace word with icons later -->
 
 <div class="post info">
-    <div class=" user_info">
-        <span class="user_icon"></span><!--!!!ass anchor to user account-->
-        <h3 class="user_name">{{username}}</h3>
-    </div>
+    <span class="user_icon"></span>
+    <span class="img_icon">Friend-only</span>
+    <h3 class="user_name">{{username}}</h3>
     <h2>{{post_title}}</h2>
-    <span class="img_icon"  {% if not fo %}style='visibility:hidden'{% endif %}>Friend-only</span>
-
 </div>
 <div class="post body">
 
@@ -28,20 +25,11 @@
 
 </div>
 <div class="post bottom_bar">
-    <p class="like_count" >{{likes_num}} Likes</p>
-    <form action="{% url 'like_post' post.id %}" method="post">
-        {% csrf_token %}
-        <button class="icon" type="submit">Like</button>
-    </form>
-    <form action="" method="post"><!--!!! url-->
-        {% csrf_token %}
-        <button class="icon" type="submit">Share</button>
-    </form>
+    <p class="like_count">{{likes_num}} Likes</p>
+    <button class="icon">Like</button>
+    <button class="icon">Share</button>
 </div>
 <div class="post bottom_bar">
     <p class="comment_count">{{comment_num}} Comments</p>
-    <form action="{% url 'create_comment' post_id=post.id %}" method="post">
-        {% csrf_token %}
-        <button class="icon" type="submit">Add Comment</button>
-    </form>
+    <button class="icon">Comment</button>
 </div>
