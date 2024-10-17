@@ -2,19 +2,6 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 
-
-# class User(AbstractUser):
-#     first_name = models.CharField(max_length=20, null=False)
-#     last_name = models.CharField(max_length=20, null=False)
-#     # make it optional or else you cant create a superuser
-#     date_ob = models.DateField(null=True, blank=True)
-#     profile_img = models.FilePathField(null=True)
-#     screen_name = models.CharField(max_length=20, null=False)
-#     description = models.TextField(null=False)
-#     join_date = models.DateField(null=False, default=datetime.now)
-#     email = models.EmailField(max_length=20, null=False, unique=True)
-
-
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
 # ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
 
@@ -25,7 +12,6 @@ from django.contrib.auth.models import AbstractUser
 
 
 class User(AbstractUser):
-
     date_ob = models.DateField(null=True, blank=True)  # date of brith
 
     profile_image = models.ImageField(
@@ -44,7 +30,7 @@ class User(AbstractUser):
     description = models.TextField(null=True, blank=True)  # profile bio
 
     def __str__(self):
-        return self.display_name or self.username
+        return str(self.display_name) or str(self.username)
 
 
 class Admin(User):

@@ -338,3 +338,5 @@ tests/.coverage*
 build/
 tests/report/
 tests/screenshots/
+
+media/images/
