@@ -48,7 +48,10 @@
 }
 .user_img img{
     max-height: 100%;
-
+}
+.user_img.small{
+    height: 3vh;
+    width: 3vh;
 }
 
 
