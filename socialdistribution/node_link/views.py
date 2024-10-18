@@ -238,7 +238,7 @@ def home(request):
 
         fl_posts = list(
             Post.objects.filter(
-                visibility="fo", author__in=following, created_at__gt=user.last_login
+                visibility="u", author__in=following, created_at__gt=user.last_login
             )
             .distinct()
             .values_list("id", flat=True)
@@ -248,9 +248,7 @@ def home(request):
         newest = list(set(public_posts + fo_posts + fl_posts))
         random.shuffle(newest)
         remaining_p = list(
-            Post.objects.filter(
-                Q(visibility="p") | Q(visibility="u"), created_at__lt=user.last_login
-            )
+            Post.objects.filter(visibility="p", created_at__lt=user.last_login)
             .distinct()
             .order_by("created_at")
             .values_list("id", flat=True)
