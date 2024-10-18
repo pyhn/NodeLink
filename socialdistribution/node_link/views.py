@@ -106,7 +106,7 @@ def create_post(request):
             updated_by=author,
         )
         # Redirect to the post list page SEdBo49hPQ4
-        return redirect("post_list")
+        return redirect("home")
 
     return render(request, "create_post.html")
 
@@ -130,9 +130,9 @@ def create_comment(request, post_id):
             updated_by=author,
         )
         # Redirect back to the post detail page
-        return redirect("post_detail", post_id=post.id)
+        return render(request, "create_comment_card.html", {"success": True})
 
-    return render(request, "create_comment.html", {"post": post})
+    return render(request, "create_comment_card.html", {"post": post})
 
 
 @login_required
@@ -206,11 +206,16 @@ def post_detail(request, post_id):
                 redirect("post_list")
 
         user_has_liked = post.likes.filter(author=author).exists()
-
+        comment_list = list(post.comments.filter().order_by("-created_at"))
         return render(
             request,
             "post_details.html",
-            {"post": post, "user_has_liked": user_has_liked, "a_username": post.author},
+            {
+                "post": post,
+                "user_has_liked": user_has_liked,
+                "a_username": post.author,
+                "comment_list": comment_list,
+            },
         )
     else:
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
@@ -244,7 +249,7 @@ def home(request):
                 )
             )
             .distinct()
-            .order_by("created_at")
+            .order_by("-created_at")
             .values_list("id", flat=True)
         )
 

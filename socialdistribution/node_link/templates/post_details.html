@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
@@ -18,20 +17,31 @@
 
     <div class="post-container" id="main_post" hx-get="{%url 'one_post' post.id %}" hx-trigger="load"
         hx-target="#post_body" hx-swap="innerHTML">
-        <div id='post_body'>Loading</div>
+        <div id='post_body'></div>
     </div>
 
 
     <div class="post-container">
+        <!-- Add Comment Button -->
+
+        <div id="comment_create_block">
+            <div class="create-comment-button">
+                <button class="icon" type="button" hx-get="{%url 'create_comment' post.id %}" hx-trigger="click"
+                hx-target="#comment_create_block" hx-swap="innerHTML">Add a Comment<img src="{% static 'icons/plus.svg' %}"></button>
+        </div>
+        </div>
         <!-- Comments Section -->
         <div class="comments-section">
             <h2>Comments</h2>
             {% if post.comments.all %}
             <ul>
-                {% for comment in post.comments.all %}
+                {% for comment in comment_list %}
                 <li>
                     <div class="comment">
-                        <span class="comment-author"><div class = 'user_img small'><img src = {{comment.author.profile_image}}></div>{{ comment.author.username }}</span>:
+                        <span class="comment-author">
+                            <div class='user_img small'><img src={{comment.author.profile_image}}></div>
+                            {{comment.author.username }}
+                        </span>:
                         {{ comment.content|linebreaks }}
                         <span class="comment-date">
                             Posted on {{ comment.created_at|date:"F j, Y, g:i a" }}
@@ -45,12 +55,7 @@
             {% endif %}
         </div>
 
-        <!-- Add Comment Button -->
-        <div class="create-comment-button">
-            <a href="{% url 'create_comment' post_id=post.id %}">
-                <button class="icon" type="button">Add a Comment<img src="{% static 'icons/plus.svg' %}"></button>
-            </a>
-        </div>
+
     </div>
 
 
