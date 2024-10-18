@@ -2,7 +2,7 @@
 
 
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -257,3 +257,4 @@ def home(request):
 
         # Return the rendered template
         return render(request, template_name, context)
+    return HttpResponseNotAllowed("Invalid Method;go home")

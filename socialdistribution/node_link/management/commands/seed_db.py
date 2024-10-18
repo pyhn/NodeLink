@@ -1,9 +1,9 @@
 import logging
 from django.core.management.base import BaseCommand
+from django.contrib.auth.hashers import make_password
 from faker import Faker
 from random import choice
-from node_link.models import Author, Node, Post, Like, Comment, Admin, Friends, Follower
-from django.contrib.auth.hashers import make_password
+from node_link.models import Author, Node, Post, Like, Comment, Admin, Friends
 
 # Set up logger
 logger = logging.getLogger(__name__)
