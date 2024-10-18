@@ -62,10 +62,16 @@
 }
 
 .post.body {
-
     display: flex;
     flex-direction: row;
     font-size: 1rem;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+
+}
+img{
+    height: 70vh;
 
 }
 .post.body a{
