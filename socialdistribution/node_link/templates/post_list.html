@@ -85,7 +85,7 @@
             <div class="post-item">
                 <h2 class="post-title">{{ post.title }}</h2>
                 <div class="post-meta">
-                    By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+                    By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
                 </div>
                 <a href="{% url 'post_detail' post.id %}" class="read-more">View Post</a>
             </div>

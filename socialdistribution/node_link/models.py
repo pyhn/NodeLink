@@ -47,32 +47,43 @@ class User(AbstractUser):
         return str(self.display_name) or str(self.username)
 
 
-class Admin(User):
+class AdminProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="admin_profile"
+    )
+
     def __str__(self):
-        return f"{self.user.username} (Node Admin)"
+        return f"{self.user.username} (Admin)"
 
 
 class Node(models.Model):
     admin = models.ForeignKey(
-        Admin, on_delete=models.PROTECT, related_name="managed_nodes"
+        AdminProfile, on_delete=models.PROTECT, related_name="managed_nodes"
     )
     url = models.TextField(null=False)
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
-        Admin, on_delete=models.PROTECT, related_name="created_nodes"
+        AdminProfile, on_delete=models.PROTECT, related_name="created_nodes"
     )
     updated_at = models.DateTimeField(default=datetime.now)
     deleted_at = models.DateTimeField(default=datetime.now)
     deleted_by = models.ForeignKey(
-        Admin, on_delete=models.PROTECT, related_name="deleted_nodes"
+        AdminProfile,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="deleted_nodes",
     )
 
 
-class Author(User):
-    github_url = models.CharField(null=True, max_length=255)
-    github_token = models.CharField(null=True, max_length=255)
-    github_user = models.CharField(null=True, max_length=255)
-    local_node = models.ForeignKey(Node, null=False, on_delete=models.PROTECT)
+class AuthorProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="author_profile"
+    )
+    github_url = models.CharField(max_length=255, null=True, blank=True)
+    github_token = models.CharField(max_length=255, null=True, blank=True)
+    github_user = models.CharField(max_length=255, null=True, blank=True)
+    local_node = models.ForeignKey("Node", on_delete=models.PROTECT)
 
     def __str__(self):
         return f"{self.user.username} (Author)"
@@ -81,11 +92,15 @@ class Author(User):
 class MixinApp(models.Model):
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
-        Author, on_delete=models.PROTECT, related_name="%(class)s_created"
+        AuthorProfile, on_delete=models.PROTECT, related_name="%(class)s_created"
     )
     updated_at = models.DateTimeField(default=datetime.now)
     updated_by = models.ForeignKey(
-        Author, on_delete=models.PROTECT, related_name="%(class)s_updated"
+        AuthorProfile,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="%(class)s_updated",
     )
     deleted_at = models.DateTimeField(default=datetime.now)
 
@@ -100,7 +115,9 @@ class Post(MixinApp):
     img = models.ImageField(upload_to="images/", null=True)
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
-    author = models.ForeignKey(Author, on_delete=models.PROTECT, related_name="posts")
+    author = models.ForeignKey(
+        AuthorProfile, on_delete=models.PROTECT, related_name="posts"
+    )
 
 
 class Comment(MixinApp):
@@ -109,7 +126,7 @@ class Comment(MixinApp):
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
     author = models.ForeignKey(
-        Author, on_delete=models.PROTECT, related_name="comments"
+        AuthorProfile, on_delete=models.PROTECT, related_name="comments"
     )
 
     def __str__(self):
@@ -118,7 +135,9 @@ class Comment(MixinApp):
 
 class Like(MixinApp):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="likes")
+    author = models.ForeignKey(
+        AuthorProfile, on_delete=models.CASCADE, related_name="likes"
+    )
 
     class Meta:
         constraints = [
@@ -131,10 +150,10 @@ class Like(MixinApp):
 
 class Friends(MixinApp):
     user1 = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="friendships_initiated"
+        AuthorProfile, on_delete=models.CASCADE, related_name="friendships_initiated"
     )
     user2 = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="friendships_received"
+        AuthorProfile, on_delete=models.CASCADE, related_name="friendships_received"
     )
     status = models.BooleanField(default=False)
 
@@ -146,10 +165,10 @@ class Friends(MixinApp):
 
 class Follower(MixinApp):
     user1 = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="followers_initiated"
+        AuthorProfile, on_delete=models.CASCADE, related_name="followers_initiated"
     )
     user2 = models.ForeignKey(
-        Author, on_delete=models.CASCADE, related_name="followers_received"
+        AuthorProfile, on_delete=models.CASCADE, related_name="followers_received"
     )
 
     class Meta:

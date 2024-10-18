@@ -125,7 +125,7 @@
 
         <!-- Post Meta Information -->
         <div class="post-meta">
-            By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+            By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
             | Visibility: {{ post.get_visibility_display }}
         </div>
 
@@ -166,7 +166,7 @@
                 <ul>
                     {% for comment in post.comments.all %}
                         <li>
-                            <span class="comment-author">{{ comment.author.username }}</span>:
+                            <span class="comment-author">{{ comment.author.user.username }}</span>:
                             {{ comment.content|linebreaks }}
                             <span class="comment-date">
                                 Posted on {{ comment.created_at|date:"F j, Y, g:i a" }}
