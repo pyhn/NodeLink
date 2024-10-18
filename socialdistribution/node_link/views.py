@@ -157,13 +157,13 @@ def post_card(request, u_id):
         ).exists()
     ):
 
-        comment_num = Comment.objects.filter(post=post).count()
-        like_num = Like.objects.filter(post=post).count()
         user_has_liked = post.likes.filter(author=request.user).exists()
+        user_img = post.author.profile_image
 
         context = {
             "post": post,
             "user_has_liked": user_has_liked,
+            "profile_img": user_img,
         }
         return render(request, "post_card.html", context)
     return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?

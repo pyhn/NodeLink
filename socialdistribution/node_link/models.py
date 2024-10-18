@@ -16,7 +16,10 @@ class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)  # date of brith
 
     profile_image = models.ImageField(
-        upload_to="profile_images/", null=True, blank=True
+        upload_to="profile_images/",
+        null=True,
+        blank=True,
+        default="/static/icons/user_icon.svg",
     )
     # ^switched from filepathfield to ImageField
     # FilePathField only stores the path location of a file and can only be used if the file already exists in the system

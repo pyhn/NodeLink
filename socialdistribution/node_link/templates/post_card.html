@@ -1,11 +1,14 @@
+{% load static %}
+
+
 <!-- Replace word with icons later -->
 <div class="post-container">
     <div class="post info">
         <!-- Post Meta Information -->
         <!-- Post Title -->
+        <div class = 'user_img' ><img src="{{profile_img}}"></div>
         <div class=" user_info">
             <h1>{{post.title}}</h1>
-
             <span class="user_icon"></span><!--!!!add anchor to user account-->
             <div class="post-meta"><!--!!!add link yo user profile-->
                 By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
@@ -41,12 +44,12 @@
             {% if user_has_liked %}
             <form action="{% url 'like_post' post.id %}" method="post">
                 {% csrf_token %}
-                <button type="submit">Unlike</button>
+                <button  class= 'icon' type="submit"><img src="{% static 'icons/filled_heart.svg' %}" alt="unlike button"></button>
             </form>
             {% else %}
             <form action="{% url 'like_post' post.id %}" method="post">
                 {% csrf_token %}
-                <button type="submit">Like</button>
+                <button class= 'icon' type="submit"><img src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
             </form>
             {% endif %}
         </div>
@@ -55,7 +58,7 @@
         <div class="icon-button">
         <form action="" method="post"><!--!!! url-->
             {% csrf_token %}
-            <button class="icon" type="submit">Share</button>
+            <button class="icon" type="submit"><img src="{% static 'icons/send.svg' %}" alt="send button"></button>
         </form>
         </div>
     </div>
