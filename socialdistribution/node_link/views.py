@@ -160,7 +160,8 @@ def post_card(request, u_id):
     post = get_object_or_404(Post, id=u_id)
     # check is user has permission to see post
     if (
-        post.visibility == "p"
+        post.author.id == request.user.id
+        or post.visibility == "p"
         or post.visibility == "u"
         or (
             post.visibility == "fo"
@@ -220,45 +221,23 @@ def home(request):
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(Follower.objects.filter(Q(user2=user)).values_list())
 
-        # Get public posts
-        public_posts = list(
-            Post.objects.filter(visibility="p", created_at__gt=user.last_login)
-            .distinct()
-            .values_list("id", flat=True)
-        )
-
-        # Get friends-only posts from the user's friends
-        fo_posts = list(
+        # Get all posts
+        all_posts = list(
             Post.objects.filter(
-                visibility="fo", author__in=friends, created_at__gt=user.last_login
+                Q(visibility="p")  # all public
+                | Q(
+                    visibility="fo",  # all friends only
+                    author_id__in=friends,
+                )
+                | Q(
+                    visibility="u",  # all unlisted
+                    author_id__in=following,
+                )
             )
-            .distinct()
-            .values_list("id", flat=True)
-        )
-
-        fl_posts = list(
-            Post.objects.filter(
-                visibility="u", author__in=following, created_at__gt=user.last_login
-            )
-            .distinct()
-            .values_list("id", flat=True)
-        )
-
-        # Combine and sort all posts by creation date
-        newest = list(set(public_posts + fo_posts + fl_posts))
-        random.shuffle(newest)
-        remaining_p = list(
-            Post.objects.filter(visibility="p", created_at__lt=user.last_login)
             .distinct()
             .order_by("created_at")
             .values_list("id", flat=True)
         )
-
-        rest_post = []
-        for i in remaining_p:
-            if i not in newest:
-                rest_post.append(i)
-        all_posts = newest + rest_post
 
         context = {"all_ids": all_posts}
 
