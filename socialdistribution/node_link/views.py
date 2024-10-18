@@ -1,39 +1,18 @@
 # from django.shortcuts import render, HttpResponse
 
 
-from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed
-from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
+from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from node_link.models import Post, Friends, Follower, Comment, Like, Author
+from node_link.models import Post, Friends, Follower, Comment, Like, AuthorProfile, Node
 from .forms import SignUpForm, LoginForm
 
 User = get_user_model()
-# helpers
-def has_access(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    if (
-        post.author.id == request.user.id
-        or post.visibility == "p"
-        or post.visibility == "u"
-        or (
-            post.visibility == "fo"
-            and Friends.objects.filter(
-                Q(user1=request.user, user2=post.author)
-                | Q(user2=request.user, user1=post.author)
-            ).exists()
-        )
-    ):
-        return True
-    return False
-
-
-# login/user creation
-
-
+# sign up
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -48,6 +27,20 @@ def signup_view(request):
             # user.username = form.cleaned_data['username']
             user.description = form.cleaned_data["description"]
             user.save()
+
+            # Retrieve the first node in the Node table
+            first_node = Node.objects.first()
+            if not first_node:
+                messages.error(request, "No nodes are available to assign.")
+                return redirect("signup")
+
+            # Create an AuthorProfile linked to the user and assign the first node
+            AuthorProfile.objects.create(
+                user=user,
+                local_node=first_node,
+                # Set other author-specific fields if necessary
+            )
+
             auth_login(request, user)
             messages.success(
                 request, f"Welcome {user.username}, your account has been created."
@@ -82,6 +75,24 @@ def logout_view(request):
     return redirect("login")
 
 
+def has_access(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    if (
+        post.author.id == request.user.id
+        or post.visibility == "p"
+        or post.visibility == "u"
+        or (
+            post.visibility == "fo"
+            and Friends.objects.filter(
+                Q(user1=request.user, user2=post.author)
+                | Q(user2=request.user, user1=post.author)
+            ).exists()
+        )
+    ):
+        return True
+    return False
+
+
 # post edit/create methods
 
 
@@ -92,7 +103,7 @@ def create_post(request):
         content = request.POST.get("content", "")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
-        author = Author.objects.get(pk=request.user.pk)
+        author = AuthorProfile.objects.get(pk=request.user.pk)
 
         # Create the post with the necessary fields
         Post.objects.create(
@@ -118,7 +129,7 @@ def create_comment(request, post_id):
     if request.method == "POST":
         content = request.POST.get("content")
 
-        author = Author.objects.get(pk=request.user.pk)
+        author = AuthorProfile.objects.get(pk=request.user.pk)
 
         # Create the comment
         Comment.objects.create(
@@ -138,7 +149,7 @@ def create_comment(request, post_id):
 @login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    author = Author.objects.get(pk=request.user.pk)
+    author = AuthorProfile.objects.get(pk=request.user.pk)
 
     existing_like = Like.objects.filter(post=post, author=author)
     if existing_like.exists():
@@ -197,9 +208,9 @@ def post_detail(request, post_id):
 
         if request.user.is_authenticated:
             try:
-                author = Author.objects.get(pk=request.user.pk)
+                author = AuthorProfile.objects.get(pk=request.user.pk)
                 user_has_liked = post.likes.filter(author=author).exists()
-            except Author.DoesNotExist:
+            except AuthorProfile.DoesNotExist:
                 # Handle the case where the Author profile does not exist
                 messages.error(request, "Author profile not found.")
                 # Optionally, redirect or set user_has_liked to False

@@ -3,7 +3,16 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from faker import Faker
 from random import choice
-from node_link.models import Author, Node, Post, Like, Comment, Admin, Friends
+from node_link.models import (
+    AuthorProfile,
+    Node,
+    Post,
+    Like,
+    Comment,
+    AdminProfile,
+    Friends,
+    User,
+)
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -20,41 +29,45 @@ class Command(BaseCommand):
 
         logger.info("Creating fake Admin...")
 
-        admin = Admin.objects.create(
+        admin_user = User.objects.create(
             username=fake.user_name(),
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             email=fake.email(),
-            password=make_password("adminpassword123"),  # Set a default admin password
+            password=make_password("adminpassword123"),
+            is_staff=True,
+            is_superuser=True,
         )
+
+        admin_profile = AdminProfile.objects.create(user=admin_user)
 
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            admin=admin,  # Replace with an actual Admin instance if necessary
+            admin=admin_profile,
             url=fake.url(),
-            created_by=admin,  # Replace with an actual Admin instance if necessary
-            deleted_by=None,  # Replace with an actual Admin instance if necessary
+            created_by=admin_profile,
+            deleted_by=None,  # Can be None if not deleted
         )
-        logger.info("Node created.")
 
         # Create fake authors
         authors = []
         logger.info("Creating fake authors...")
         for _ in range(10):
-            author = Author.objects.create(
+            user = User.objects.create(
                 username=fake.user_name(),
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),
-                password=make_password(
-                    "password123"
-                ),  # Set a default password for testing
+                password=make_password("password123"),
+            )
+            author_profile = AuthorProfile.objects.create(
+                user=user,
                 github_url=fake.url(),
                 github_token=fake.sha1(),
                 github_user=fake.user_name(),
                 local_node=node,
             )
-            authors.append(author)
+            authors.append(author_profile)
         logger.info(f"{len(authors)} fake authors created.")
 
         # Create fake posts
