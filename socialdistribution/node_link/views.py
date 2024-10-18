@@ -2,18 +2,35 @@
 
 
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
+from django.http import HttpResponseForbidden
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.views.generic import TemplateView
 from node_link.models import Post, Friends, Follower, Comment, Like, Author
 from .forms import SignUpForm, LoginForm
-import random
 
 User = get_user_model()
+# helpers
+def has_access(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    if (
+        post.author.id == request.user.id
+        or post.visibility == "p"
+        or post.visibility == "u"
+        or (
+            post.visibility == "fo"
+            and Friends.objects.filter(
+                Q(user1=request.user, user2=post.author)
+                | Q(user2=request.user, user1=post.author)
+            ).exists()
+        )
+    ):
+        return True
+    return False
+
+
 # login/user creation
 
 
@@ -159,18 +176,7 @@ def post_card(request, u_id):
     """
     post = get_object_or_404(Post, id=u_id)
     # check is user has permission to see post
-    if (
-        post.author.id == request.user.id
-        or post.visibility == "p"
-        or post.visibility == "u"
-        or (
-            post.visibility == "fo"
-            and Friends.objects.filter(
-                Q(user1=request.user, user2=post.author)
-                | Q(user2=request.user, user1=post.author)
-            ).exists()
-        )
-    ):
+    if has_access(request=request, post_id=u_id):
 
         user_has_liked = post.likes.filter(author=request.user).exists()
         user_img = post.author.profile_image
@@ -181,30 +187,33 @@ def post_card(request, u_id):
             "profile_img": user_img,
         }
         return render(request, "post_card.html", context)
-    return redirect()  #!!!error page?
+    return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    user_has_liked = False
+    if has_access(request=request, post_id=post_id):
+        user_has_liked = False
 
-    if request.user.is_authenticated:
-        try:
-            author = Author.objects.get(pk=request.user.pk)
-            user_has_liked = post.likes.filter(author=author).exists()
-        except Author.DoesNotExist:
-            # Handle the case where the Author profile does not exist
-            messages.error(request, "Author profile not found.")
-            # Optionally, redirect or set user_has_liked to False
-            redirect("post_list")
+        if request.user.is_authenticated:
+            try:
+                author = Author.objects.get(pk=request.user.pk)
+                user_has_liked = post.likes.filter(author=author).exists()
+            except Author.DoesNotExist:
+                # Handle the case where the Author profile does not exist
+                messages.error(request, "Author profile not found.")
+                # Optionally, redirect or set user_has_liked to False
+                redirect("post_list")
 
-    user_has_liked = post.likes.filter(author=author).exists()
+        user_has_liked = post.likes.filter(author=author).exists()
 
-    return render(
-        request,
-        "post_details.html",
-        {"post": post, "user_has_liked": user_has_liked, "a_username": post.author},
-    )
+        return render(
+            request,
+            "post_details.html",
+            {"post": post, "user_has_liked": user_has_liked, "a_username": post.author},
+        )
+    else:
+        return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
 @login_required
