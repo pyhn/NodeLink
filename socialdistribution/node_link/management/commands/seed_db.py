@@ -47,7 +47,6 @@ class Command(BaseCommand):
             admin=admin_profile,
             url=fake.url(),
             created_by=admin_profile,
-            updated_by=admin_profile,
             deleted_by=None,  # Can be None if not deleted
         )
 
