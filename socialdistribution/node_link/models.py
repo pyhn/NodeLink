@@ -47,9 +47,13 @@ class User(AbstractUser):
         return str(self.display_name) or str(self.username)
 
 
-class Admin(User):
+class AdminProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="admin_profile"
+    )
+
     def __str__(self):
-        return f"{self.user.username} (Node Admin)"
+        return f"{self.user.username} (Admin)"
 
 
 class Node(models.Model):
@@ -72,11 +76,14 @@ class Node(models.Model):
     )
 
 
-class Author(User):
-    github_url = models.CharField(null=True, max_length=255)
-    github_token = models.CharField(null=True, max_length=255)
-    github_user = models.CharField(null=True, max_length=255)
-    local_node = models.ForeignKey(Node, null=False, on_delete=models.PROTECT)
+class AuthorProfile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="author_profile"
+    )
+    github_url = models.CharField(max_length=255, null=True, blank=True)
+    github_token = models.CharField(max_length=255, null=True, blank=True)
+    github_user = models.CharField(max_length=255, null=True, blank=True)
+    local_node = models.ForeignKey("Node", on_delete=models.PROTECT)
 
     def __str__(self):
         return f"{self.user.username} (Author)"
