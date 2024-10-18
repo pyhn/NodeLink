@@ -1,8 +1,5 @@
 # from django.shortcuts import render, HttpResponse
 
-# Create your views here.
-# def home(request):
-#     return render(request, "home.html")
 
 from django.shortcuts import render, redirect, get_object_or_404, HttpResponse
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
@@ -162,12 +159,16 @@ def post_card(request, u_id):
     """
     post = get_object_or_404(Post, id=u_id)
     # check is user has permission to see post
-    if post.visibility == "p" or (
-        post.visibility == "fo"
-        and Friends.objects.filter(
-            Q(user1=request.user, user2=post.author)
-            | Q(user2=request.user, user1=post.author)
-        ).exists()
+    if (
+        post.visibility == "p"
+        or post.visibility == "u"
+        or (
+            post.visibility == "fo"
+            and Friends.objects.filter(
+                Q(user1=request.user, user2=post.author)
+                | Q(user2=request.user, user1=post.author)
+            ).exists()
+        )
     ):
 
         user_has_liked = post.likes.filter(author=request.user).exists()
@@ -179,7 +180,7 @@ def post_card(request, u_id):
             "profile_img": user_img,
         }
         return render(request, "post_card.html", context)
-    return redirect(request.META.get("HTTP_REFERER"))  #!!!error page?
+    return redirect()  #!!!error page?
 
 
 def post_detail(request, post_id):
@@ -246,14 +247,20 @@ def home(request):
         # Combine and sort all posts by creation date
         newest = list(set(public_posts + fo_posts + fl_posts))
         random.shuffle(newest)
-
-        rest_post = list(
-            Post.objects.filter(visibility="p", created_at__lt=user.last_login)
+        remaining_p = list(
+            Post.objects.filter(
+                Q(visibility="p") | Q(visibility="u"), created_at__lt=user.last_login
+            )
             .distinct()
+            .order_by("created_at")
             .values_list("id", flat=True)
         )
-        random.shuffle(rest_post)
-        all_posts = set(newest + rest_post)
+
+        rest_post = []
+        for i in remaining_p:
+            if i not in newest:
+                rest_post.append(i)
+        all_posts = newest + rest_post
 
         context = {"all_ids": all_posts}
 
