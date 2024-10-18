@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+{% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ post.title }}</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <script src="https://unpkg.com/htmx.org"></script>
+
+
+</head>
+
+<body>
+
+
+    <div class="post-container" id="main_post" hx-get="{%url 'one_post' post.id %}" hx-trigger="load"
+        hx-target="#post_body" hx-swap="innerHTML">
+        <div id='post_body'>Loading</div>
+    </div>
+
+
+    <div class="post-container">
+        <!-- Comments Section -->
+        <div class="comments-section">
+            <h2>Comments</h2>
+            {% if post.comments.all %}
+            <ul>
+                {% for comment in post.comments.all %}
+                <li>
+                    <div class="comment">
+                        <span class="comment-author">{{ comment.author.username }}</span>:
+                        {{ comment.content|linebreaks }}
+                        <span class="comment-date">
+                            Posted on {{ comment.created_at|date:"F j, Y, g:i a" }}
+                        </span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No comments yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Add Comment Button -->
+        <div class="create-comment-button">
+            <a href="{% url 'create_comment' post_id=post.id %}">
+                <button class="icon" type="button">Add a Comment<img src="{% static 'icons/plus.svg' %}"></button>
+            </a>
+        </div>
+    </div>
+
+
+    </div>
+</body>
+{% endblock %}
+
+</html>

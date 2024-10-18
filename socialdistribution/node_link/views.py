@@ -17,6 +17,58 @@ from .forms import SignUpForm, LoginForm
 import random
 
 User = get_user_model()
+# login/user creation
+
+
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # Set additional fields
+            user.email = form.cleaned_data["email"]
+            user.first_name = form.cleaned_data["first_name"]
+            user.last_name = form.cleaned_data["last_name"]
+            # user.username = form.cleaned_data['username']
+            user.description = form.cleaned_data["description"]
+            user.save()
+            auth_login(request, user)
+            messages.success(
+                request, f"Welcome {user.username}, your account has been created."
+            )
+            return redirect("home")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = SignUpForm()
+    return render(request, "signup.html", {"form": form})
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+    if request.method == "POST":
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            auth_login(request, form.get_user())
+            messages.success(request, f"Welcome back, {form.get_user().username}!")
+            return redirect("home")
+        else:
+            messages.error(request, "Invalid username or password.")
+    else:
+        form = LoginForm()
+    return render(request, "login.html", {"form": form})
+
+
+def logout_view(request):
+    auth_logout(request)
+    messages.info(request, "You have successfully logged out.")
+    return redirect("login")
+
+
+# post edit/create methods
 
 
 @login_required
@@ -43,12 +95,6 @@ def create_post(request):
         return redirect("post_list")
 
     return render(request, "create_post.html")
-
-
-def post_list(request):
-    # Retrieve all posts
-    posts = Post.objects.all()
-    return render(request, "post_list.html", {"posts": posts})
 
 
 @login_required
@@ -94,46 +140,13 @@ def like_post(request, post_id):
     return redirect("post_detail", post_id=post.id)
 
 
-def signup_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-    if request.method == "POST":
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            # Set additional fields
-            user.email = form.cleaned_data["email"]
-            user.first_name = form.cleaned_data["first_name"]
-            user.last_name = form.cleaned_data["last_name"]
-            # user.username = form.cleaned_data['username']
-            user.description = form.cleaned_data["description"]
-            user.save()
-            auth_login(request, user)
-            messages.success(
-                request, f"Welcome {user.username}, your account has been created."
-            )
-            return redirect("home")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
-        form = SignUpForm()
-    return render(request, "signup.html", {"form": form})
+# view post
 
 
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-    if request.method == "POST":
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            auth_login(request, form.get_user())
-            messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("home")
-        else:
-            messages.error(request, "Invalid username or password.")
-    else:
-        form = LoginForm()
-    return render(request, "login.html", {"form": form})
+def post_list(request):
+    # Retrieve all posts
+    posts = Post.objects.all()
+    return render(request, "post_list.html", {"posts": posts})
 
 
 @login_required
@@ -147,13 +160,13 @@ def post_card(request, u_id):
     Returns:
         _type_: _description_
     """
-    post = get_object_or_404(Post, uuid=u_id)
+    post = get_object_or_404(Post, id=u_id)
     # check is user has permission to see post
     if post.visibility == "p" or (
         post.visibility == "fo"
         and Friends.objects.filter(
-            Q(user1=request.user, user2=post.user)
-            | Q(user2=request.user, user1=post.user)
+            Q(user1=request.user, user2=post.author)
+            | Q(user2=request.user, user1=post.author)
         ).exists()
     ):
 
@@ -187,11 +200,8 @@ def post_detail(request, post_id):
 
     return render(
         request,
-        "post_detail.html",
-        {
-            "post": post,
-            "user_has_liked": user_has_liked,
-        },
+        "post_details.html",
+        {"post": post, "user_has_liked": user_has_liked, "a_username": post.author},
     )
 
 
@@ -213,7 +223,7 @@ def home(request):
         public_posts = list(
             Post.objects.filter(visibility="p", created_at__gt=user.last_login)
             .distinct()
-            .values_list("uuid", flat=True)
+            .values_list("id", flat=True)
         )
 
         # Get friends-only posts from the user's friends
@@ -222,7 +232,7 @@ def home(request):
                 visibility="fo", author__in=friends, created_at__gt=user.last_login
             )
             .distinct()
-            .values_list("uuid", flat=True)
+            .values_list("id", flat=True)
         )
 
         fl_posts = list(
@@ -230,7 +240,7 @@ def home(request):
                 visibility="fo", author__in=following, created_at__gt=user.last_login
             )
             .distinct()
-            .values_list("uuid", flat=True)
+            .values_list("id", flat=True)
         )
 
         # Combine and sort all posts by creation date
@@ -240,7 +250,7 @@ def home(request):
         rest_post = list(
             Post.objects.filter(visibility="p", created_at__lt=user.last_login)
             .distinct()
-            .values_list("uuid", flat=True)
+            .values_list("id", flat=True)
         )
         random.shuffle(rest_post)
         all_posts = set(newest + rest_post)
@@ -249,9 +259,3 @@ def home(request):
 
         # Return the rendered template
         return render(request, template_name, context)
-
-
-def logout_view(request):
-    auth_logout(request)
-    messages.info(request, "You have successfully logged out.")
-    return redirect("login")

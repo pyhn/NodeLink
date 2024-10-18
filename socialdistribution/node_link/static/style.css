@@ -13,28 +13,33 @@
     flex-direction: column;
     margin: 2.5vh;
 }
-.post>div{
-    padding: 3vh 2vw 2vh 2vw;
+.post{
+    padding: 2vh 1vw 1vh 1vw;
 }
 
+
 .post.info {
-    border-bottom: 1px solid  var(--border);
     display: flex;
     align-items:center;
     height: 15vh;
     padding:1vh 1vw;
+    border-bottom: 1px solid var(--border);
 
 
 }
 .post.info h1{
     font-size:1.25rem ;
 }
+.user_info{
+    padding: 0vh 1vw 0vh 1vw;
+
+}
 .user_img{
     border: 1px solid var(--border);
     border-radius: 100%;
 
-    display: flex;                /* Flexbox to handle image alignment */
-    align-items: center;          /* Center the image vertically */
+    display: flex;
+    align-items: center;
     height: 10vh;
     width: 10vh;
     padding:0px 0px 0px 0px !important;
@@ -54,10 +59,15 @@
 }
 
 .post.body {
-    border-bottom: 1px solid  var(--border);
+
     display: flex;
     flex-direction: row;
     font-size: 1rem;
+
+}
+.post.body a{
+    all: inherit;
+    padding:1vh 1vw;
 
 }
 
@@ -65,6 +75,9 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    padding:1vh 1vw;
+    border-top: 1px solid var(--border);
+
 
 }
 button.icon{
@@ -91,4 +104,43 @@ button.icon img{
     max-width: 100%;
     max-height: 100%;
 
+}
+/* Comments Section Styles */
+.comments-section {
+    margin-top: 40px;
+}
+.comments-section ul {
+    list-style-type: none;
+    padding: 0;
+}
+.comments-section li {
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 5px;
+    word-wrap: break-word;
+}
+.comment-author {
+    font-weight: bold;
+}
+.comment-date {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+}
+/* Button Styles */
+.create-comment-button button, .like-button button {
+    background-color: #007BFF;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.create-comment-button button:hover, .like-button button:hover {
+    background-color: #0056b3;
+}
+.back-link a {
+    font-size: 16px;
 }
