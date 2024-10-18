@@ -64,7 +64,11 @@ class Node(models.Model):
     updated_at = models.DateTimeField(default=datetime.now)
     deleted_at = models.DateTimeField(default=datetime.now)
     deleted_by = models.ForeignKey(
-        Admin, on_delete=models.PROTECT, related_name="deleted_nodes"
+        Admin,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="deleted_nodes",
     )
 
 
@@ -85,7 +89,11 @@ class MixinApp(models.Model):
     )
     updated_at = models.DateTimeField(default=datetime.now)
     updated_by = models.ForeignKey(
-        Author, on_delete=models.PROTECT, related_name="%(class)s_updated"
+        Author,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="%(class)s_updated",
     )
     deleted_at = models.DateTimeField(default=datetime.now)
 

@@ -157,6 +157,9 @@ def login_view(request):
     return render(request, "login.html", {"form": form})
 
 
+@login_required(
+    login_url="login"
+)  # Ensure 'login' matches the name of your login URL pattern
 def home_view(request):
     return render(request, "home.html")
 
