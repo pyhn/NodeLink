@@ -31,7 +31,7 @@
                 {% for comment in post.comments.all %}
                 <li>
                     <div class="comment">
-                        <span class="comment-author">{{ comment.author.username }}</span>:
+                        <span class="comment-author"><div class = 'user_img small'><img src = {{comment.author.profile_image}}></div>{{ comment.author.username }}</span>:
                         {{ comment.content|linebreaks }}
                         <span class="comment-date">
                             Posted on {{ comment.created_at|date:"F j, Y, g:i a" }}
