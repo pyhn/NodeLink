@@ -231,20 +231,11 @@ def post_detail(request, post_id):
         user_has_liked = post.likes.filter(author=author.id).exists()
         comment_list = list(post.comments.filter().order_by("-created_at"))
 
-        if post.is_commonmark:
-            # Convert Markdown to HTML
-            parser = commonmark.Parser()
-            renderer = commonmark.HtmlRenderer()
-            post_content = renderer.render(parser.parse(post.content))
-        else:
-            post_content = post.content
-
         return render(
             request,
             "post_details.html",
             {
                 "post": post,
-                "post_content": post_content,
                 "user_has_liked": user_has_liked,
                 "a_username": post.author,
                 "comment_list": comment_list,
