@@ -66,7 +66,7 @@
     <h1>Create a new post here!</h1>
 
     <form method="POST" enctype="multipart/form-data">
-
+        {% csrf_token %}
         <br>
         <!-- Input for post title -->
         <input type="text" name="title" placeholder="Enter the post title" required><br>
@@ -84,9 +84,15 @@
             <option value="fo">Friends-Only</option>
         </select><br>
         <br>
+        <!-- Checkbox for CommonMark -->
+        <label>
+            <input type="checkbox" name="is_commonmark" value="true">
+            Enable CommonMark formatting
+        </label><br>
+        <br>
         <!-- Submit button -->
         <button type="submit">Submit Post</button><br>
-        {% csrf_token %}
     </form>
+
 </body>
 </html>
