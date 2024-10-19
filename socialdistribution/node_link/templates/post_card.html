@@ -15,15 +15,7 @@
             | Visibility: {{ post.get_visibility_display }}
         </div>
     </div>
-    {% if post.author.user == user%}
-    <div class="post info user_actions">
-        <!--!!!CHAnGE URL-->
-        <!--!!!CHAnGE ICON-->
 
-        <button class='icon'><img src="{% static 'icons/plain_heart.svg' %}" alt="delete post button"></button>
-
-    </div>
-    {%endif%}
 
 </div>
 <div class="post body">
@@ -74,25 +66,3 @@
         </form>
     </div>
 </div>
-
-<!-- Delete Confirmation Overlay -->
-<div id="deleteModal-{{ post.id }}" class="overlay" style="display: none;">
-    <div class="overlay-content">
-        <p>Are you sure you want to delete this post?</p>
-        <form action="{% url 'delete_post' post.id %}" method="post">
-            {% csrf_token %}
-            <button class="confirm-btn" type="submit">Yes, Delete</button>
-        </form>
-        <button class="cancel-btn" onclick="closeModal('{{ post.id }}')">Cancel</button>
-    </div>
-</div>
-<!-- Delete Confirmation Scripts -->
-<script>
-    document.getElementById('post-delete-{{ post.id }}').addEventListener('click', function() {
-        document.getElementById('deleteModal-{{ post.id }}').classList.add('show-overlay');
-    });
-
-    function closeModal(postId) {
-        document.getElementById('deleteModal-' + postId).style.display = 'none';
-    }
-</script>

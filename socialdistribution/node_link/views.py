@@ -171,6 +171,7 @@ def delete_post(request, post_id):
     # check if they are allow to delete
     if post.author.user == request.user:
         post.visibility = "d"
+        post.save()
     return redirect("home")
 
 
