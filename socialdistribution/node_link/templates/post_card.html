@@ -20,9 +20,14 @@
     <div class="post body">
         <a href="{%url 'post_detail' post.id%}" target="_parent">
 
-            {% if post.content %}
+            {% if post_content %}
             <div class="post content">
-                {{ post.content|linebreaks }}
+                {% if post.is_commonmark %}
+                    {{ post_content|safe|linebreaks }}
+                {% else %}
+                    {{ post_content|linebreaks }}
+                {% endif %}
+
             </div>
             {% endif %}
 

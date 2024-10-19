@@ -19,6 +19,7 @@ from node_link.models import (
     Notification,
 )
 from .forms import SignUpForm, LoginForm
+import commonmark
 
 User = get_user_model()
 # sign up
@@ -112,6 +113,7 @@ def create_post(request):
         content = request.POST.get("content", "")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
+        is_commonmark = request.POST.get("is_commonmark") == "true"
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Create the post with the necessary fields
@@ -120,6 +122,7 @@ def create_post(request):
             content=content,
             img=img,
             visibility=visibility,
+            is_commonmark=is_commonmark,
             author=author,
             node=author.local_node,  # Associate the post with the author's node
             created_by=author,
@@ -208,8 +211,17 @@ def post_card(request, u_id):
         user_has_liked = post.likes.filter(author=request.user.author_profile).exists()
         user_img = post.author.user.profile_image
 
+        if post.is_commonmark:
+            # Convert Markdown to HTML
+            parser = commonmark.Parser()
+            renderer = commonmark.HtmlRenderer()
+            post_content = renderer.render(parser.parse(post.content))
+        else:
+            post_content = post.content
+
         context = {
             "post": post,
+            "post_content": post_content,
             "user_has_liked": user_has_liked,
             "profile_img": user_img,
         }
@@ -234,6 +246,7 @@ def post_detail(request, post_id):
 
         user_has_liked = post.likes.filter(author=author.id).exists()
         comment_list = list(post.comments.filter().order_by("-created_at"))
+
         return render(
             request,
             "post_details.html",
