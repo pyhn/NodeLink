@@ -165,6 +165,15 @@ def like_post(request, post_id):
     return redirect("post_detail", post_id=post.id)
 
 
+@login_required
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    # check if they are allow to delete
+    if post.author.user == request.user:
+        post.visibility = "d"
+    return redirect("home")
+
+
 # view post
 
 
