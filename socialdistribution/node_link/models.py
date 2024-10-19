@@ -117,6 +117,7 @@ class Post(MixinApp):
         AuthorProfile, on_delete=models.PROTECT, related_name="posts"
     )
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_commonmark = models.BooleanField(default=False)
 
 
 class Comment(MixinApp):
