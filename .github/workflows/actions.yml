@@ -27,7 +27,7 @@ jobs:
     - name: Lint with Pylint
       run: |
         pip install pylint
-        pylint --rcfile=.pylintrc socialdistribution/**/*.py  
+        pylint --rcfile=.pylintrc socialdistribution/**/*.py
     ### Uncomment the following lines if you have Django templates and tests (later on)
     # #change the path to the template directory
     # - name: Lint Django Templates with djLint

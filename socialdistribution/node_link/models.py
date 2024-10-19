@@ -1,20 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
-
-# We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
-# ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
-
-# class User(AbstractUser):
-#     first_name = models.CharField(max_length=20, null=False)
-#     last_name = models.CharField(max_length=20, null=False)
-#     # make it optional or else you cant create a superuser
-#     date_ob = models.DateField(null=True, blank=True)
-#     profile_img = models.FilePathField(null=True)
-#     screen_name = models.CharField(max_length=20, null=False)
-#     description = models.TextField(null=False)
-#     join_date = models.DateField(null=False, default=datetime.now)
-#     email = models.EmailField(max_length=20, null=False, unique=True)
+import uuid
 
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
 # ^from: https://docs.djangoproject.com/en/5.1/topics/auth/customizing/#using-a-custom-user-model-when-starting-a-project
@@ -29,7 +16,10 @@ class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)  # date of brith
 
     profile_image = models.ImageField(
-        upload_to="profile_images/", null=True, blank=True
+        upload_to="profile_images/",
+        null=True,
+        blank=True,
+        default="/static/icons/user_icon.svg",
     )
     # ^switched from filepathfield to ImageField
     # FilePathField only stores the path location of a file and can only be used if the file already exists in the system
@@ -94,7 +84,9 @@ class MixinApp(models.Model):
     created_by = models.ForeignKey(
         AuthorProfile, on_delete=models.PROTECT, related_name="%(class)s_created"
     )
-    updated_at = models.DateTimeField(default=datetime.now)
+
+    updated_at = models.DateTimeField(default=datetime.now, null=True, blank=True)
+
     updated_by = models.ForeignKey(
         AuthorProfile,
         null=True,
@@ -102,7 +94,8 @@ class MixinApp(models.Model):
         on_delete=models.PROTECT,
         related_name="%(class)s_updated",
     )
-    deleted_at = models.DateTimeField(default=datetime.now)
+
+    deleted_at = models.DateTimeField(default=datetime.now, null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -118,6 +111,7 @@ class Post(MixinApp):
     author = models.ForeignKey(
         AuthorProfile, on_delete=models.PROTECT, related_name="posts"
     )
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
 
 class Comment(MixinApp):

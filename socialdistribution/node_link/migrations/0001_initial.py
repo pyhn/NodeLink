@@ -14,184 +14,488 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='User',
+            name="User",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('password', models.CharField(max_length=128, verbose_name='password')),
-                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
-                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
-                ('username', models.CharField(error_messages={'unique': 'A user with that username already exists.'}, help_text='Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.', max_length=150, unique=True, validators=[django.contrib.auth.validators.UnicodeUsernameValidator()], verbose_name='username')),
-                ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
-                ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
-                ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('first_name', models.CharField(max_length=20)),
-                ('last_name', models.CharField(max_length=20)),
-                ('date_ob', models.DateField(blank=True, null=True)),
-                ('profile_img', models.FilePathField(null=True)),
-                ('description', models.TextField()),
-                ('join_date', models.DateField(default=datetime.datetime.now)),
-                ('email', models.EmailField(max_length=20, unique=True)),
-                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
-                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("password", models.CharField(max_length=128, verbose_name="password")),
+                (
+                    "last_login",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="last login"
+                    ),
+                ),
+                (
+                    "is_superuser",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates that this user has all permissions without explicitly assigning them.",
+                        verbose_name="superuser status",
+                    ),
+                ),
+                (
+                    "username",
+                    models.CharField(
+                        error_messages={
+                            "unique": "A user with that username already exists."
+                        },
+                        help_text="Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.",
+                        max_length=150,
+                        unique=True,
+                        validators=[
+                            django.contrib.auth.validators.UnicodeUsernameValidator()
+                        ],
+                        verbose_name="username",
+                    ),
+                ),
+                (
+                    "is_staff",
+                    models.BooleanField(
+                        default=False,
+                        help_text="Designates whether the user can log into this admin site.",
+                        verbose_name="staff status",
+                    ),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Designates whether this user should be treated as active. Unselect this instead of deleting accounts.",
+                        verbose_name="active",
+                    ),
+                ),
+                (
+                    "date_joined",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="date joined"
+                    ),
+                ),
+                ("first_name", models.CharField(max_length=20)),
+                ("last_name", models.CharField(max_length=20)),
+                ("date_ob", models.DateField(blank=True, null=True)),
+                ("profile_img", models.FilePathField(null=True)),
+                ("description", models.TextField()),
+                ("join_date", models.DateField(default=datetime.datetime.now)),
+                ("email", models.EmailField(max_length=20, unique=True)),
+                (
+                    "groups",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.group",
+                        verbose_name="groups",
+                    ),
+                ),
+                (
+                    "user_permissions",
+                    models.ManyToManyField(
+                        blank=True,
+                        help_text="Specific permissions for this user.",
+                        related_name="user_set",
+                        related_query_name="user",
+                        to="auth.permission",
+                        verbose_name="user permissions",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'user',
-                'verbose_name_plural': 'users',
-                'abstract': False,
+                "verbose_name": "user",
+                "verbose_name_plural": "users",
+                "abstract": False,
             },
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='Node',
+            name="Node",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('url', models.TextField()),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("url", models.TextField()),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
             ],
         ),
         migrations.CreateModel(
-            name='Admin',
+            name="Admin",
             fields=[
-                ('user_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to=settings.AUTH_USER_MODEL)),
+                (
+                    "user_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'user',
-                'verbose_name_plural': 'users',
-                'abstract': False,
+                "verbose_name": "user",
+                "verbose_name_plural": "users",
+                "abstract": False,
             },
-            bases=('node_link.user',),
+            bases=("node_link.user",),
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='Author',
+            name="Author",
             fields=[
-                ('user_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to=settings.AUTH_USER_MODEL)),
-                ('github_url', models.CharField(max_length=255, null=True)),
-                ('github_token', models.CharField(max_length=255, null=True)),
-                ('github_user', models.CharField(max_length=255, null=True)),
+                (
+                    "user_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                ("github_url", models.CharField(max_length=255, null=True)),
+                ("github_token", models.CharField(max_length=255, null=True)),
+                ("github_user", models.CharField(max_length=255, null=True)),
             ],
             options={
-                'verbose_name': 'user',
-                'verbose_name_plural': 'users',
-                'abstract': False,
+                "verbose_name": "user",
+                "verbose_name_plural": "users",
+                "abstract": False,
             },
-            bases=('node_link.user',),
+            bases=("node_link.user",),
             managers=[
-                ('objects', django.contrib.auth.models.UserManager()),
+                ("objects", django.contrib.auth.models.UserManager()),
             ],
         ),
         migrations.CreateModel(
-            name='Post',
+            name="Post",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('content', models.TextField(null=True)),
-                ('img', models.ImageField(null=True, upload_to='images/')),
-                ('visibility', models.CharField(choices=[('p', 'public'), ('u', 'unlisted'), ('fo', 'friends-only')], default='p', max_length=2)),
-                ('node', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='posts', to='node_link.node')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_created', to='node_link.author')),
-                ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_updated', to='node_link.author')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("content", models.TextField(null=True)),
+                ("img", models.ImageField(null=True, upload_to="images/")),
+                (
+                    "visibility",
+                    models.CharField(
+                        choices=[
+                            ("p", "public"),
+                            ("u", "unlisted"),
+                            ("fo", "friends-only"),
+                        ],
+                        default="p",
+                        max_length=2,
+                    ),
+                ),
+                (
+                    "node",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="posts",
+                        to="node_link.node",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_created",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_updated",
+                        to="node_link.author",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='node',
-            name='admin',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='managed_nodes', to='node_link.admin'),
+            model_name="node",
+            name="admin",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="managed_nodes",
+                to="node_link.admin",
+            ),
         ),
         migrations.AddField(
-            model_name='node',
-            name='created_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_nodes', to='node_link.admin'),
+            model_name="node",
+            name="created_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="created_nodes",
+                to="node_link.admin",
+            ),
         ),
         migrations.AddField(
-            model_name='node',
-            name='deleted_by',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='deleted_nodes', to='node_link.admin'),
+            model_name="node",
+            name="deleted_by",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="deleted_nodes",
+                to="node_link.admin",
+            ),
         ),
         migrations.CreateModel(
-            name='Comment',
+            name="Comment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('content', models.TextField(null=True)),
-                ('visibility', models.CharField(choices=[('p', 'public'), ('fo', 'friends-only')], default='p', max_length=2)),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='node_link.post')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_created', to='node_link.author')),
-                ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_updated', to='node_link.author')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("content", models.TextField(null=True)),
+                (
+                    "visibility",
+                    models.CharField(
+                        choices=[("p", "public"), ("fo", "friends-only")],
+                        default="p",
+                        max_length=2,
+                    ),
+                ),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comments",
+                        to="node_link.post",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_created",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_updated",
+                        to="node_link.author",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='author',
-            name='local_node',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='node_link.node'),
+            model_name="author",
+            name="local_node",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, to="node_link.node"
+            ),
         ),
         migrations.CreateModel(
-            name='Like',
+            name="Like",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='likes', to='node_link.post')),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_created', to='node_link.author')),
-                ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_updated', to='node_link.author')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "post",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="likes",
+                        to="node_link.post",
+                    ),
+                ),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_created",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_updated",
+                        to="node_link.author",
+                    ),
+                ),
             ],
             options={
-                'constraints': [models.UniqueConstraint(fields=('created_by', 'post'), name='unique_like')],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("created_by", "post"), name="unique_like"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Friends',
+            name="Friends",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('status', models.BooleanField(default=False)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_created', to='node_link.author')),
-                ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_updated', to='node_link.author')),
-                ('user1', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='friendships_initiated', to='node_link.author')),
-                ('user2', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='friendships_received', to='node_link.author')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("status", models.BooleanField(default=False)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_created",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_updated",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "user1",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="friendships_initiated",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "user2",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="friendships_received",
+                        to="node_link.author",
+                    ),
+                ),
             ],
             options={
-                'constraints': [models.UniqueConstraint(fields=('user1', 'user2'), name='unique_friendship')],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("user1", "user2"), name="unique_friendship"
+                    )
+                ],
             },
         ),
         migrations.CreateModel(
-            name='Follower',
+            name="Follower",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('updated_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('deleted_at', models.DateTimeField(default=datetime.datetime.now)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_created', to='node_link.author')),
-                ('updated_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='%(class)s_updated', to='node_link.author')),
-                ('user1', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='followers_initiated', to='node_link.author')),
-                ('user2', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='followers_received', to='node_link.author')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("updated_at", models.DateTimeField(default=datetime.datetime.now)),
+                ("deleted_at", models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_created",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "updated_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="%(class)s_updated",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "user1",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="followers_initiated",
+                        to="node_link.author",
+                    ),
+                ),
+                (
+                    "user2",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="followers_received",
+                        to="node_link.author",
+                    ),
+                ),
             ],
             options={
-                'constraints': [models.UniqueConstraint(fields=('user1', 'user2'), name='unique_follower')],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("user1", "user2"), name="unique_follower"
+                    )
+                ],
             },
         ),
     ]
