@@ -11,7 +11,7 @@
             <h1>{{post.title}}</h1>
             <span class="user_icon"></span><!--!!!add anchor to user account-->
             <div class="post-meta"><!--!!!add link yo user profile-->
-                By {{ post.author.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+                By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
                 | Visibility: {{ post.get_visibility_display }}
             </div>
 

@@ -78,14 +78,14 @@ def logout_view(request):
 def has_access(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if (
-        post.author.id == request.user.id
+        post.author.id == request.user.author_profile.id
         or post.visibility == "p"
         or post.visibility == "u"
         or (
             post.visibility == "fo"
             and Friends.objects.filter(
-                Q(user1=request.user, user2=post.author)
-                | Q(user2=request.user, user1=post.author)
+                Q(user1=request.user.author_profile, user2=post.author)
+                | Q(user2=request.user.author_profile, user1=post.author)
             ).exists()
         )
     ):
@@ -103,7 +103,7 @@ def create_post(request):
         content = request.POST.get("content", "")
         img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
-        author = AuthorProfile.objects.get(pk=request.user.pk)
+        author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Create the post with the necessary fields
         Post.objects.create(
@@ -129,7 +129,7 @@ def create_comment(request, post_id):
     if request.method == "POST":
         content = request.POST.get("content")
 
-        author = AuthorProfile.objects.get(pk=request.user.pk)
+        author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Create the comment
         Comment.objects.create(
@@ -149,7 +149,7 @@ def create_comment(request, post_id):
 @login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    author = AuthorProfile.objects.get(pk=request.user.pk)
+    author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
     existing_like = Like.objects.filter(post=post, author=author)
     if existing_like.exists():
@@ -189,8 +189,8 @@ def post_card(request, u_id):
     # check is user has permission to see post
     if has_access(request=request, post_id=u_id):
 
-        user_has_liked = post.likes.filter(author=request.user).exists()
-        user_img = post.author.profile_image
+        user_has_liked = post.likes.filter(author=request.user.author_profile).exists()
+        user_img = post.author.user.profile_image
 
         context = {
             "post": post,
@@ -208,7 +208,7 @@ def post_detail(request, post_id):
 
         if request.user.is_authenticated:
             try:
-                author = AuthorProfile.objects.get(pk=request.user.pk)
+                author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
                 user_has_liked = post.likes.filter(author=author).exists()
             except AuthorProfile.DoesNotExist:
                 # Handle the case where the Author profile does not exist
@@ -216,7 +216,7 @@ def post_detail(request, post_id):
                 # Optionally, redirect or set user_has_liked to False
                 redirect("post_list")
 
-        user_has_liked = post.likes.filter(author=author).exists()
+        user_has_liked = post.likes.filter(author=author.id).exists()
         comment_list = list(post.comments.filter().order_by("-created_at"))
         return render(
             request,
@@ -237,7 +237,7 @@ def home(request):
 
     if request.method == "GET":
         template_name = "home.html"
-        user = request.user
+        user = request.user.author_profile
         friends = list(
             Friends.objects.filter(
                 Q(user1=user, status=True) | Q(user2=user, status=True)
