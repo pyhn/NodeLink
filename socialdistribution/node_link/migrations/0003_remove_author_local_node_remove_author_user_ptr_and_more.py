@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("node_link", "0006_alter_user_profile_image"),
+        ("node_link", "0002_remove_like_unique_like_remove_user_join_date_and_more"),
     ]
 
     operations = [
