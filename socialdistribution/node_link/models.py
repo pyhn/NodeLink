@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 import uuid
 
 # We use abstract user if we want everything a base User has but want to add more fields (But also maintaining the way it is authenticated)
@@ -155,27 +156,60 @@ class Friends(MixinApp):
     user2 = models.ForeignKey(
         AuthorProfile, on_delete=models.CASCADE, related_name="friendships_received"
     )
-    status = models.BooleanField(default=False)
+    # Removed 'status' as mutual following implies confirmed friendship
 
+    # enforce that each friendship is stored only once, regardless of the order of users.
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user1", "user2"], name="unique_friendship")
+            models.UniqueConstraint(
+                fields=["user1", "user2"],
+                name="unique_friendship",
+                condition=models.Q(user1__lt=models.F("user2")),
+            )
         ]
+
+    def clean(self):
+        if self.user1 == self.user2:
+            raise ValidationError("Users cannot be friends with themselves.")
+        if self.user1.id > self.user2.id:
+            raise ValidationError(
+                "user1 ID must be less than user2 ID to maintain order."
+            )
+
+    def save(self, *args, **kwargs):
+        if self.user1.id > self.user2.id:
+            self.user1, self.user2 = self.user2, self.user1
+        super().save(*args, **kwargs)
 
 
 class Follower(MixinApp):
+    # user 1 is the follower
     user1 = models.ForeignKey(
         AuthorProfile, on_delete=models.CASCADE, related_name="followers_initiated"
     )
+
+    # user 2 is the followee
     user2 = models.ForeignKey(
         AuthorProfile, on_delete=models.CASCADE, related_name="followers_received"
     )
-    status = models.CharField(max_length=20, default="pending")
+    # status = models.CharField(max_length=20, default="pending")
+
+    # Status of the follow request
+    STATUS_CHOICES = [
+        ("P", "Pending"),
+        ("A", "Accepted"),
+        ("D", "Denied"),
+    ]
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default="P")
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["user1", "user2"], name="unique_follower")
         ]
+
+    def clean(self):
+        if self.user1 == self.user2:
+            raise ValidationError("Users cannot follow themselves.")
 
 
 class Notification(models.Model):
