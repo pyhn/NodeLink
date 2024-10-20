@@ -1,18 +1,23 @@
 import logging
-from django.core.management.base import BaseCommand
+from random import choice, randint
+
 from django.contrib.auth.hashers import make_password
+from django.core.management.base import BaseCommand
+from django.db.models import Q
 from faker import Faker
-from random import choice
+
 from node_link.models import (
+    AdminProfile,
     AuthorProfile,
+    Comment,
+    Follower,
+    Friends,
+    Like,
     Node,
     Post,
-    Like,
-    Comment,
-    AdminProfile,
-    Friends,
     User,
 )
+
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -108,35 +113,99 @@ class Command(BaseCommand):
                     created_by=author,
                 )
         logger.info("Comments created for posts.")
+
         # Create fake friends
         logger.info("Creating fake friends...")
-        for author in authors:
-            for _ in range(5):  # Each author will get 5 friends
-                user2 = choice(authors)
-                if (
-                    user2 != author
-                    and not Friends.objects.filter(user1=author, user2=user2).exists()
-                ):
-                    Friends.objects.create(
-                        user1=author,
-                        status=choice([True, False]),
-                        user2=user2,
-                        created_by=author,
-                    )
+        self.create_fake_friends(authors)
         logger.info("Friends created for Authors.")
+
+        # Create fake followers
         logger.info("Creating fake followers...")
-        for author in authors:
-            for _ in range(2):  # Each author will get 2 followers
-                user1 = choice(authors)  # does not ensure they are not friends
-                if (
-                    user1 != author
-                    and not Friends.objects.filter(user1=user1, user2=author).exists()
-                ):
-                    Friends.objects.create(
-                        user1=user1,
-                        user2=author,
-                        created_by=author,
-                    )
+        self.create_fake_followers(authors)
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
+
+    def create_fake_friends(self, authors):
+        """
+        Creates mutual friendships between authors.
+        Each author will have up to 5 friends.
+        """
+        max_friends_per_author = 5
+        for author in authors:
+            # Determine how many friends to add for this author
+            current_friend_count = Friends.objects.filter(
+                Q(user1=author) | Q(user2=author)
+            ).count()
+            friends_to_add = randint(0, max_friends_per_author - current_friend_count)
+
+            for _ in range(friends_to_add):
+                potential_friend = choice(authors)
+                if potential_friend == author:
+                    continue  # Skip self
+
+                # Ensure ordering to comply with unique constraint (user1_id < user2_id)
+                if author.id < potential_friend.id:
+                    user1, user2 = author, potential_friend
+                else:
+                    user1, user2 = potential_friend, author
+
+                # Check if the friendship already exists
+                if Friends.objects.filter(user1=user1, user2=user2).exists():
+                    continue  # Friendship already exists
+
+                # Create the friendship
+                Friends.objects.create(
+                    user1=user1,
+                    user2=user2,
+                    created_by=user1,  # Assuming 'created_by' is part of MixinApp
+                )
+                logger.debug(
+                    f"Friendship created between {user1.user.username} and {user2.user.username}"
+                )
+
+    def create_fake_followers(self, authors):
+        """
+        Creates follow relationships between authors.
+        Each author will have up to 2 followers.
+        Ensures that followers are not already friends.
+        """
+        max_followers_per_author = 2
+        for author in authors:
+            # Determine how many followers to add for this author
+            current_follower_count = Follower.objects.filter(
+                user2=author, status="A"
+            ).count()
+            followers_to_add = randint(
+                0, max_followers_per_author - current_follower_count
+            )
+
+            for _ in range(followers_to_add):
+                potential_follower = choice(authors)
+                if potential_follower == author:
+                    continue  # Skip self
+
+                # Ensure that the follower is not already a friend
+                # Check if a friendship exists between potential_follower and author
+                if Friends.objects.filter(
+                    Q(user1=potential_follower) | Q(user2=potential_follower),
+                    Q(user1=author) | Q(user2=author),
+                ).exists():
+                    continue  # They are already friends
+
+                # Check if the follower already follows the author
+                if Follower.objects.filter(
+                    user1=potential_follower, user2=author
+                ).exists():
+                    continue  # Already follows
+
+                # Create the follower with status 'A' (Accepted)
+                Follower.objects.create(
+                    user1=potential_follower,
+                    user2=author,
+                    status="A",
+                    created_by=potential_follower,  # Assuming 'created_by' is part of MixinApp
+                )
+                logger.debug(
+                    f"{potential_follower.user.username} is now following {author.user.username}"
+                )

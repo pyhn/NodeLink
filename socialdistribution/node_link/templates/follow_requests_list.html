@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Manage Follow Requests - SocialDistribution{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Manage Follow Requests</h1>
+
+{% if incoming_requests %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Profile Image</th>
+                <th scope="col">Username</th>
+                <th scope="col">Display Name</th>
+                <th scope="col">Description</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for request in incoming_requests %}
+            <tr>
+                <td>
+                    {% if request.user1.user.profile_image %}
+                        <img src="{{ request.user1.user.profile_image }}" alt="{{ request.user1.user.username }}'s profile image" width="50" height="50" class="rounded-circle">
+                    {% else %}
+                        <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image" width="50" height="50" class="rounded-circle">
+                    {% endif %}
+                </td>
+                <td>{{ request.user1.user.username }}</td>
+                <td>{{ request.user1.user.display_name }}</td>
+                <td>{{ request.user1.user.description|truncatewords:10 }}</td>
+                <td>
+                    <form action="{% url 'accept_follow_request' request.id %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                    </form>
+                    <form action="{% url 'deny_follow_request' request.id %}" method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Deny</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>You have no pending follow requests.</p>
+{% endif %}
+{% endblock %}
