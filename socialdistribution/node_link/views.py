@@ -1,14 +1,23 @@
 # from django.shortcuts import render, HttpResponse
 
 
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from node_link.models import Post, Friends, Follower, Comment, Like, AuthorProfile, Node
+from node_link.models import (
+    Post,
+    Friends,
+    Follower,
+    Comment,
+    Like,
+    AuthorProfile,
+    Node,
+    Notification,
+)
 from .forms import SignUpForm, LoginForm
 import commonmark
 
@@ -162,6 +171,13 @@ def like_post(request, post_id):
     existing_like = Like.objects.filter(post=post, author=author)
     if existing_like.exists():
         existing_like.delete()
+        # Delete the corresponding notification
+        Notification.objects.filter(
+            user=post.author,
+            notification_type="like",
+            related_object_id=str(post.id),
+            message=f"{author.user.username} liked your post.",
+        ).delete()
     else:
         Like.objects.create(
             post=post,
@@ -287,6 +303,35 @@ def home(request):
         # Return the rendered template
         return render(request, template_name, context)
     return HttpResponseNotAllowed("Invalid Method;go home")
+
+
+@login_required
+def approve_follow_request(request, follow_request_id):
+    follow_request = get_object_or_404(
+        Follower, id=follow_request_id, user2=request.user.author_profile
+    )
+    follow_request.status = "approved"
+    follow_request.save()
+    return redirect("notifications")
+
+
+@login_required
+def deny_follow_request(request, follow_request_id):
+    follow_request = get_object_or_404(
+        Follower, id=follow_request_id, user2=request.user.author_profile
+    )
+    follow_request.status = "denied"
+    follow_request.save()
+    return redirect("notifications")
+
+
+@login_required
+def notifications_view(request):
+    notifications = Notification.objects.filter(
+        user=request.user.author_profile
+    ).order_by("-created_at")
+    notifications.update(is_read=True)  # Mark notifications as read
+    return render(request, "notifications.html", {"notifications": notifications})
 
 
 # user methods
