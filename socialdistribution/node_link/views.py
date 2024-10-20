@@ -22,6 +22,8 @@ from .forms import SignUpForm, LoginForm
 import commonmark
 
 User = get_user_model()
+
+
 # sign up
 def signup_view(request):
     if request.user.is_authenticated:
@@ -98,7 +100,7 @@ def has_access(request, post_id):
                 | Q(user2=request.user.author_profile, user1=post.author)
             ).exists()
         )
-    ):
+    ) and not post.visibility == "d":
         return True
     return False
 
@@ -283,7 +285,9 @@ def home(request):
             ).values_list("user1", "user2")
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
-        following = list(Follower.objects.filter(Q(user2=user)).values_list())
+        following = list(
+            Follower.objects.filter(Q(user2=user, status=True)).values_list("user1")
+        )
 
         # Get all posts
         all_posts = list(
@@ -299,7 +303,7 @@ def home(request):
                 )
             )
             .distinct()
-            .order_by("-created_at")
+            .order_by("-updated_at")
             .values_list("id", flat=True)
         )
 
@@ -337,3 +341,30 @@ def notifications_view(request):
     ).order_by("-created_at")
     notifications.update(is_read=True)  # Mark notifications as read
     return render(request, "notifications.html", {"notifications": notifications})
+
+
+# user methods
+def profile_display(request, author_un):
+    if request.method == "GET":
+        author = get_object_or_404(AuthorProfile, user__username=author_un)
+        all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
+        num_following = Follower.objects.filter(user1=author).count()
+        num_friends = Friends.objects.filter(
+            Q(user1=author, status=True) | Q(user2=author, status=True)
+        ).count()
+        num_followers = Follower.objects.filter(user2=author).count()
+
+        filtered_ids = []
+        for a in all_ids:
+            if has_access(request, a.id):
+                filtered_ids.append(a)
+
+        context = {
+            "all_ids": filtered_ids,
+            "num_following": num_following,
+            "num_friends": num_friends,
+            "num_followers": num_followers,
+            "author": author,
+        }
+        return render(request, "user_profile.html", context)
+    return redirect("home")
