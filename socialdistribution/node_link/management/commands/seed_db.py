@@ -11,6 +11,7 @@ from node_link.models import (
     Comment,
     AdminProfile,
     Friends,
+    Follower,
     User,
 )
 
@@ -130,12 +131,13 @@ class Command(BaseCommand):
                 user1 = choice(authors)  # does not ensure they are not friends
                 if (
                     user1 != author
-                    and not Friends.objects.filter(user1=user1, user2=author).exists()
+                    and not Follower.objects.filter(user1=user1, user2=author).exists()
                 ):
-                    Friends.objects.create(
+                    Follower.objects.create(
                         user1=user1,
                         user2=author,
                         created_by=author,
+                        status=choice([True, False]),
                     )
         logger.info("Followers created for Authors.")
 
