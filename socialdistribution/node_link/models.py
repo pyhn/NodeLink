@@ -170,8 +170,30 @@ class Follower(MixinApp):
     user2 = models.ForeignKey(
         AuthorProfile, on_delete=models.CASCADE, related_name="followers_received"
     )
+    status = models.CharField(max_length=20, default="pending")
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["user1", "user2"], name="unique_follower")
         ]
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(
+        AuthorProfile, on_delete=models.CASCADE, related_name="notifications"
+    )
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    # notifications can be a follow_request, new post, etc.
+    notification_type = models.CharField(max_length=20)
+    # id of the related object
+    related_object_id = models.CharField(max_length=255, null=True, blank=True)
+    # url to the author's profile picture
+    author_picture_url = models.URLField(null=True, blank=True)
+    # message for follow request notifications
+    follow_request_message = models.TextField(null=True, blank=True)
+    link_url = models.URLField(null=True, blank=True)  # url to the related object
+
+    def __str__(self):
+        return f"{self.user.user.username} - {self.message}"

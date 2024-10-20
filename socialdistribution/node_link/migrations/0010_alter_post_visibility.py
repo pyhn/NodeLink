@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("node_link", "0008_post_is_commonmark"),
+        ("node_link", "0009_follower_status_notification"),
     ]
 
     operations = [
