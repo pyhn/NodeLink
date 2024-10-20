@@ -17,6 +17,14 @@
 
     <div class="post-container" id="main_post" hx-get="{%url 'one_post' post.id %}" hx-trigger="load"
         hx-target="#post_body" hx-swap="innerHTML">
+        {% if post.author.user == user%}
+        <div class="post info user_actions">
+
+            <button class='icon' onclick="openOverlay()" id='post-delete'><img src="{% static 'icons/bin.svg' %}"
+                    alt="delete post button"></button>
+
+        </div>
+        {%endif%}
         <div id='post_body'></div>
     </div>
 
@@ -27,8 +35,9 @@
         <div id="comment_create_block">
             <div class="create-comment-button">
                 <button class="icon" type="button" hx-get="{%url 'create_comment' post.id %}" hx-trigger="click"
-                hx-target="#comment_create_block" hx-swap="innerHTML">Add a Comment<img src="{% static 'icons/plus.svg' %}"></button>
-        </div>
+                    hx-target="#comment_create_block" hx-swap="innerHTML">Add a Comment<img
+                        src="{% static 'icons/plus.svg' %}"></button>
+            </div>
         </div>
         <!-- Comments Section -->
         <div class="comments-section">
@@ -61,6 +70,32 @@
 
     </div>
 </body>
+{% if post.author.user == user%}
+
+<!-- Delete Confirmation Overlay -->
+<div id="deleteOverlay" class="overlay">
+    <div class="overlay-content">
+        <p>Are you sure you want to delete this post?</p>
+        <form action="{% url 'delete_post' post.id %}" method="post">
+            {% csrf_token %}
+            <button class="confirm-btn" type="submit">Yes, Delete</button>
+        </form>
+        <button class="cancel-btn" onclick=" closeoverlay()">Cancel</button>
+    </div>
+</div>
+<!-- Delete Confirmation Scripts -->
+<script>
+    console.log('tets')
+    function openOverlay() {
+        document.getElementById('deleteOverlay').classList.add('show-overlay');
+    };
+
+    function closeoverlay() {
+        document.getElementById('deleteOverlay').classList.remove('show-overlay');;
+    }
+</script>
+{%endif%}
 {% endblock %}
+
 
 </html>

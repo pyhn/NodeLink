@@ -15,4 +15,5 @@ urlpatterns = [
     path("like_post/<int:post_id>/", views.like_post, name="like_post"),
     path("<str:author_un>/profile", views.profile_display, name="profile_display"),
     path("notifications/", views.notifications_view, name="notifications"),
+    path("delete_post/<int:post_id>/", views.delete_post, name="delete_post"),
 ]

@@ -100,7 +100,7 @@ def has_access(request, post_id):
                 | Q(user2=request.user.author_profile, user1=post.author)
             ).exists()
         )
-    ):
+    ) and not post.visibility == "d":
         return True
     return False
 
@@ -184,6 +184,16 @@ def like_post(request, post_id):
         )
 
     return redirect("post_detail", post_id=post.id)
+
+
+@login_required
+def delete_post(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    # check if they are allow to delete
+    if post.author.user == request.user:
+        post.visibility = "d"
+        post.save()
+    return redirect("home")
 
 
 # view post
@@ -276,7 +286,7 @@ def home(request):
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(
-            Follower.objects.filter(Q(user2=user, status=True)).values_list()
+            Follower.objects.filter(Q(user2=user, status=True)).values_list("user1")
         )
 
         # Get all posts
