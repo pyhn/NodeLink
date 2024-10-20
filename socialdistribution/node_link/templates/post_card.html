@@ -3,22 +3,23 @@
 
 <!-- Replace word with icons later -->
 
-    <div class="post info">
-        <!-- Post Meta Information -->
-        <!-- Post Title -->
-        <div class='user_img'><img src="{{profile_img}}"></div>
-        <div class="user_info">
-            <h1>{{post.title}}</h1>
-            <span class="user_icon"></span><!--!!!add anchor to user account-->
-            <div class="post-meta"><!--!!!add link yo user profile-->
-                By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
-                | Visibility: {{ post.get_visibility_display }}
-            </div>
-
+<div class="post info">
+    <!-- Post Meta Information -->
+    <!-- Post Title -->
+    <div class='user_img'><img src="{{profile_img}}"></div>
+    <div class="user_info">
+        <h1>{{post.title}}</h1>
+        <span class="user_icon"></span><!--!!!add anchor to user account-->
+        <div class="post-meta"><!--!!!add link yo user profile-->
+            By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+            | Visibility: {{ post.get_visibility_display }}
         </div>
     </div>
-    <div class="post body">
-        <a href="{%url 'post_detail' post.id%}" target="_parent">
+
+
+</div>
+<div class="post body">
+    <a href="{%url 'post_detail' post.id%}" target="_parent">
 
             {% if post_content %}
             <div class="post content">
@@ -32,41 +33,41 @@
             {% endif %}
 
 
-            <!-- Post Image -->
-            {% if post.img %}
-            <div class="post img">
-                <img src="{{ post.img.url }}" alt="Post Image">
-            </div>
-            {% endif %}
-        </a>
+        <!-- Post Image -->
+        {% if post.img %}
+        <div class="post img">
+            <img src="{{ post.img.url }}" alt="Post Image">
+        </div>
+        {% endif %}
+    </a>
+</div>
+<div class="post bottom_bar">
+    <!-- Display the number of likes -->
+    <div class="like-count">
+        {{ post.likes.count }} {{ post.likes.count|pluralize:"Like,Likes" }}
     </div>
-    <div class="post bottom_bar">
-        <!-- Display the number of likes -->
-        <div class="like-count">
-            {{ post.likes.count }} {{ post.likes.count|pluralize:"Like,Likes" }}
-        </div>
-        <!-- Like/Unlike Button -->
-        <div class="icon-button">
-            {% if user_has_liked %}
-            <form action="{% url 'like_post' post.id %}" method="post">
-                {% csrf_token %}
-                <button class='icon' type="submit"><img src="{% static 'icons/filled_heart.svg' %}"
-                        alt="unlike button"></button>
-            </form>
-            {% else %}
-            <form action="{% url 'like_post' post.id %}" method="post">
-                {% csrf_token %}
-                <button class='icon' type="submit"><img src="{% static 'icons/plain_heart.svg' %}"
-                        alt="like button"></button>
-            </form>
-            {% endif %}
-        </div>
+    <!-- Like/Unlike Button -->
+    <div class="icon-button">
+        {% if user_has_liked %}
+        <form action="{% url 'like_post' post.id %}" method="post">
+            {% csrf_token %}
+            <button class='icon' type="submit"><img src="{% static 'icons/filled_heart.svg' %}"
+                    alt="unlike button"></button>
+        </form>
+        {% else %}
+        <form action="{% url 'like_post' post.id %}" method="post">
+            {% csrf_token %}
+            <button id='post-delete-{{post.id}}' class='icon' type="submit"><img
+                    src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
+        </form>
+        {% endif %}
+    </div>
 
 
-        <div class="icon-button">
-            <form action="" method="post"><!--!!! url-->
-                {% csrf_token %}
-                <button class="icon" type="submit"><img src="{% static 'icons/send.svg' %}" alt="send button"></button>
-            </form>
-        </div>
+    <div class="icon-button">
+        <form action="" method="post"><!--!!! url-->
+            {% csrf_token %}
+            <button class="icon" type="submit"><img src="{% static 'icons/send.svg' %}" alt="send button"></button>
+        </form>
     </div>
+</div>

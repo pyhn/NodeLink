@@ -102,7 +102,12 @@ class MixinApp(models.Model):
 
 
 class Post(MixinApp):
-    visibility_choices = [("p", "public"), ("u", "unlisted"), ("fo", "friends-only")]
+    visibility_choices = [
+        ("p", "public"),
+        ("u", "unlisted"),
+        ("fo", "friends-only"),
+        ("d", "deleted"),
+    ]
     title = models.TextField(default="New Post")
     content = models.TextField(blank=True, default="")
     img = models.ImageField(upload_to="images/", null=True)
