@@ -81,7 +81,12 @@ def has_access(request, post_id):
     if (
         post.author.id == request.user.author_profile.id
         or post.visibility == "p"
-        or post.visibility == "u"
+        or (
+            post.visibility == "u"
+            and Follower.objects.filter(
+                Q(user1=request.user.author_profile, user2=post.author)
+            ).exists()
+        )
         or (
             post.visibility == "fo"
             and Friends.objects.filter(
@@ -282,3 +287,30 @@ def home(request):
         # Return the rendered template
         return render(request, template_name, context)
     return HttpResponseNotAllowed("Invalid Method;go home")
+
+
+# user methods
+def profile_display(request, author_un):
+    if request.method == "GET":
+        author = get_object_or_404(AuthorProfile, user__username=author_un)
+        all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
+        num_following = Follower.objects.filter(user1=author).count()
+        num_friends = Friends.objects.filter(
+            Q(user1=author, status=True) | Q(user2=author, status=True)
+        ).count()
+        num_followers = Follower.objects.filter(user2=author).count()
+
+        filtered_ids = []
+        for a in all_ids:
+            if has_access(request, a.id):
+                filtered_ids.append(a)
+
+        context = {
+            "all_ids": filtered_ids,
+            "num_following": num_following,
+            "num_friends": num_friends,
+            "num_followers": num_followers,
+            "author": author,
+        }
+        return render(request, "user_profile.html", context)
+    return redirect("home")

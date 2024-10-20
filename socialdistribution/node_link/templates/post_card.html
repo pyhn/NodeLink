@@ -6,12 +6,12 @@
     <div class="post info">
         <!-- Post Meta Information -->
         <!-- Post Title -->
-        <div class='user_img'><img src="{{profile_img}}"></div>
+        <a  href="{% url 'profile_display' post.author.user.username%}"><div class='user_img'><img src="{{profile_img}}"></div></a>
         <div class="user_info">
             <h1>{{post.title}}</h1>
             <span class="user_icon"></span><!--!!!add anchor to user account-->
             <div class="post-meta"><!--!!!add link yo user profile-->
-                By {{ post.author.user.username }} on {{ post.created_at|date:"F j, Y, g:i a" }}
+                By <a  href="{% url 'profile_display' post.author.user.username%}">{{ post.author.user.username }}</a> on {{ post.created_at|date:"F j, Y, g:i a" }}
                 | Visibility: {{ post.get_visibility_display }}
             </div>
 
