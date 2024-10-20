@@ -22,6 +22,8 @@ from .forms import SignUpForm, LoginForm
 import commonmark
 
 User = get_user_model()
+
+
 # sign up
 def signup_view(request):
     if request.user.is_authenticated:
@@ -90,12 +92,7 @@ def has_access(request, post_id):
     if (
         post.author.id == request.user.author_profile.id
         or post.visibility == "p"
-        or (
-            post.visibility == "u"
-            and Follower.objects.filter(
-                Q(user1=request.user.author_profile, user2=post.author)
-            ).exists()
-        )
+        or post.visibility == "u"
         or (
             post.visibility == "fo"
             and Friends.objects.filter(
@@ -278,7 +275,9 @@ def home(request):
             ).values_list("user1", "user2")
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
-        following = list(Follower.objects.filter(Q(user2=user)).values_list())
+        following = list(
+            Follower.objects.filter(Q(user2=user, status=True)).values_list()
+        )
 
         # Get all posts
         all_posts = list(
@@ -294,7 +293,7 @@ def home(request):
                 )
             )
             .distinct()
-            .order_by("-created_at")
+            .order_by("-updated_at")
             .values_list("id", flat=True)
         )
 
