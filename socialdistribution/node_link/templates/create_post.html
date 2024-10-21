@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Post</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            background-color: rgb(230, 230, 230);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input[type="text"], textarea {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        textarea {
+            height: 200px;
+            resize: vertical;
+        }
+        input[type="file"] {
+            display: inline-block;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            cursor: pointer;
+            width: 50%;
+            max-width: 300px;
+            margin-bottom: 20px;
+        }
+        input[type="file"]:hover {
+            border-color: #888;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Create a new post here!</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <br>
+        <!-- Input for post title -->
+        <input type="text" name="title" placeholder="Enter the post title" required><br>
+        <br>
+        <!-- Textarea for post content -->
+        <textarea name="content" rows="10" cols="50" placeholder="Write your post..."></textarea>
+        <br>
+        <!-- Input for image file -->
+        <input type="file" name="img"><br>
+        <br>
+        <!-- Select for post visibility -->
+        <select name="visibility">
+            <option value="p">Public</option>
+            <option value="u">Unlisted</option>
+            <option value="fo">Friends-Only</option>
+        </select><br>
+        <br>
+        <!-- Checkbox for CommonMark -->
+        <label>
+            <input type="checkbox" name="is_commonmark" value="true">
+            Enable CommonMark formatting
+        </label><br>
+        <br>
+        <!-- Submit button -->
+        <button type="submit">Submit Post</button><br>
+    </form>
+
+</body>
+</html>

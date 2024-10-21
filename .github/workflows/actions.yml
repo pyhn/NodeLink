@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11"]
 
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
     - name: Lint with Pylint
       run: |
         pip install pylint
-        pylint socialdistribution/**/*.py    
+        pylint --rcfile=.pylintrc socialdistribution/**/*.py
     ### Uncomment the following lines if you have Django templates and tests (later on)
     # #change the path to the template directory
     # - name: Lint Django Templates with djLint

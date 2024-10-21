@@ -6,6 +6,8 @@ __pycache__/
 
 # C extensions
 *.so
+#media
+media/images/
 
 # Distribution / packaging
 .Python
@@ -336,3 +338,5 @@ tests/.coverage*
 build/
 tests/report/
 tests/screenshots/
+
+media/images/

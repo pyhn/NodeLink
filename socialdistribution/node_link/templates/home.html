@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SocialDistribution</title>
+    </head>
+    <body>
+
+        <div>
+
+            <main >
+                {%for p in all_ids%}
+                <div  hx-get="{%url 'one_post' p %}" hx-trigger="load" hx-target="#number-{{p}}" hx-swap="innerHTML">
+                    <div  class = "post-container">
+                        <p id = 'number-{{ p }}'>Loading</p>
+                    <div class="post bottom_bar comment_append">
+                        <a a href="{%url 'post_detail' p%}" target="_blank">
+                            Comments...
+                        </a>
+                    </div>
+                </div>
+
+
+                {% endfor %}
+            </main>
+        </div>
+    </body>
+    {% endblock %}
+
+</html>

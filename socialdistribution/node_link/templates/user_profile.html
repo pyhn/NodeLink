@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+{% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SocialDistribution</title>
+</head>
+
+<body>
+    <div class='personal_profile'>
+        <div id="user_info">
+            <span class="user_icon large"><img src={{author.user.profile_image}}></span><!--!!!add anchor to user account-->
+            <h1> {{author.user.display_name}}</h1>
+            <h4> @{{author.user.username}}</h4>
+
+            <span id="user_stats">
+                <h2>{{num_friends}} friends</h2>
+                <h2>{{num_followers}} followers</h2>
+                <h2>{{num_following}} following</h2>
+            </span>
+            {% if request.user.author_profile != author.user%}
+            <span id="user_fri/fol">
+                <!--!!!add friends/follow button-->
+            </span>
+            {%endif%}
+
+
+        </div>
+
+        <div id -="user_posts">
+
+            <main>
+                {%for p in all_ids%}
+                <div hx-get="{%url 'one_post' p.id %}" hx-trigger="load" hx-target="#number-{{p.id}}"
+                    hx-swap="innerHTML">
+                    <div class="post-container">
+                        <p id='number-{{ p.id }}'></p>
+                    </div>
+
+
+                    {% endfor %}
+            </main>
+        </div>
+    </div>
+</body>
+{% endblock %}
+
+</html>
