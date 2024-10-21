@@ -286,7 +286,9 @@ def home(request):
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(
-            Follower.objects.filter(Q(user2=user, status=True)).values_list("user1")
+            Follower.objects.filter(Q(user1=user, status=True)).values_list(
+                "user2", flat=True
+            )
         )
 
         # Get all posts
