@@ -571,6 +571,7 @@ def unfriend(request, friend_id):
         return redirect("friends_page")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
+
 def notifications_view(request):
     notifications = Notification.objects.filter(
         user=request.user.author_profile
@@ -604,4 +605,3 @@ def profile_display(request, author_un):
         }
         return render(request, "user_profile.html", context)
     return redirect("home")
-
