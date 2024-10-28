@@ -27,6 +27,8 @@ from node_link.models import (
 from .forms import SignUpForm, LoginForm
 
 User = get_user_model()
+
+
 # sign up
 def signup_view(request):
     if request.user.is_authenticated:
@@ -103,7 +105,7 @@ def has_access(request, post_id):
                 | Q(user2=request.user.author_profile, user1=post.author)
             ).exists()
         )
-    ):
+    ) and not post.visibility == "d":
         return True
     return False
 
@@ -276,17 +278,18 @@ def home(request):
         template_name = "home.html"
         user = request.user.author_profile
 
-        # Fetch Friends
-        friends_queryset = Friends.objects.filter(
-            Q(user1=user) | Q(user2=user)
-        ).select_related("user1__user", "user2__user")
+        friends = list(
+            Friends.objects.filter(
+                Q(user1=user) | Q(user2=user)
+            ).values_list("user1", "user2")
+        )
+        friends = list(set(u_id for tup in friends for u_id in tup))
+        following = list(
+            Follower.objects.filter(Q(user1=user, status="A")).values_list(
+                "user2", flat=True
+            )
+        )
 
-        friends_ids = [
-            friend.user2_id if friend.user1_id == user.id else friend.user1_id
-            for friend in friends_queryset
-        ]
-
-        following = list(Follower.objects.filter(Q(user2=user)).values_list())
 
         # Get all posts
         all_posts = list(
@@ -294,7 +297,7 @@ def home(request):
                 Q(visibility="p")  # all public
                 | Q(
                     visibility="fo",  # all friends only
-                    author_id__in=friends_ids,
+                    author_id__in=friends,
                 )
                 | Q(
                     visibility="u",  # all unlisted
@@ -302,7 +305,7 @@ def home(request):
                 )
             )
             .distinct()
-            .order_by("-created_at")
+            .order_by("-updated_at")
             .values_list("id", flat=True)
         )
 
@@ -391,6 +394,7 @@ def friends_page(request):
 
 
 @login_required
+
 def follow_author_pyhn(request, author_id):
     """
     Handles sending and resending follow requests, as well as unfollowing authors.
@@ -567,3 +571,38 @@ def unfriend(request, friend_id):
         return redirect("friends_page")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
+=======
+def notifications_view(request):
+    notifications = Notification.objects.filter(
+        user=request.user.author_profile
+    ).order_by("-created_at")
+    notifications.update(is_read=True)  # Mark notifications as read
+    return render(request, "notifications.html", {"notifications": notifications})
+
+
+# user methods
+def profile_display(request, author_un):
+    if request.method == "GET":
+        author = get_object_or_404(AuthorProfile, user__username=author_un)
+        all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
+        num_following = Follower.objects.filter(user1=author).count()
+        num_friends = Friends.objects.filter(
+            Q(user1=author, status=True) | Q(user2=author, status=True)
+        ).count()
+        num_followers = Follower.objects.filter(user2=author).count()
+
+        filtered_ids = []
+        for a in all_ids:
+            if has_access(request, a.id):
+                filtered_ids.append(a)
+
+        context = {
+            "all_ids": filtered_ids,
+            "num_following": num_following,
+            "num_friends": num_friends,
+            "num_followers": num_followers,
+            "author": author,
+        }
+        return render(request, "user_profile.html", context)
+    return redirect("home")
+

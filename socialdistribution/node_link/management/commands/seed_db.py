@@ -122,6 +122,7 @@ class Command(BaseCommand):
         # Create fake followers
         logger.info("Creating fake followers...")
         self.create_fake_followers(authors)
+
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
