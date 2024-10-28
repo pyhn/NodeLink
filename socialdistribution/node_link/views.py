@@ -572,14 +572,6 @@ def unfriend(request, friend_id):
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
-def notifications_view(request):
-    notifications = Notification.objects.filter(
-        user=request.user.author_profile
-    ).order_by("-created_at")
-    notifications.update(is_read=True)  # Mark notifications as read
-    return render(request, "notifications.html", {"notifications": notifications})
-
-
 # user methods
 def profile_display(request, author_un):
     if request.method == "GET":
