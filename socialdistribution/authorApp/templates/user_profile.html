@@ -33,10 +33,10 @@
 
             <main>
                 {%for p in all_ids%}
-                <div hx-get="{%url 'postApp:one_post' p.id %}" hx-trigger="load" hx-target="#number-{{p.id}}"
+                <div hx-get="{%url 'postApp:one_post' p.uuid %}" hx-trigger="load" hx-target="#number-{{p.uuid}}"
                     hx-swap="innerHTML">
                     <div class="post-container">
-                        <p id='number-{{ p.id }}'></p>
+                        <p id='number-{{ p.uuid }}'></p>
                     </div>
 
 

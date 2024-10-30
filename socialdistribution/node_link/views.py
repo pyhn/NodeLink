@@ -1,7 +1,7 @@
 # from django.shortcuts import render, HttpResponse
 
 
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render
 from django.http import HttpResponseNotAllowed
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -45,7 +45,7 @@ def home(request):
             )
             .distinct()
             .order_by("-updated_at")
-            .values_list("id", flat=True)
+            .values_list("uuid", flat=True)
         )
 
         context = {"all_ids": all_posts}

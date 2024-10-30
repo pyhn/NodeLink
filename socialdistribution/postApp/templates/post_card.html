@@ -19,7 +19,7 @@
 
 </div>
 <div class="post body">
-    <a href="{%url 'postApp:post_detail' post.id%}" target="_parent">
+    <a href="{%url 'postApp:post_detail' post.uuid%}" target="_parent">
 
             {% if post_content %}
             <div class="post content">
@@ -51,9 +51,9 @@
 
 
         {% if user_has_liked == False%}
-        <form action="{% url 'postApp:like_post' post.id %}" method="post">
+        <form action="{% url 'postApp:like_post' post.uuid %}" method="post">
             {% csrf_token %}
-            <button id='post-like-{{post.id}}' class='icon' type="submit"><img
+            <button id='post-like-{{post.uuid}}' class='icon' type="submit"><img
                     src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
         </form>
         {%else%}

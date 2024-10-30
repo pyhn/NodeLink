@@ -45,8 +45,8 @@ def create_post(request):
 
 
 @login_required
-def create_comment(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+def create_comment(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
 
     if request.method == "POST":
         content = request.POST.get("content")
@@ -69,8 +69,8 @@ def create_comment(request, post_id):
 
 
 @login_required
-def like_post(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+def like_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
     existing_like = Like.objects.filter(post=post, author=author)
@@ -91,12 +91,12 @@ def like_post(request, post_id):
             updated_by=author,
         )
 
-    return redirect("postApp:post_detail", post_id=post.id)
+    return redirect("postApp:post_detail", post_uuid)
 
 
 @login_required
-def delete_post(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
+def delete_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
     if post.author.user == request.user:
         post.visibility = "d"
@@ -108,7 +108,9 @@ def delete_post(request, post_id):
 
 
 @login_required
-def post_card(request, u_id):  #!!!POST NOTE: Must be updated with new content handling
+def post_card(
+    request, post_uuid: str
+):  #!!!POST NOTE: Must be updated with new content handling
     """renders a single card
 
     Args:
@@ -118,9 +120,9 @@ def post_card(request, u_id):  #!!!POST NOTE: Must be updated with new content h
     Returns:
         _type_: _description_
     """
-    post = get_object_or_404(Post, id=u_id)
+    post = get_object_or_404(Post, uuid=post_uuid)
     # check is user has permission to see post
-    if has_access(request=request, post_id=u_id):
+    if has_access(request=request, post_uuid=post_uuid):
 
         user_has_liked = post.postliked.filter(
             author=request.user.author_profile
@@ -146,9 +148,9 @@ def post_card(request, u_id):  #!!!POST NOTE: Must be updated with new content h
 
 
 @login_required
-def post_detail(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    if has_access(request=request, post_id=post_id):
+def post_detail(request, post_uuid: str):
+    post = get_object_or_404(Post, uuid=post_uuid)
+    if has_access(request=request, post_uuid=post_uuid):
         user_has_liked = False
 
         if request.user.is_authenticated:

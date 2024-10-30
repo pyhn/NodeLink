@@ -7,8 +7,8 @@ from authorApp.models import Friends
 from postApp.models import Post
 
 
-def has_access(request, post_id):
-    post = get_object_or_404(Post, id=post_id)  #!!!SPLIT
+def has_access(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
     if (
         post.author.id == request.user.author_profile.id
         or post.visibility == "p"

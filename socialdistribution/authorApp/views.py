@@ -93,7 +93,7 @@ def profile_display(request, author_un):
 
         filtered_ids = []
         for a in all_ids:
-            if has_access(request, a.id):
+            if has_access(request, a.uuid):
                 filtered_ids.append(a)
 
         context = {
