@@ -7,13 +7,10 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
-from node_link.models import (
-    Post,
-    Comment,
-    Like,
-    Notification,
-)
+from node_link.models import Notification
 from authorApp.models import Friends, Follower, AuthorProfile
+from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
+
 import commonmark
 from .utils.common import has_access
 

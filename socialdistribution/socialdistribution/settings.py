@@ -42,6 +42,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "node_link",
     "authorApp",
+    "postApp",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

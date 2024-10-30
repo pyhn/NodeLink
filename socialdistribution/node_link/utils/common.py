@@ -4,7 +4,7 @@ from django.db.models import Q
 
 # Project Imports
 from authorApp.models import Friends
-from node_link.models import Post
+from postApp.models import Post
 
 
 def has_access(request, post_id):

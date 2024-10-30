@@ -1,8 +1,6 @@
 from django.db import models
 from datetime import datetime
-import uuid
 from authorApp.models import AuthorProfile
-from node_link.utils.mixin import MixinApp
 
 
 class Node(models.Model):
@@ -21,53 +19,6 @@ class Node(models.Model):
         on_delete=models.PROTECT,
         related_name="deleted_nodes",
     )
-
-
-class Post(MixinApp):
-    visibility_choices = [
-        ("p", "public"),
-        ("u", "unlisted"),
-        ("fo", "friends-only"),
-        ("d", "deleted"),
-    ]
-    title = models.TextField(default="New Post")
-    content = models.TextField(blank=True, default="")
-    img = models.ImageField(upload_to="images/", null=True)
-    visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
-    node = models.ForeignKey(Node, on_delete=models.PROTECT, related_name="posts")
-    author = models.ForeignKey(
-        AuthorProfile, on_delete=models.PROTECT, related_name="posts"
-    )
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
-    is_commonmark = models.BooleanField(default=False)
-
-
-class Comment(MixinApp):
-    visibility_choices = [("p", "public"), ("fo", "friends-only")]
-    content = models.TextField(null=False, default="")
-    visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
-    author = models.ForeignKey(
-        AuthorProfile, on_delete=models.PROTECT, related_name="comments"
-    )
-
-    def __str__(self):
-        return f"Comment by {self.author.username} on {self.post.title}"
-
-
-class Like(MixinApp):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
-    author = models.ForeignKey(
-        AuthorProfile, on_delete=models.CASCADE, related_name="likes"
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["author", "post"], name="unique_like")
-        ]
-
-    def __str__(self):
-        return f"{self.author.username} liked '{self.post.title}'"
 
 
 class Notification(models.Model):

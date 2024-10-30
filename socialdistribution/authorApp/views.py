@@ -11,9 +11,10 @@ from .models import (
     Follower,
     AuthorProfile,
 )
-from node_link.models import Node, Post
+from node_link.models import Node
 from .forms import SignUpForm, LoginForm
 from node_link.utils.common import has_access
+from postApp.models import Post
 
 # Create your views here.
 # sign up

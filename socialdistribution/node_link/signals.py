@@ -3,8 +3,9 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
-from node_link.models import Post, Like, Comment, Notification
+from node_link.models import Notification
 from authorApp.models import Follower
+from postApp.models import Post, Comment, Like, CommentLike
 
 
 @receiver(post_save, sender=Post)

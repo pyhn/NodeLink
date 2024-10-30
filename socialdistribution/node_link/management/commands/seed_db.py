@@ -3,12 +3,9 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from faker import Faker
 from random import choice
-from node_link.models import (
-    Node,
-    Post,
-    Like,
-    Comment,
-)
+from node_link.models import Node
+
+from postApp.models import Post, Comment, Like, CommentLike
 from authorApp.models import Follower, Friends, AuthorProfile, User
 
 # Set up logger
@@ -69,16 +66,17 @@ class Command(BaseCommand):
         # Create fake posts
         logger.info("Creating fake posts...")
         posts = []
-        for _ in range(20):
+        for _ in range(50):
             aut = choice(authors)
             post = Post.objects.create(
                 title=fake.sentence(),
+                description=fake.sentence(),
                 content=fake.paragraph(),
-                img=None,  # Optional: Use if you have images to upload
-                visibility=choice(["p", "u", "fo"]),
+                visibility=choice(["p", "u", "fo", "d"]),
                 node=node,
                 author=aut,
                 created_by=aut,
+                contentType=choice(["a", "png", "jpeg", "p", "m"]),
             )
             posts.append(post)
         logger.info(f"{len(posts)} fake posts created.")
@@ -93,17 +91,30 @@ class Command(BaseCommand):
 
         # Create fake comments
         logger.info("Creating fake comments...")
+        comments = []
         for post in posts:
             for _ in range(5):  # Each post will get 5 comments
                 author = choice(authors)
-                Comment.objects.create(
+                comment = Comment.objects.create(
                     content=fake.sentence(),
                     visibility=choice(["p", "fo"]),
                     post=post,
                     author=author,  # Randomly assign an author to the comment
                     created_by=author,
                 )
+                comments.append(comment)
         logger.info("Comments created for posts.")
+
+        # Create fake Comment likes
+        logger.info("Creating fake Comment likes...")
+        for comment in comments:
+            for _ in range(3):  # Each Comment will get 3 likes
+                author = choice(authors)
+                CommentLike.objects.get_or_create(
+                    comment=comment, author=author, created_by=author
+                )
+        logger.info("Likes created for posts.")
+
         # Create fake friends
         logger.info("Creating fake friends...")
         for author in authors:
