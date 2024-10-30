@@ -3,17 +3,10 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from faker import Faker
 from random import choice
-from node_link.models import (
-    AuthorProfile,
-    Node,
-    Post,
-    Like,
-    Comment,
-    AdminProfile,
-    Friends,
-    Follower,
-    User,
-)
+from node_link.models import Node
+
+from postApp.models import Post, Comment, Like, CommentLike
+from authorApp.models import Follower, Friends, AuthorProfile, User
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -40,13 +33,10 @@ class Command(BaseCommand):
             is_superuser=True,
         )
 
-        admin_profile = AdminProfile.objects.create(user=admin_user)
-
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            admin=admin_profile,
             url=fake.url(),
-            created_by=admin_profile,
+            created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
         )
 
@@ -60,10 +50,12 @@ class Command(BaseCommand):
                 last_name=fake.last_name(),
                 email=fake.email(),
                 password=make_password("password123"),
+                date_ob=fake.date(),  # Optional: set a random date of birth
+                displayName=fake.name(),
             )
             author_profile = AuthorProfile.objects.create(
                 user=user,
-                github_url=fake.url(),
+                github=fake.url(),
                 github_token=fake.sha1(),
                 github_user=fake.user_name(),
                 local_node=node,
@@ -74,16 +66,17 @@ class Command(BaseCommand):
         # Create fake posts
         logger.info("Creating fake posts...")
         posts = []
-        for _ in range(20):
+        for _ in range(50):
             aut = choice(authors)
             post = Post.objects.create(
                 title=fake.sentence(),
+                description=fake.sentence(),
                 content=fake.paragraph(),
-                img=None,  # Optional: Use if you have images to upload
-                visibility=choice(["p", "u", "fo"]),
+                visibility=choice(["p", "u", "fo", "d"]),
                 node=node,
                 author=aut,
                 created_by=aut,
+                contentType=choice(["a", "png", "jpeg", "p", "m"]),
             )
             posts.append(post)
         logger.info(f"{len(posts)} fake posts created.")
@@ -98,17 +91,30 @@ class Command(BaseCommand):
 
         # Create fake comments
         logger.info("Creating fake comments...")
+        comments = []
         for post in posts:
             for _ in range(5):  # Each post will get 5 comments
                 author = choice(authors)
-                Comment.objects.create(
+                comment = Comment.objects.create(
                     content=fake.sentence(),
                     visibility=choice(["p", "fo"]),
                     post=post,
                     author=author,  # Randomly assign an author to the comment
                     created_by=author,
                 )
+                comments.append(comment)
         logger.info("Comments created for posts.")
+
+        # Create fake Comment likes
+        logger.info("Creating fake Comment likes...")
+        for comment in comments:
+            for _ in range(3):  # Each Comment will get 3 likes
+                author = choice(authors)
+                CommentLike.objects.get_or_create(
+                    comment=comment, author=author, created_by=author
+                )
+        logger.info("Likes created for posts.")
+
         # Create fake friends
         logger.info("Creating fake friends...")
         for author in authors:
@@ -127,18 +133,19 @@ class Command(BaseCommand):
         logger.info("Friends created for Authors.")
         logger.info("Creating fake followers...")
         for author in authors:
-            for _ in range(2):  # Each author will get 2 followers
+            for _ in range(3):  # Each author will get 2 followers
                 user1 = choice(authors)  # does not ensure they are not friends
                 if (
                     user1 != author
-                    and not Follower.objects.filter(user1=user1, user2=author).exists()
+                    and not Follower.objects.filter(actor=user1, object=author).exists()
                 ):
                     Follower.objects.create(
-                        user1=user1,
-                        user2=author,
+                        actor=user1,
+                        object=author,
                         created_by=author,
                         status=choice([True, False]),
                     )
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
+        logger.info(f"Sample Username: {authors[1]}")
