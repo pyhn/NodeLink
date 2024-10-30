@@ -11,8 +11,8 @@
 <body>
     <div class='personal_profile'>
         <div id="user_info">
-            <span class="user_icon large"><img src={{author.user.profile_image}}></span><!--!!!add anchor to user account-->
-            <h1> {{author.user.display_name}}</h1>
+            <span class="user_icon large"><img src={{author.user.profileImage}}></span><!--!!!add anchor to user account-->
+            <h1> {{author.user.displayName}}</h1>
             <h4> @{{author.user.username}}</h4>
 
             <span id="user_stats">
@@ -33,10 +33,10 @@
 
             <main>
                 {%for p in all_ids%}
-                <div hx-get="{%url 'one_post' p.id %}" hx-trigger="load" hx-target="#number-{{p.id}}"
+                <div hx-get="{%url 'postApp:one_post' p.uuid %}" hx-trigger="load" hx-target="#number-{{p.uuid}}"
                     hx-swap="innerHTML">
                     <div class="post-container">
-                        <p id='number-{{ p.id }}'></p>
+                        <p id='number-{{ p.uuid }}'></p>
                     </div>
 
 

@@ -9,14 +9,14 @@
 
                 window.location.reload();
 
-        }, 2000);
+        }, 1500);
 
 </script>
 
 
 {%else%}
 
-    <form method="POST" hx-post="{%url 'create_comment' post.id %}" hx-trigger="click">
+    <form method="POST" hx-post="{%url 'postApp:create_comment' post.uuid %}" hx-trigger="click">
         {% csrf_token %}
         <!-- Textarea for comment content -->
         <textarea name="content" placeholder="Write your comment..." required></textarea><br>
