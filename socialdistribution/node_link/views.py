@@ -56,26 +56,6 @@ def home(request):
 
 
 @login_required
-def approve_follow_request(request, follow_request_id):
-    follow_request = get_object_or_404(
-        Follower, id=follow_request_id, user2=request.user.author_profile
-    )
-    follow_request.status = "approved"
-    follow_request.save()
-    return redirect("notifications")
-
-
-@login_required
-def deny_follow_request(request, follow_request_id):
-    follow_request = get_object_or_404(
-        Follower, id=follow_request_id, user2=request.user.author_profile
-    )
-    follow_request.status = "denied"
-    follow_request.save()
-    return redirect("notifications")
-
-
-@login_required
 def notifications_view(request):
     notifications = Notification.objects.filter(
         user=request.user.author_profile

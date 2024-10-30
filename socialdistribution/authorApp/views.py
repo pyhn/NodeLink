@@ -20,7 +20,7 @@ from postApp.models import Post
 # sign up
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect("node_link:home")
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -50,7 +50,7 @@ def signup_view(request):
             messages.success(
                 request, f"Welcome {user.username}, your account has been created."
             )
-            return redirect("home")
+            return redirect("node_link:home")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -60,13 +60,13 @@ def signup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("home")
+        return redirect("node_link:home")
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             auth_login(request, form.get_user())
             messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("home")
+            return redirect("node_link:home")
         else:
             messages.error(request, "Invalid username or password.")
     else:
@@ -104,4 +104,24 @@ def profile_display(request, author_un):
             "author": author,
         }
         return render(request, "user_profile.html", context)
-    return redirect("home")
+    return redirect("node_link:home")
+
+
+@login_required
+def approve_follow_request(request, follow_request_id):
+    follow_request = get_object_or_404(
+        Follower, id=follow_request_id, user2=request.user.author_profile
+    )
+    follow_request.status = "approved"
+    follow_request.save()
+    return redirect("node_link:notifications")
+
+
+@login_required
+def deny_follow_request(request, follow_request_id):
+    follow_request = get_object_or_404(
+        Follower, id=follow_request_id, user2=request.user.author_profile
+    )
+    follow_request.status = "denied"
+    follow_request.save()
+    return redirect("node_link:notifications")

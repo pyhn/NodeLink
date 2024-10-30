@@ -39,7 +39,7 @@ def create_post(request):
             updated_by=author,
         )
         # Redirect to the post list page SEdBo49hPQ4
-        return redirect("home")
+        return redirect("node_link:home")
 
     return render(request, "create_post.html")
 
@@ -101,7 +101,7 @@ def delete_post(request, post_id):
     if post.author.user == request.user:
         post.visibility = "d"
         post.save()
-    return redirect("home")
+    return redirect("node_link:home")
 
 
 # view post
