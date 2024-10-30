@@ -17,7 +17,7 @@ Make a distributed social network!
 The authors claiming copyright, if they wish to be known, can list their names here...
 
 * Faiza Rahman
-* Chidinma Amogu
+* Pratham Prajapati
 * Aivan Dolor
 * Reimark Ronabio
 * Matthew Neufeld
