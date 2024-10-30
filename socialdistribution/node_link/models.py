@@ -37,28 +37,17 @@ class User(AbstractUser):
         return str(self.display_name) or str(self.username)
 
 
-class AdminProfile(models.Model):
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name="admin_profile"
-    )
-
-    def __str__(self):
-        return f"{self.user.username} (Admin)"
-
-
 class Node(models.Model):
-    admin = models.ForeignKey(
-        AdminProfile, on_delete=models.PROTECT, related_name="managed_nodes"
-    )
+
     url = models.TextField(null=False)
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
-        AdminProfile, on_delete=models.PROTECT, related_name="created_nodes"
+        User, on_delete=models.PROTECT, related_name="created_nodes"
     )
     updated_at = models.DateTimeField(default=datetime.now)
     deleted_at = models.DateTimeField(default=datetime.now)
     deleted_by = models.ForeignKey(
-        AdminProfile,
+        User,
         null=True,
         blank=True,
         on_delete=models.PROTECT,

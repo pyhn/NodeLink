@@ -9,7 +9,6 @@ from node_link.models import (
     Post,
     Like,
     Comment,
-    AdminProfile,
     Friends,
     Follower,
     User,
@@ -40,13 +39,11 @@ class Command(BaseCommand):
             is_superuser=True,
         )
 
-        admin_profile = AdminProfile.objects.create(user=admin_user)
-
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            admin=admin_profile,
+            admin=admin_user,
             url=fake.url(),
-            created_by=admin_profile,
+            created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
         )
 
