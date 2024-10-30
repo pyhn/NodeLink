@@ -1,4 +1,7 @@
+# Django Imports
 from django.urls import path
+
+# Project Imports
 from . import views
 
 app_name = "authorApp"

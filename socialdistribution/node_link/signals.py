@@ -3,23 +3,26 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
-from node_link.models import Post, Like, Comment, Follower, Notification
+from node_link.models import Post, Like, Comment, Notification
+from authorApp.models import Follower
 
 
 @receiver(post_save, sender=Post)
 def notify_followers_on_new_post(sender, instance, created, **kwargs):
     if created:
         author = instance.author
-        followers = Follower.objects.filter(user2=author)
+        followers = Follower.objects.filter(
+            object=author
+        )  #!!!FRIENDS NOTE: Please double check
         for follower in followers:
             message = f"{author.user.username} has made a new post."
             link_url = reverse("post_detail", args=[instance.id])
             Notification.objects.create(
-                user=follower.user1,  # Use follower.user1 (AuthorProfile)
+                user=follower.actor,
                 message=message,
                 notification_type="new_post",
                 related_object_id=str(instance.id),
-                author_picture_url=author.user.profile_image.url,
+                author_picture_url=author.user.profileImage.url,
                 link_url=link_url,
             )
 
@@ -36,7 +39,7 @@ def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
             message=message,
             notification_type="follow_request",
             related_object_id=str(instance.id),
-            author_picture_url=author.user.profile_image.url,
+            author_picture_url=author.user.profileImage.url,
             follow_request_message=instance.follow_request_message,
             link_url=link_url,
         )
@@ -57,6 +60,6 @@ def notify_author_on_new_like(sender, instance, created, **kwargs):
                 message=message,
                 notification_type="like",
                 related_object_id=str(post.id),
-                author_picture_url=author.user.profile_image,
+                author_picture_url=author.user.profileImage,
                 link_url=link_url,
             )

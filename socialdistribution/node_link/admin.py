@@ -1,6 +1,8 @@
 from django.contrib import admin
+from .models import Node, Post, Comment, Like, Notification
 
-from django.contrib.auth.admin import UserAdmin
-from node_link.models import User
-
-admin.site.register(User, UserAdmin)
+admin.site.register(Node)
+admin.site.register(Post)
+admin.site.register(Comment)
+admin.site.register(Like)
+admin.site.register(Notification)

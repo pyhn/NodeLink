@@ -1,6 +1,10 @@
+# Django Imports
 from django.shortcuts import get_object_or_404
-from authorApp.models import Friends
 from django.db.models import Q
+
+# Project Imports
+from authorApp.models import Friends
+from node_link.models import Post
 
 
 def has_access(request, post_id):

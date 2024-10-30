@@ -4,15 +4,12 @@ from django.contrib.auth.hashers import make_password
 from faker import Faker
 from random import choice
 from node_link.models import (
-    AuthorProfile,
     Node,
     Post,
     Like,
     Comment,
-    Friends,
-    Follower,
-    User,
 )
+from authorApp.models import Follower, Friends, AuthorProfile, User
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -41,7 +38,6 @@ class Command(BaseCommand):
 
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            admin=admin_user,
             url=fake.url(),
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
@@ -57,10 +53,12 @@ class Command(BaseCommand):
                 last_name=fake.last_name(),
                 email=fake.email(),
                 password=make_password("password123"),
+                date_ob=fake.date(),  # Optional: set a random date of birth
+                displayName=fake.name(),
             )
             author_profile = AuthorProfile.objects.create(
                 user=user,
-                github_url=fake.url(),
+                github=fake.url(),
                 github_token=fake.sha1(),
                 github_user=fake.user_name(),
                 local_node=node,
@@ -124,18 +122,19 @@ class Command(BaseCommand):
         logger.info("Friends created for Authors.")
         logger.info("Creating fake followers...")
         for author in authors:
-            for _ in range(2):  # Each author will get 2 followers
+            for _ in range(3):  # Each author will get 2 followers
                 user1 = choice(authors)  # does not ensure they are not friends
                 if (
                     user1 != author
-                    and not Follower.objects.filter(user1=user1, user2=author).exists()
+                    and not Follower.objects.filter(actor=user1, object=author).exists()
                 ):
                     Follower.objects.create(
-                        user1=user1,
-                        user2=author,
+                        actor=user1,
+                        object=author,
                         created_by=author,
                         status=choice([True, False]),
                     )
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
+        logger.info(f"Sample Username: {authors[1]}")

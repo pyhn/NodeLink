@@ -1,17 +1,19 @@
+# Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
+
+# Project Imports
 from .models import (
-    Post,  #!!!SPLIT
     Friends,
     Follower,
     AuthorProfile,
 )
-from node_link.models import Node
+from node_link.models import Node, Post
 from .forms import SignUpForm, LoginForm
-from ..utils import has_access
+from node_link.utils.common import has_access
 
 # Create your views here.
 # sign up
@@ -34,7 +36,7 @@ def signup_view(request):
             first_node = Node.objects.first()
             if not first_node:
                 messages.error(request, "No nodes are available to assign.")
-                return redirect("signup")
+                return redirect("authorApp:signup")
 
             # Create an AuthorProfile linked to the user and assign the first node
             AuthorProfile.objects.create(
@@ -74,7 +76,7 @@ def login_view(request):
 def logout_view(request):
     auth_logout(request)
     messages.info(request, "You have successfully logged out.")
-    return redirect("login")
+    return redirect("authorApp:login")
 
 
 @login_required
@@ -82,11 +84,11 @@ def profile_display(request, author_un):
     if request.method == "GET":
         author = get_object_or_404(AuthorProfile, user__username=author_un)
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
-        num_following = Follower.objects.filter(user1=author).count()
+        num_following = Follower.objects.filter(actor=author).count()
         num_friends = Friends.objects.filter(
             Q(user1=author, status=True) | Q(user2=author, status=True)
         ).count()
-        num_followers = Follower.objects.filter(user2=author).count()
+        num_followers = Follower.objects.filter(object=author).count()
 
         filtered_ids = []
         for a in all_ids:

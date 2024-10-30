@@ -1,6 +1,9 @@
+# Django Imports
 from django.db import models
-from node_link.models import MixinApp, Node
 from django.contrib.auth.models import AbstractUser
+
+# Project Imports
+from node_link.utils.mixin import MixinApp
 
 
 class User(AbstractUser):
@@ -13,7 +16,7 @@ class User(AbstractUser):
         default="/static/icons/user_icon.svg",
     )
 
-    displayName = models.CharField(max_length=50, null=True, blank=True)
+    displayName = models.CharField(max_length=50, null=False, blank=False)
 
     description = models.TextField(null=True, blank=True)  # profile bio
 
@@ -31,7 +34,7 @@ class AuthorProfile(models.Model):
     github = models.CharField(max_length=255, null=True, blank=True)
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
-    local_node = models.ForeignKey(Node, on_delete=models.PROTECT)
+    local_node = models.ForeignKey("node_link.Node", on_delete=models.PROTECT)
 
     def __str__(self):
         return f"{self.user.username} (Author)"
@@ -39,10 +42,14 @@ class AuthorProfile(models.Model):
 
 class Friends(MixinApp):
     user1 = models.ForeignKey(
-        AuthorProfile, on_delete=models.CASCADE, related_name="friendships_initiated"
+        "authorApp.AuthorProfile",
+        on_delete=models.CASCADE,
+        related_name="friendships_initiated",
     )
     user2 = models.ForeignKey(
-        AuthorProfile, on_delete=models.CASCADE, related_name="friendships_received"
+        "authorApp.AuthorProfile",
+        on_delete=models.CASCADE,
+        related_name="friendships_received",
     )
     status = models.BooleanField(default=False)
 
@@ -56,24 +63,25 @@ class Follower(MixinApp):
     #!!!API NOTE: type will have to be hardcoded bc this info is for Followers and Follow Request API objs
 
     actor = models.ForeignKey(
-        AuthorProfile, on_delete=models.CASCADE, related_name="followers_initiated"
+        "authorApp.AuthorProfile",
+        on_delete=models.CASCADE,
+        related_name="followers_initiated",
     )
     object = models.ForeignKey(
-        AuthorProfile, on_delete=models.CASCADE, related_name="followers_received"
+        "authorApp.AuthorProfile",
+        on_delete=models.CASCADE,
+        related_name="followers_received",
     )
 
     status = models.CharField(max_length=20, default="pending")
-
-    def save(self, *args, **kwargs):
-        self.summary = f"{self.user1.displayName} wants to follow {self.user2.displayName}"  # API NOTE: This might be best done in the serializer bc its not used anywhere else and the data is readily available
-        #!!!API NOTE, !!!FRIENDS NOTE there is no friends API, so we can check if (actor = 1, object = 2) and (actor = 2, object = 1) then create a Friend object after doing a API request
-        # 1. user1(actor local) sends Follow Request to user2(object remote)
-        # 2. create Follower obj (locally or API)
-        # 3. If user2 approves then make Followers status=True(FIND OUT THROUGH Followers API for remote users)
-        # 4. then user2 sends Follow Request
-        # 5. Ask for Followers API for user1
-        # 6. If user1 approves then make Friends obj (FIND OUT THROUGH Local query API for local users)
-        super().save(*args, **kwargs)
+    # API NOTE: Summary might be best done in the serializer bc its not used anywhere else and the data is readily available
+    #!!!API NOTE, !!!FRIENDS NOTE there is no friends API, so we can check if (actor = 1, object = 2) and (actor = 2, object = 1) then create a Friend object after doing a API request
+    # 1. user1(actor local) sends Follow Request to user2(object remote)
+    # 2. create Follower obj (locally or API)
+    # 3. If user2 approves then make Followers status=True(FIND OUT THROUGH Followers API for remote users)
+    # 4. then user2 sends Follow Request
+    # 5. Ask for Followers API for user1
+    # 6. If user1 approves then make Friends obj (FIND OUT THROUGH Local query API for local users)
 
     class Meta:
         constraints = [

@@ -20,10 +20,10 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 LOGIN_REDIRECT_URL = "home"
-LOGOUT_REDIRECT_URL = "login"
-LOGIN_URL = "login"
+LOGOUT_REDIRECT_URL = "authorApp:login"
+LOGIN_URL = "authorApp:login"
 
-AUTH_USER_MODEL = "node_link.User"
+AUTH_USER_MODEL = "authorApp.User"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -41,6 +41,7 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "node_link",
+    "authorApp",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -48,7 +49,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 ]
-AUTH_USER_MODEL = "node_link.User"
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",

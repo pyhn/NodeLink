@@ -7,102 +7,15 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
-from django.contrib.auth import get_user_model
 from node_link.models import (
     Post,
-    Friends,
-    Follower,
     Comment,
     Like,
-    AuthorProfile,
-    Node,
     Notification,
 )
-from .forms import SignUpForm, LoginForm
+from authorApp.models import Friends, Follower, AuthorProfile
 import commonmark
-
-User = get_user_model()
-
-
-# sign up
-def signup_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-    if request.method == "POST":
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            # Set additional fields
-            user.email = form.cleaned_data["email"]
-            user.first_name = form.cleaned_data["first_name"]
-            user.last_name = form.cleaned_data["last_name"]
-            # user.username = form.cleaned_data['username']
-            user.description = form.cleaned_data["description"]
-            user.save()
-
-            # Retrieve the first node in the Node table
-            first_node = Node.objects.first()
-            if not first_node:
-                messages.error(request, "No nodes are available to assign.")
-                return redirect("signup")
-
-            # Create an AuthorProfile linked to the user and assign the first node
-            AuthorProfile.objects.create(
-                user=user,
-                local_node=first_node,
-                # Set other author-specific fields if necessary
-            )
-
-            auth_login(request, user)
-            messages.success(
-                request, f"Welcome {user.username}, your account has been created."
-            )
-            return redirect("home")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
-        form = SignUpForm()
-    return render(request, "signup.html", {"form": form})
-
-
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect("home")
-    if request.method == "POST":
-        form = LoginForm(request, data=request.POST)
-        if form.is_valid():
-            auth_login(request, form.get_user())
-            messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("home")
-        else:
-            messages.error(request, "Invalid username or password.")
-    else:
-        form = LoginForm()
-    return render(request, "login.html", {"form": form})
-
-
-def logout_view(request):
-    auth_logout(request)
-    messages.info(request, "You have successfully logged out.")
-    return redirect("login")
-
-
-def has_access(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    if (
-        post.author.id == request.user.author_profile.id
-        or post.visibility == "p"
-        or post.visibility == "u"
-        or (
-            post.visibility == "fo"
-            and Friends.objects.filter(
-                Q(user1=request.user.author_profile, user2=post.author)
-                | Q(user2=request.user.author_profile, user1=post.author)
-            ).exists()
-        )
-    ) and not post.visibility == "d":
-        return True
-    return False
+from .utils.common import has_access
 
 
 # post edit/create methods
@@ -221,7 +134,7 @@ def post_card(request, u_id):
     if has_access(request=request, post_id=u_id):
 
         user_has_liked = post.likes.filter(author=request.user.author_profile).exists()
-        user_img = post.author.user.profile_image
+        user_img = post.author.user.profileImage
 
         if post.is_commonmark:
             # Convert Markdown to HTML
@@ -235,7 +148,7 @@ def post_card(request, u_id):
             "post": post,
             "post_content": post_content,
             "user_has_liked": user_has_liked,
-            "profile_img": user_img,
+            "profileImg": user_img,
         }
         return render(request, "post_card.html", context)
     return HttpResponseForbidden("You are not supposed to be here. Go Home!")
@@ -286,8 +199,8 @@ def home(request):
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(
-            Follower.objects.filter(Q(user1=user, status=True)).values_list(
-                "user2", flat=True
+            Follower.objects.filter(Q(actor=user, status=True)).values_list(
+                "object", flat=True
             )
         )
 
@@ -343,30 +256,3 @@ def notifications_view(request):
     ).order_by("-created_at")
     notifications.update(is_read=True)  # Mark notifications as read
     return render(request, "notifications.html", {"notifications": notifications})
-
-
-# user methods
-def profile_display(request, author_un):
-    if request.method == "GET":
-        author = get_object_or_404(AuthorProfile, user__username=author_un)
-        all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
-        num_following = Follower.objects.filter(user1=author).count()
-        num_friends = Friends.objects.filter(
-            Q(user1=author, status=True) | Q(user2=author, status=True)
-        ).count()
-        num_followers = Follower.objects.filter(user2=author).count()
-
-        filtered_ids = []
-        for a in all_ids:
-            if has_access(request, a.id):
-                filtered_ids.append(a)
-
-        context = {
-            "all_ids": filtered_ids,
-            "num_following": num_following,
-            "num_friends": num_friends,
-            "num_followers": num_followers,
-            "author": author,
-        }
-        return render(request, "user_profile.html", context)
-    return redirect("home")
