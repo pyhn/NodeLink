@@ -19,11 +19,11 @@
 
 </div>
 <div class="post body">
-    <a href="{%url 'post_detail' post.id%}" target="_parent">
+    <a href="{%url 'postApp:post_detail' post.id%}" target="_parent">
 
             {% if post_content %}
             <div class="post content">
-                {% if post.is_commonmark %}
+                {% if post.contentType == 'c' %}
                     {{ post_content|safe|linebreaks }}
                 {% else %}
                     {{ post_content|linebreaks }}
@@ -44,22 +44,21 @@
 <div class="post bottom_bar">
     <!-- Display the number of likes -->
     <div class="like-count">
-        {{ post.likes.count }} {{ post.likes.count|pluralize:"Like,Likes" }}
+        {{ post.postliked.count }} {{ post.postliked.count|pluralize:"Like,Likes" }}
     </div>
     <!-- Like/Unlike Button -->
     <div class="icon-button">
-        {% if user_has_liked %}
-        <form action="{% url 'like_post' post.id %}" method="post">
-            {% csrf_token %}
-            <button class='icon' type="submit"><img src="{% static 'icons/filled_heart.svg' %}"
-                    alt="unlike button"></button>
-        </form>
-        {% else %}
-        <form action="{% url 'like_post' post.id %}" method="post">
+
+
+        {% if user_has_liked == False%}
+        <form action="{% url 'postApp:like_post' post.id %}" method="post">
             {% csrf_token %}
             <button id='post-like-{{post.id}}' class='icon' type="submit"><img
                     src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
         </form>
+        {%else%}
+        <span class='icon'><img src="{% static 'icons/filled_heart.svg' %}"
+            alt="unlike button"></span>
         {% endif %}
     </div>
 

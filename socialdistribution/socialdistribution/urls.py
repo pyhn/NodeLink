@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("", include("node_link.urls")),
     path("authorApp/", include("authorApp.urls")),
+    path("postApp/", include("postApp.urls")),
     path("admin/", admin.site.urls),
     # path("", include("node_link.urls")),
 ]
