@@ -161,3 +161,18 @@ LOGGING = {
         },
     },
 }
+
+# enforce authentication when accessed via HTTP requests
+# if an unauthenticated user tries to access the /api/posts/ endpoint, they will receive a 401
+# curl -i http://localhost:8000/api/posts/ will give 401 Unauthorized
+# curl -i -u your_username:your_password http://localhost:8000/api/posts/ will give 200 OK
+# from rest_framework.permissions import IsAuthenticated will be added in views.py to enforce authentication
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.BasicAuthentication",
+        # Add more authentication classes if needed
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+}
