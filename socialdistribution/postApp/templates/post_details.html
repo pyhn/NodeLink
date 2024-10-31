@@ -15,7 +15,7 @@
 <body>
 
 
-    <div class="post-container" id="main_post" hx-get="{%url 'one_post' post.id %}" hx-trigger="load"
+    <div class="post-container" id="main_post" hx-get="{%url 'postApp:one_post' post.uuid %}" hx-trigger="load"
         hx-target="#post_body" hx-swap="innerHTML">
         {% if post.author.user == user%}
         <div class="post info user_actions">
@@ -34,7 +34,7 @@
 
         <div id="comment_create_block">
             <div class="create-comment-button">
-                <button class="icon" type="button" hx-get="{%url 'create_comment' post.id %}" hx-trigger="click"
+                <button class="icon" type="button" hx-get="{%url 'postApp:create_comment' post.uuid %}" hx-trigger="click"
                     hx-target="#comment_create_block" hx-swap="innerHTML">Add a Comment<img
                         src="{% static 'icons/plus.svg' %}"></button>
             </div>
@@ -48,8 +48,8 @@
                 <li>
                     <div class="comment">
                         <span class="comment-author">
-                            <a  href="{% url 'profile_display' comment.author.user.username%}"><div class='user_img small'><img src={{comment.author.user.profile_image}}></div></a>
-                            <a  href="{% url 'profile_display' comment.author.user.username%}">{{comment.author.user.username }}</a>
+                            <a  href="{% url 'authorApp:profile_display' comment.author.user.username%}"><div class='user_img small'><img src={{comment.author.user.profileImage}}></div></a>
+                            <a  href="{% url 'authorApp:profile_display' comment.author.user.username%}">{{comment.author.user.username }}</a>
                         </span>:
                         {{ comment.content|linebreaks }}
                         <span class="comment-date">
@@ -76,7 +76,7 @@
 <div id="deleteOverlay" class="overlay">
     <div class="overlay-content">
         <p>Are you sure you want to delete this post?</p>
-        <form action="{% url 'delete_post' post.id %}" method="post">
+        <form action="{% url 'postApp:delete_post' post.uuid %}" method="post">
             {% csrf_token %}
             <button class="confirm-btn" type="submit">Yes, Delete</button>
         </form>
