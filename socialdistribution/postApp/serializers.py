@@ -1,80 +1,99 @@
 from rest_framework import serializers
 from postApp.models import Post, Comment, Like
+from authorApp.serializers import AuthorProfileSerializer
 
 
 class PostSerializer(serializers.ModelSerializer):
-    # author = AuthorsSerializer(read_only=True)
+    id = serializers.SerializerMethodField()
+    type = serializers.CharField(default="post")
+    author = serializers.SerializerMethodField()
 
     class Meta:
-        # model = Post
-        # post fields (based on eclass)
+        model = Post
         fields = [
-            "type",  # should be 'post'
-            "title",  # title of a post
-            "id",  # id of the post must be the original URL on the node the post came from "http://nodebbbb/api/authors/222/posts/249"
-            "description",  # check eclass
-            "contentType",  # should be 'text/plain'
-            "content",  # check eclass
-            "author",  # author
-            "comments",  # comments about the post
-            "likes",
-            "published",  # likes on the post  # ISO 8601 TIMESTAMP
-            "visibility",  # visibility ["PUBLIC","FRIENDS","UNLISTED","DELETED"]
+            "title",
+            "type",
+            "description",
+            "content",
+            "visibility",
+            "node",
+            "author",
+            "uuid",
+            "contentType",
+            "created_by",
         ]
+        read_only_fields = ["comments", "likes", "published"]
 
     def create(self, validated_data):
-        """
-        creates a post object using the validated data
-        """
+        # when creating the post locally, fields that have the same name
+        # in both the incoming JSON and the model will be mapped automatically, otherwise,
+        # you will have to map them manually
         return Post.objects.create(**validated_data)
 
-    # add more methods as needed
+    def update(self, instance, validated_data):
+        instance.title = validated_data.get("title", instance.title)
+        instance.description = validated_data.get("description", instance.description)
+        instance.content = validated_data.get("content", instance.content)
+        instance.contentType = validated_data.get("contentType", instance.contentType)
+        instance.visibility = validated_data.get("visibility", instance.visibility)
+        instance.save()
+        return instance
+
+    def get_id(self, obj):
+        """
+        constructs the full URL id for the post
+        """
+        host = obj.node.url.rstrip("/")
+        author_id = obj.author.user.username
+        post_id = obj.uuid
+        return f"{host}/api/authors/{author_id}/posts/{post_id}"
+
+    def get_author(self, obj):
+        # Serialize the author using AuthorProfileSerializer
+        return AuthorProfileSerializer(obj.author).data
+
+    # check out def to_representation(self, instance) method for custom serialization
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    # author = AuthorsSerializer(read_only=True)
-
     class Meta:
         model = Comment
-        # comment fields (based on eclass)
         fields = [
             "type",  # should be 'comment'
             "author",  # author
             "comment",  # comment
             "contentType",  # check eclass
-            "published"  # ISO 8601 TIMESTAMP
-            "id"  # id of the comment (check eclass) "http://nodebbbb/api/authors/111/commented/130"
-            "post"  # post commented (check eclass)
+            "published",  # ISO 8601 TIMESTAMP
+            "id",  # id of the comment (check eclass) "http://nodebbbb/api/authors/111/commented/130"
+            "post",  # post commented (check eclass)
             "likes",  # likes on the comment
         ]
 
     def create(self, validated_data):
-        """
-        creates a comment object using the validated data
-        """
         return Comment.objects.create(**validated_data)
 
-    # add more methods as needed
+    def update(self, instance, validated_data):
+        instance.comment = validated_data.get("comment", instance.comment)
+        instance.contentType = validated_data.get("contentType", instance.contentType)
+        instance.save()
+        return instance
 
 
 class LikeSerializer(serializers.ModelSerializer):
-    # author = AuthorsSerializer(read_only=True)
-
     class Meta:
         model = Like
-        # like fields (based on eclass)
         fields = [
             "type",  # should be 'like'
             "author",  # author
             "published",  # ISO 8601 TIMESTAMP
-            "id",  # id of the like (check eclass) "http://nodebbbb/api/authors/111/liked/130"
-            "object",  # post/comment
+            "id",  # id of the like (check eclass)
+            "object",  # object liked (check eclass)
         ]
 
     def create(self, validated_data):
-        """
-        creates a like object using the validated data
-        """
         return Like.objects.create(**validated_data)
 
-    # add more methods as needed
+    def update(self, instance, validated_data):
+        instance.object = validated_data.get("object", instance.object)
+        instance.save()
+        return instance

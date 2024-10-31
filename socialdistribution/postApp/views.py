@@ -1,14 +1,25 @@
 # Django imports
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseForbidden
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+from django.http import Http404, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+
+# Third-party imports
+from rest_framework import generics, permissions
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.decorators import action
+from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 # Project imports
+from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
-from authorApp.models import AuthorProfile
-from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
+from postApp.models import Comment, Like, Post
+from .serializers import PostSerializer
 
 # Package imports
 import commonmark
@@ -178,3 +189,139 @@ def post_detail(request, post_uuid: str):
         )
     else:
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
+
+
+# --- API Views ---
+class IsAuthorOrReadOnly(BasePermission):
+    """
+    Custom permission to only allow authors of a post to edit or delete it.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request,
+        # so we'll always allow GET requests.
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # Write permissions are only allowed to the author of the post.
+        return obj.author.user == request.user
+
+
+class PostDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET: Retrieve a public post or friends-only post if authenticated.
+    PUT: Update a post if authenticated as the author.
+    DELETE: Delete a post if authenticated as the author.
+    """
+
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthorOrReadOnly]
+
+    def get_object(self):
+        author_serial = self.kwargs["author_serial"]
+        post_serial = self.kwargs["post_serial"]
+        # Get the author
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        # Get the post
+        post = get_object_or_404(Post, uuid=post_serial, author=author)
+
+        # Check visibility
+        if post.visibility == "p":  # Public
+            return post
+        elif post.visibility == "fo":  # Friends-only
+            if self.request.user.is_authenticated:
+                # Check if the user is a friend
+                if is_friend(self.request.user.author_profile, author):
+                    return post
+            raise PermissionDenied("You do not have permission to access this post.")
+        else:
+            raise Http404
+
+    def perform_update(self, serializer):
+        # Ensure the user is the author
+        if self.request.user.author_profile != serializer.instance.author:
+            raise PermissionDenied("You do not have permission to edit this post.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Ensure the user is the author
+        if self.request.user.author_profile != instance.author:
+            raise PermissionDenied("You do not have permission to delete this post.")
+        instance.delete()
+
+
+class PostListCreateAPIView(generics.ListCreateAPIView):
+    """
+    GET: Retrieve recent posts from an author.
+    POST: Create a new post as the authenticated author.
+    """
+
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        author_serial = self.kwargs["author_serial"]
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        user = self.request.user
+
+        # Not authenticated: only public posts.
+        if not user.is_authenticated:
+            return Post.objects.filter(author=author, visibility="p")
+
+        # Authenticated as the author: all posts.
+        if user.author_profile == author:
+            return Post.objects.filter(author=author)
+
+        # Authenticated as friend: public + friends-only posts.
+        if is_friend(user.author_profile, author):
+            return Post.objects.filter(author=author).exclude(visibility="u")
+
+        # Authenticated but not a friend: only public posts.
+        return Post.objects.filter(author=author, visibility="p")
+
+    def perform_create(self, serializer):
+        author_serial = self.kwargs["author_serial"]
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Ensure the authenticated user is the author
+        if self.request.user.author_profile != author:
+            raise PermissionDenied("You cannot create posts for another author.")
+
+        serializer.save(author=author, node=author.local_node)
+
+
+class PostByFQIDAPIView(APIView):
+    """
+    GET: Retrieve a public post by its Fully Qualified ID (FQID).
+    """
+
+    def get(self, request, post_fqid):
+        # Decode the FQID to get the post
+        try:
+            # post_url = f"http://{request.get_host()}/api/posts/{post_fqid}"
+            post = Post.objects.get(uuid=post_fqid)
+        except Exception as exc:
+            raise Http404 from exc
+
+        # Check visibility
+        if post.visibility == "p":  # Public
+            serializer = PostSerializer(post)
+            return Response(serializer.data)
+        elif post.visibility == "fo":  # Friends-only
+            if request.user.is_authenticated:
+                # Check if the user is a friend
+                if is_friend(request.user.author_profile, post.author):
+                    serializer = PostSerializer(post)
+                    return Response(serializer.data)
+            raise PermissionDenied("You do not have permission to access this post.")
+        else:
+            raise Http404
+
+
+def is_friend(author1, author2):
+    # Implement logic to check if author1 and author2 are friends
+    friendship_exists = Friends.objects.filter(
+        (Q(user1=author1) & Q(user2=author2)) | (Q(user1=author2) & Q(user2=author1)),
+        status=True,
+    ).exists()
+    return friendship_exists
