@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "corsheaders",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -60,6 +61,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+
 ]
 
 ROOT_URLCONF = "socialdistribution.urls"
@@ -86,13 +89,13 @@ WSGI_APPLICATION = "socialdistribution.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if os.environ.get("DATABASE_URL") != None:
-    # Running on Heroku
+if os.environ.get("DATABASE_URL") is not None:
     DATABASES = {
         "default": dj_database_url.config(
             conn_max_age=600, conn_health_checks=True, ssl_require=True
         )
     }
+
 else:
     # Running locally.
     DATABASES = {
@@ -155,12 +158,18 @@ LOGGING = {
         "level": "INFO",
     },
     "loggers": {
-        "yourapp": {  # Use your actual app name
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
+    "authorApp": {
+        "handlers": ["console"],
+        "level": "INFO",
+        "propagate": False,
     },
+    "node_link": {
+        "handlers": ["console"],
+        "level": "INFO",
+        "propagate": False,
+    },
+},
+
 }
 
 # enforce authentication when accessed via HTTP requests

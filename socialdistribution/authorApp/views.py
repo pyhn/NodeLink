@@ -4,6 +4,12 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
+from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from rest_framework.response import Response
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+
+
 
 # Project Imports
 from .models import (
@@ -125,3 +131,36 @@ def deny_follow_request(request, follow_request_id):
     follow_request.status = "denied"
     follow_request.save()
     return redirect("node_link:notifications")
+
+
+# ViewSet for AuthorProfile API
+class AuthorProfileViewSet(viewsets.ViewSet):
+    # Retrieve all authors
+    def list(self, request):
+        authors = AuthorProfile.objects.all()
+        serializer = AuthorProfileSerializer(authors, many=True)
+        return Response(serializer.data)
+
+    # Retrieve a single author by username
+    def retrieve(self, request, pk=None):
+        author = get_object_or_404(AuthorProfile, user__username=pk)
+        serializer = AuthorProfileSerializer(author)
+        return Response(serializer.data)
+
+    # Custom action to list followers of an author
+    @action(detail=True, methods=['get'])
+    def followers(self, request, pk=None):
+        author = get_object_or_404(AuthorProfile, user__username=pk)
+        followers = Follower.objects.filter(object=author)
+        serializer = FollowerSerializer(followers, many=True)
+        return Response(serializer.data)
+
+    # Custom action to list friends of an author
+    @action(detail=True, methods=['get'])
+    def friends(self, request, pk=None):
+        author = get_object_or_404(AuthorProfile, user__username=pk)
+        friends = Friends.objects.filter(
+            (Q(user1=author) | Q(user2=author)) & Q(status=True)
+        )
+        serializer = FriendSerializer(friends, many=True)
+        return Response(serializer.data)
