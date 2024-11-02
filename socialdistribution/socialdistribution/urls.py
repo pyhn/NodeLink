@@ -19,13 +19,11 @@ from django.urls import include, path
 from django.conf import settings
 from django.conf.urls.static import static
 
-app_name = "authorApp"
-
 urlpatterns = [
-    path("", include("node_link.urls")),
-    path("authorApp/", include("authorApp.urls", namespace="authorApp")),
-    path("postApp/", include("postApp.urls")),
-    path("admin/", admin.site.urls),
+    path("", include("node_link.urls")),  # Root URL directed to node_link app
+    path("authorApp/", include("authorApp.urls", namespace="authorApp")),  # URL for authorApp
+    path("postApp/", include("postApp.urls")),  # URL for postApp
+    path("admin/", admin.site.urls),  # Admin panel URL
 ]
 
 if settings.DEBUG:

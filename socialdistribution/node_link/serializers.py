@@ -1,56 +1,71 @@
 from rest_framework import serializers
-
-# from node_link.models import
-# Author,
-# FollowRequest,
-
-
-# We need to refactor some of our models.py to have
-# - Author
-# - FollowRequest
-# - Post
-# - Comment
-# - Like
+from authorApp.models import AuthorProfile
+from node_link.models import Node, Notification
 
 
 class AuthorsSerializer(serializers.ModelSerializer):
+    """Serializer for author profiles, including related fields."""
+
+    type = serializers.CharField(default="author")
+    id = serializers.SerializerMethodField()
+    host = serializers.SerializerMethodField()
+
     class Meta:
-        # model = Author
-        # # author fields (based on eclass)
+        model = AuthorProfile
         fields = [
-            "type",  # should be 'author'
-            "id",  # should be the full API URL for the author 'http://nodename/api/authors/id
-            "host",  # should be the full API URL for the author's node 'http://nodename/api'
-            "displayName",  # should be 'Greg Johnson' (name to be displayed)
-            "github",  # should be 'http://github/gjohnson'
-            "profileImage",  # check eclass
-            "page",  # check eclass
+            "type",
+            "id",
+            "host",
+            "displayName",
+            "github",
+            "profileImage",
         ]
 
-    def create(self, validated_data):
-        """
-        creates an author object using the validated data
-        """
-        # return Author.objects.create(**validated_data)
+    def get_id(self, obj):
+        # Construct the API URL for the author
+        return f"{obj.local_node.url}/api/authors/{obj.user.username}"
 
-    # add more methods as needed
+    def get_host(self, obj):
+        return obj.local_node.url
 
 
 class FollowRequestSerializer(serializers.ModelSerializer):
+    """Serializer for follow requests between authors."""
+
+    type = serializers.CharField(default="follow")
+    summary = serializers.CharField()
+
     class Meta:
-        # model = FollowRequest
-        # # follow request fields (based on eclass)
+        model = AuthorProfile  # Replace with your FollowRequest model if available
         fields = [
-            "type",  # should be "follow"
+            "type",
             "summary",
-            "actor",  # author
-            "object",  # author
+            "actor",
+            "object",
         ]
 
-    def create(self, validated_data):
-        """
-        creates a follow request object using the validated data
-        """
-        # return FollowRequest.objects.create(**validated_data)
 
-    # add more methods as needed
+class NodeSerializer(serializers.ModelSerializer):
+    """Serializer for Node data."""
+
+    class Meta:
+        model = Node
+        fields = ['url', 'created_at', 'created_by', 'updated_at', 'deleted_at', 'deleted_by']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for Notification data."""
+
+    class Meta:
+        model = Notification
+        fields = [
+            'user',
+            'message',
+            'created_at',
+            'is_read',
+            'notification_type',
+            'related_object_id',
+            'author_picture_url',
+            'follow_request_message',
+            'link_url'
+        ]
