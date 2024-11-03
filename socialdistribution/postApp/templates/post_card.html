@@ -6,12 +6,12 @@
 <div class="post info">
     <!-- Post Meta Information -->
     <!-- Post Title -->
-    <a  href="{% url 'profile_display' post.author.user.username%}"><div class='user_img'><img src="{{profile_img}}"></div></a>
+    <a  href="{% url 'authorApp:profile_display' post.author.user.username%}"><div class='user_img'><img src="{{profileImg}}"></div></a>
     <div class="user_info">
         <h1>{{post.title}}</h1>
         <span class="user_icon"></span><!--!!!add anchor to user account-->
         <div class="post-meta"><!--!!!add link yo user profile-->
-            By <a  href="{% url 'profile_display' post.author.user.username%}">{{ post.author.user.username }}</a> on {{ post.created_at|date:"F j, Y, g:i a" }}
+            By <a  href="{% url 'authorApp:profile_display' post.author.user.username%}">{{ post.author.user.username }}</a> on {{ post.created_at|date:"F j, Y, g:i a" }}
             | Visibility: {{ post.get_visibility_display }}
         </div>
     </div>
@@ -19,11 +19,11 @@
 
 </div>
 <div class="post body">
-    <a href="{%url 'post_detail' post.id%}" target="_parent">
+    <a href="{%url 'postApp:post_detail' post.uuid%}" target="_parent">
 
             {% if post_content %}
             <div class="post content">
-                {% if post.is_commonmark %}
+                {% if post.contentType == 'c' %}
                     {{ post_content|safe|linebreaks }}
                 {% else %}
                     {{ post_content|linebreaks }}
@@ -44,22 +44,21 @@
 <div class="post bottom_bar">
     <!-- Display the number of likes -->
     <div class="like-count">
-        {{ post.likes.count }} {{ post.likes.count|pluralize:"Like,Likes" }}
+        {{ post.postliked.count }} {{ post.postliked.count|pluralize:"Like,Likes" }}
     </div>
     <!-- Like/Unlike Button -->
     <div class="icon-button">
-        {% if user_has_liked %}
-        <form action="{% url 'like_post' post.id %}" method="post">
+
+
+        {% if user_has_liked == False%}
+        <form action="{% url 'postApp:like_post' post.uuid %}" method="post">
             {% csrf_token %}
-            <button class='icon' type="submit"><img src="{% static 'icons/filled_heart.svg' %}"
-                    alt="unlike button"></button>
-        </form>
-        {% else %}
-        <form action="{% url 'like_post' post.id %}" method="post">
-            {% csrf_token %}
-            <button id='post-like-{{post.id}}' class='icon' type="submit"><img
+            <button id='post-like-{{post.uuid}}' class='icon' type="submit"><img
                     src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
         </form>
+        {%else%}
+        <span class='icon'><img src="{% static 'icons/filled_heart.svg' %}"
+            alt="unlike button"></span>
         {% endif %}
     </div>
 

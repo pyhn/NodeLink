@@ -75,7 +75,9 @@
 
 }
 .post.body img{
-    height: 70vh;
+    height: 70%;
+    width: 70%;
+    overflow: hidden;
 
 }
 .post.body a{
@@ -93,7 +95,7 @@
 
 
 }
-button.icon{
+.icon{
     background: transparent;
     border: 0px;
     height: 30px;
@@ -109,11 +111,9 @@ button.icon :hover{
     border-radius: 10px;
     border: 1px transparent;
 
-
-
 }
 
-button.icon img{
+.icon img{
     max-width: 100%;
     max-height: 100%;
 
