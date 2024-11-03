@@ -48,8 +48,6 @@ def submit_post(request):
                         "png": "png",
                         "jpeg": "jpeg",
                         "jpg": "jpeg",  # Pillow returns 'JPEG' for both 'jpeg' and 'jpg'
-                        "gif": "gif",
-                        # Add more mappings if needed
                     }
 
                     actual_content_type = mime_to_content.get(
