@@ -11,12 +11,11 @@ from node_link.models import Notification
 from node_link.utils.common import has_access
 from authorApp.models import AuthorProfile
 from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
+from .utils.image_checks import validate_image_file, process_image_file
 
 # Package imports
 import commonmark
-import base64
 from datetime import datetime
-from PIL import Image
 
 
 @login_required
@@ -26,69 +25,48 @@ def create_post(request):
 
 @login_required
 def submit_post(request):
-    if request.method == "POST":
-        title = request.POST.get("title", "New Post")
-        description = request.POST.get("description", "")
-        content = request.POST.get("content", "")
-        visibility = request.POST.get("visibility", "p")
-        content_type = request.POST.get("contentType", "p")
-        author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
+    if request.method != "POST":
+        return redirect("postApp:create_post")
 
-        # Handle image upload
-        if content_type in ["png", "jpeg", "gif", "a"]:  # Include 'gif' if supported
+    # Extract form data with defaults
+    title = request.POST.get("title", "New Post")
+    description = request.POST.get("description", "")
+    content = request.POST.get("content", "")
+    visibility = request.POST.get("visibility", "p")
+    content_type = request.POST.get("contentType", "p")
+    submit_type = request.POST.get("submit_type", "plain")
+
+    try:
+        if submit_type == "image":
             img = request.FILES.get("img", None)
             if img:
-                try:
-                    # Open the image using Pillow to verify its format
-                    image = Image.open(img)
-                    detected_type = image.format.lower()  # e.g., 'png', 'jpeg', 'gif'
-
-                    # Map detected type to contentType
-                    mime_to_content = {
-                        "png": "png",
-                        "jpeg": "jpeg",
-                        "jpg": "jpeg",  # Pillow returns 'JPEG' for both 'jpeg' and 'jpg'
-                    }
-
-                    actual_content_type = mime_to_content.get(
-                        detected_type, "a"
-                    )  # Default to 'a' if unknown
-
-                    # Compare with provided content_type
-                    if content_type != actual_content_type:
-                        raise ValidationError("MIME type does not match contentType.")
-
-                    # Reset the file pointer after Pillow has read the file
-                    img.seek(0)
-
-                    # Convert image to base64
-                    img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                    content = f"data:image/{detected_type};base64,{img_base64}"
-
-                except IOError as exc:
-                    # The file is not a valid image
-                    raise ValidationError(
-                        "Uploaded file is not a valid image."
-                    ) from exc
+                validate_image_file(img)
+                data_url, actual_content_type = process_image_file(img)
+                if content_type != actual_content_type:
+                    raise ValidationError("MIME type does not match contentType.")
+                content = data_url
+                content_type = actual_content_type
             else:
-                # If no image is uploaded but content_type expects one
                 raise ValidationError("Image file is required for image posts.")
 
-        # Create the post with the necessary fields
-        Post.objects.create(
+        author = request.user.author_profile
+        post = Post.objects.create(
             title=title,
             description=description,
             content=content,
             visibility=visibility,
             contentType=content_type,
             author=author,
-            node=author.local_node,  # Associate the post with the author's node
+            node=author.local_node,
             created_by=author,
             updated_by=author,
         )
-        # Redirect to the post list page
-        return redirect("node_link:home")
-    return redirect("node_link:home")
+
+        messages.success(request, "Post created successfully!")
+        return redirect("postApp:post_detail", post_uuid=post.uuid)
+
+    except ValidationError:
+        return redirect("postApp:create_post")
 
 
 @login_required
@@ -158,55 +136,74 @@ def edit_post(request, post_uuid):
     if post.author.user != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
 
+    # Determine active tab based on contentType
+    if post.contentType == "p":
+        active_tab = "PlainText"
+    elif post.contentType == "m":
+        active_tab = "Markdown"
+    elif post.contentType in ["png", "jpeg", "gif"]:
+        active_tab = "Image"
+    else:
+        active_tab = "PlainText"  # Default to PlainText if unknown
+
+    # Define image types for conditional rendering
+    image_types = ["png", "jpeg", "gif"]
+
     # Handle GET request to render the form with pre-filled data
     if request.method == "GET":
-        # Prepare context data with post information
         context = {
             "post": post,
+            "active_tab": active_tab,
+            "image_types": image_types,
         }
         return render(request, "edit_post.html", context)
     else:
         # If request method is not GET, redirect to edit page
-        return redirect("postApp:edit_post", uuid=post_uuid)
+        return redirect("postApp:edit_post", post_uuid=post_uuid)
 
 
+@login_required
 def submit_edit_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
     if post.author.user != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
 
-    if request.method == "POST":
-        title = request.POST.get("title", post.title)
-        description = request.POST.get("description", post.description)
-        content = request.POST.get("content", post.content)
-        visibility = request.POST.get("visibility", post.visibility)
-        content_type = request.POST.get("contentType", post.contentType)
-        submit_type = request.POST.get("submit_type", "plain")  # From updated form
+    if request.method != "POST":
+        return redirect("postApp:edit_post", post_uuid=post_uuid)
 
-        # Handle image upload if content type is image
+    # Extract form data with defaults
+    title = request.POST.get("title", post.title)
+    description = request.POST.get("description", post.description)
+    content = request.POST.get("content", post.content)
+    visibility = request.POST.get("visibility", post.visibility)
+    content_type = request.POST.get("contentType", post.contentType)
+    submit_type = request.POST.get("submit_type", "plain")  # From updated form
+
+    try:
         if submit_type == "image":
             img = request.FILES.get("img", None)
             if img:
-                # Validate image
-                try:
-                    # Check file size (e.g., max 2MB)
-                    if img.size > 2 * 1024 * 1024:
-                        raise ValidationError("Image file too large ( > 2MB ).")
-                except ValidationError as e:
-                    # Handle validation errors
-                    messages.error(request, e)
-                    return redirect("postApp:edit_post", uuid=post_uuid)
+                # Validate the image
+                validate_image_file(img)
 
-                # Convert image to base64
-                img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                content = f"data:{img.content_type};base64,{img_base64}"
-                content_type = (
-                    img.content_type
-                )  # Set content_type based on actual image type
+                # Process the image and update content and content_type
+                data_url, actual_content_type = process_image_file(img)
+
+                # Ensure content_type matches actual_content_type
+                if content_type != actual_content_type:
+                    raise ValidationError("MIME type does not match contentType.")
+
+                content = data_url
+                content_type = actual_content_type
             else:
-                # If no new image is uploaded, keep the existing content
+                # If no new image is uploaded, retain existing content
                 content = post.content
+                # Optionally, reset content_type if the original post was an image
+                # For example:
+                # if post.contentType in ['png', 'jpeg', 'gif']:
+                #     content_type = 'a'
+        # For non-image submissions, no additional handling is required
 
         # Update the post with new data
         post.title = title
@@ -218,9 +215,12 @@ def submit_edit_post(request, post_uuid):
         post.updated_at = datetime.now()
         post.save()
 
-        # Redirect to the post detail page or any other page
+        messages.success(request, "Post updated successfully!")
         return redirect("postApp:post_detail", post_uuid=post_uuid)
-    else:
+
+    except ValidationError as e:
+        # Handle validation errors and inform the user
+        messages.error(request, e.message)
         return redirect("postApp:edit_post", post_uuid=post_uuid)
 
 
