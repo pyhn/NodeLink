@@ -16,6 +16,7 @@ from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
 import commonmark
 import base64
 from datetime import datetime
+from PIL import Image
 
 
 @login_required
@@ -34,16 +35,46 @@ def submit_post(request):
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Handle image upload
-        if content_type in [
-            "png",
-            "jpeg",
-            "a",
-        ]:  # Assuming 'a' stands for application/base64
+        if content_type in ["png", "jpeg", "gif", "a"]:  # Include 'gif' if supported
             img = request.FILES.get("img", None)
             if img:
-                # Convert image to base64
-                img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                content = f"data:{img.content_type};base64,{img_base64}"
+                try:
+                    # Open the image using Pillow to verify its format
+                    image = Image.open(img)
+                    detected_type = image.format.lower()  # e.g., 'png', 'jpeg', 'gif'
+
+                    # Map detected type to contentType
+                    mime_to_content = {
+                        "png": "png",
+                        "jpeg": "jpeg",
+                        "jpg": "jpeg",  # Pillow returns 'JPEG' for both 'jpeg' and 'jpg'
+                        "gif": "gif",
+                        # Add more mappings if needed
+                    }
+
+                    actual_content_type = mime_to_content.get(
+                        detected_type, "a"
+                    )  # Default to 'a' if unknown
+
+                    # Compare with provided content_type
+                    if content_type != actual_content_type:
+                        raise ValidationError("MIME type does not match contentType.")
+
+                    # Reset the file pointer after Pillow has read the file
+                    img.seek(0)
+
+                    # Convert image to base64
+                    img_base64 = base64.b64encode(img.read()).decode("utf-8")
+                    content = f"data:image/{detected_type};base64,{img_base64}"
+
+                except IOError as exc:
+                    # The file is not a valid image
+                    raise ValidationError(
+                        "Uploaded file is not a valid image."
+                    ) from exc
+            else:
+                # If no image is uploaded but content_type expects one
+                raise ValidationError("Image file is required for image posts.")
 
         # Create the post with the necessary fields
         Post.objects.create(

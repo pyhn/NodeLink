@@ -209,7 +209,8 @@
             } else if (tabName === "Markdown") {
                 contentTypeInput.value = "m";
             } else if (tabName === "Image") {
-                contentTypeInput.value = "png"; // or 'jpeg' based on your preference
+                // Initially set to 'a' for application/base64
+                contentTypeInput.value = "a";
             }
         }
 
@@ -223,6 +224,31 @@
                         inputs[j].disabled = true;
                     }
                 }
+            }
+            // Add event listener to the image file input
+            var imageInput = document.querySelector('input[name="img"]');
+            if (imageInput) {
+                imageInput.addEventListener('change', function(event) {
+                    var file = event.target.files[0];
+                    if (file) {
+                        // Get the MIME type of the file
+                        var mimeType = file.type;
+
+                        // Map MIME type to your contentType choices
+                        var contentTypeMapping = {
+                            'image/png': 'png',
+                            'image/jpeg': 'jpeg',
+                            'image/jpg': 'jpeg',
+                            // Add more mappings if needed
+                        };
+
+                        // Get the corresponding contentType value
+                        var contentTypeValue = contentTypeMapping[mimeType] || 'a'; // Default to 'a' if unknown
+
+                        // Set the hidden input value
+                        document.getElementById('contentType').value = contentTypeValue;
+                    }
+                });
             }
         };
 

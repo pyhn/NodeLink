@@ -25,10 +25,11 @@
             <div class="post content">
                 {% if post.contentType == 'm' %}
                     {{ post_content|safe|linebreaks }}
+                {% elif post.contentType in 'png jpeg a' %}
+                    <img src="{{ post_content }}" alt="Post Image" style="max-width:100%; height:auto;">
                 {% else %}
                     {{ post_content|linebreaks }}
                 {% endif %}
-
             </div>
             {% endif %}
 
