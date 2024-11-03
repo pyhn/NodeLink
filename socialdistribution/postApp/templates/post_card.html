@@ -23,7 +23,7 @@
 
             {% if post_content %}
             <div class="post content">
-                {% if post.contentType == 'c' %}
+                {% if post.contentType == 'm' %}
                     {{ post_content|safe|linebreaks }}
                 {% else %}
                     {{ post_content|linebreaks }}

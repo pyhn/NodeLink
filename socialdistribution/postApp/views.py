@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponseForbidden
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.files.images import get_image_dimensions
 
 # Project imports
 from node_link.models import Notification
@@ -12,24 +14,41 @@ from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
 
 # Package imports
 import commonmark
+import base64
+from datetime import datetime
 
 
 @login_required
 def create_post(request):
+    return render(request, "create_post.html")
+
+
+@login_required
+def submit_post(request):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
+        description = request.POST.get("description", "")
         content = request.POST.get("content", "")
-        # img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
-        is_commonmark = request.POST.get("is_commonmark") == "true"
+        content_type = request.POST.get("contentType", "p")
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-        content_type = ""
-        if is_commonmark:
-            content_type = "c"
+
+        # Handle image upload
+        if content_type in [
+            "png",
+            "jpeg",
+            "a",
+        ]:  # Assuming 'a' stands for application/base64
+            img = request.FILES.get("img", None)
+            if img:
+                # Convert image to base64
+                img_base64 = base64.b64encode(img.read()).decode("utf-8")
+                content = f"data:{img.content_type};base64,{img_base64}"
 
         # Create the post with the necessary fields
         Post.objects.create(
             title=title,
+            description=description,
             content=content,
             visibility=visibility,
             contentType=content_type,
@@ -38,10 +57,9 @@ def create_post(request):
             created_by=author,
             updated_by=author,
         )
-        # Redirect to the post list page SEdBo49hPQ4
+        # Redirect to the post list page
         return redirect("node_link:home")
-
-    return render(request, "create_post.html")
+    return redirect("node_link:home")
 
 
 @login_required
@@ -104,6 +122,79 @@ def delete_post(request, post_uuid):
     return redirect("node_link:home")
 
 
+@login_required
+def edit_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
+
+    if post.author.user != request.user:
+        return HttpResponseForbidden("You are not allowed to edit this post.")
+
+    # Handle GET request to render the form with pre-filled data
+    if request.method == "GET":
+        # Prepare context data with post information
+        context = {
+            "post": post,
+        }
+        return render(request, "edit_post.html", context)
+    else:
+        # If request method is not GET, redirect to edit page
+        return redirect("postApp:edit_post", uuid=post_uuid)
+
+
+def submit_edit_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
+
+    if post.author.user != request.user:
+        return HttpResponseForbidden("You are not allowed to edit this post.")
+
+    if request.method == "POST":
+        title = request.POST.get("title", post.title)
+        description = request.POST.get("description", post.description)
+        content = request.POST.get("content", post.content)
+        visibility = request.POST.get("visibility", post.visibility)
+        content_type = request.POST.get("contentType", post.contentType)
+        submit_type = request.POST.get("submit_type", "plain")  # From updated form
+
+        # Handle image upload if content type is image
+        if submit_type == "image":
+            img = request.FILES.get("img", None)
+            if img:
+                # Validate image
+                try:
+                    # Check file size (e.g., max 2MB)
+                    if img.size > 2 * 1024 * 1024:
+                        raise ValidationError("Image file too large ( > 2MB ).")
+                except ValidationError as e:
+                    # Handle validation errors
+                    messages.error(request, e)
+                    return redirect("postApp:edit_post", uuid=post_uuid)
+
+                # Convert image to base64
+                img_base64 = base64.b64encode(img.read()).decode("utf-8")
+                content = f"data:{img.content_type};base64,{img_base64}"
+                content_type = (
+                    img.content_type
+                )  # Set content_type based on actual image type
+            else:
+                # If no new image is uploaded, keep the existing content
+                content = post.content
+
+        # Update the post with new data
+        post.title = title
+        post.description = description
+        post.content = content
+        post.visibility = visibility
+        post.contentType = content_type
+        post.updated_by = request.user.author_profile
+        post.updated_at = datetime.now()
+        post.save()
+
+        # Redirect to the post detail page or any other page
+        return redirect("postApp:post_detail", post_uuid=post_uuid)
+    else:
+        return redirect("postApp:edit_post", post_uuid=post_uuid)
+
+
 # view post
 
 
@@ -129,7 +220,7 @@ def post_card(
         ).exists()
         user_img = post.author.user.profileImage
 
-        if post.contentType == "c":
+        if post.contentType == "m":
             # Convert Markdown to HTML
             parser = commonmark.Parser()
             renderer = commonmark.HtmlRenderer()

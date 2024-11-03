@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Post</title>
+    <title>Edit Post</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,10 +89,10 @@
     </style>
 </head>
 <body>
-    <h1>Create a New Post</h1>
+    <h1>Edit Post</h1>
 
     <div class="tab-container">
-        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_post' %}">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_edit_post' post.uuid %}">
             {% csrf_token %}
 
             <!-- Tab Buttons -->
