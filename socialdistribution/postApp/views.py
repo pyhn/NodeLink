@@ -25,6 +25,7 @@ from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
 from postApp.models import Comment, Like, Post
+from postApp.utils.image_check import check_image
 
 # Package imports
 import commonmark
@@ -53,37 +54,10 @@ def submit_post(request):
             img = request.FILES.get("img", None)
             if img:
                 try:
-                    # Open the image using Pillow to verify its format
-                    image = Image.open(img)
-                    detected_type = image.format.lower()  # e.g., 'png', 'jpeg',
-
-                    # Map detected type to contentType
-                    mime_to_content = {
-                        "png": "png",
-                        "jpeg": "jpeg",
-                        "jpg": "jpeg",  # Pillow returns 'JPEG' for both 'jpeg' and 'jpg'
-                    }
-
-                    actual_content_type = mime_to_content.get(
-                        detected_type, "a"
-                    )  # Default to 'a' if unknown
-
-                    # Compare with provided content_type
-                    if content_type != actual_content_type:
-                        raise ValidationError("MIME type does not match contentType.")
-
-                    # Reset the file pointer after Pillow has read the file
-                    img.seek(0)
-
-                    # Convert image to base64
-                    img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                    content = f"data:image/{actual_content_type};base64,{img_base64}"
-
-                except IOError as exc:
+                    content, _ = check_image(img, content_type, True)
+                except (IOError, SyntaxError):
                     # The file is not a valid image
-                    raise ValidationError(
-                        "Uploaded file is not a valid image."
-                    ) from exc
+                    return redirect("postApp:create_post")  # Early exit
             else:
                 # If no image is uploaded but content_type expects one
                 raise ValidationError("Image file is required for image posts.")
@@ -218,27 +192,7 @@ def submit_edit_post(request, post_uuid):
                 return redirect("postApp:edit_post", post_uuid=post_uuid)  # Early exit
 
             try:
-                # Open the image using Pillow to verify its format
-                image = Image.open(img)
-                detected_type = image.format.lower()  # e.g., 'png', 'jpeg'
-
-                # Map detected type to contentType
-                mime_to_content = {
-                    "png": "png",
-                    "jpeg": "jpeg",
-                    "jpg": "jpeg",  # Pillow returns 'JPEG' for both 'jpeg' and 'jpg'
-                }
-
-                actual_content_type = mime_to_content.get(
-                    detected_type, "a"
-                )  # Default to 'a' if unknown
-
-                # Reset the file pointer after Pillow has read the file
-                img.seek(0)
-
-                # Convert image to base64
-                img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                content = f"data:image/{actual_content_type};base64,{img_base64}"
+                content, actual_content_type = check_image(img, content_type, False)
                 content_type = actual_content_type
 
             except (IOError, SyntaxError):
