@@ -29,7 +29,7 @@ import commonmark
 
 
 @login_required
-def create_post(request):
+def create_post(request, username):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
         content = request.POST.get("content", "")
@@ -53,13 +53,13 @@ def create_post(request):
             updated_by=author,
         )
         # Redirect to the post list page SEdBo49hPQ4
-        return redirect("node_link:home")
+        return redirect("node_link:home", username=username)
 
     return render(request, "create_post.html")
 
 
 @login_required
-def create_comment(request, post_uuid):
+def create_comment(request, username, post_uuid ):
     post = get_object_or_404(Post, uuid=post_uuid)
 
     if request.method == "POST":
@@ -83,7 +83,7 @@ def create_comment(request, post_uuid):
 
 
 @login_required
-def like_post(request, post_uuid):
+def like_post(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
@@ -105,17 +105,17 @@ def like_post(request, post_uuid):
             updated_by=author,
         )
 
-    return redirect("postApp:post_detail", post_uuid)
+    return redirect("postApp:post_detail", username, post_uuid)
 
 
 @login_required
-def delete_post(request, post_uuid):
+def delete_post(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
     if post.author.user == request.user:
         post.visibility = "d"
         post.save()
-    return redirect("node_link:home")
+    return redirect("node_link:home", username=username)
 
 
 # view post
@@ -123,7 +123,7 @@ def delete_post(request, post_uuid):
 
 @login_required
 def post_card(
-    request, post_uuid: str
+    request, username, post_uuid: str
 ):  #!!!POST NOTE: Must be updated with new content handling
     """renders a single card
 
@@ -162,7 +162,7 @@ def post_card(
 
 
 @login_required
-def post_detail(request, post_uuid: str):
+def post_detail(request, username,  post_uuid: str):
     post = get_object_or_404(Post, uuid=post_uuid)
     if has_access(request=request, post_uuid=post_uuid):
         user_has_liked = False

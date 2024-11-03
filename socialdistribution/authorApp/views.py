@@ -25,7 +25,7 @@ from postApp.models import Post
 # sign up
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect("node_link:home")
+        return redirect("node_link:home", username=request.user.username)
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
@@ -55,7 +55,7 @@ def signup_view(request):
             messages.success(
                 request, f"Welcome {user.username}, your account has been created."
             )
-            return redirect("node_link:home")
+            return redirect("node_link:home", request.user.username)
         else:
             messages.error(request, "Please correct the errors below.")
     else:
@@ -65,13 +65,13 @@ def signup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("node_link:home")
+        return redirect("node_link:home", username=form.get_user().username)
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             auth_login(request, form.get_user())
             messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("node_link:home")
+            return redirect("node_link:home", username=form.get_user().username)
         else:
             messages.error(request, "Invalid username or password.")
     else:
@@ -109,7 +109,7 @@ def profile_display(request, author_un):
             "author": author,
         }
         return render(request, "user_profile.html", context)
-    return redirect("node_link:home")
+    return redirect("node_link:home", request.user.username)
 
 
 @login_required

@@ -17,7 +17,7 @@ from rest_framework.decorators import action
 
 
 @login_required
-def home(request):
+def home(request, username):
 
     if request.method == "GET":
         template_name = "home.html"

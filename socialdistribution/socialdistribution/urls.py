@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path("", include("node_link.urls")),  # Root URL directed to node_link app
+    path("node1/", include("node_link.urls")),  # Root URL directed to node_link app
     path("authorApp/", include("authorApp.urls", namespace="authorApp")),  # URL for authorApp
     path("postApp/", include("postApp.urls")),  # URL for postApp
     path("admin/", admin.site.urls),  # Admin panel URL
