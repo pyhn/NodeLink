@@ -91,10 +91,22 @@ def profile_display(request, author_un):
         author = get_object_or_404(AuthorProfile, user__username=author_un)
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
         num_following = Follower.objects.filter(actor=author).count()
-        num_friends = Friends.objects.filter(
-            Q(user1=author, status=True) | Q(user2=author, status=True)
-        ).count()
+        num_friends = Friends.objects.filter(Q(user1=author) | Q(user2=author)).count()
         num_followers = Follower.objects.filter(object=author).count()
+        followable = True
+
+        if Follower.objects.filter(
+            object=author, actor=request.user.author_profile
+        ).exists():
+            if (
+                Follower.objects.filter(
+                    object=author, actor=request.user.author_profile
+                )
+                .first()
+                .status
+                != "d"
+            ):
+                followable = False
 
         filtered_ids = []
         for a in all_ids:
@@ -107,29 +119,10 @@ def profile_display(request, author_un):
             "num_friends": num_friends,
             "num_followers": num_followers,
             "author": author,
+            "followable": followable,
         }
         return render(request, "user_profile.html", context)
     return redirect("node_link:home")
-
-
-@login_required
-def approve_follow_request(request, follow_request_id):
-    follow_request = get_object_or_404(
-        Follower, id=follow_request_id, user2=request.user.author_profile
-    )
-    follow_request.status = "approved"
-    follow_request.save()
-    return redirect("node_link:notifications")
-
-
-@login_required
-def deny_follow_request(request, follow_request_id):
-    follow_request = get_object_or_404(
-        Follower, id=follow_request_id, user2=request.user.author_profile
-    )
-    follow_request.status = "denied"
-    follow_request.save()
-    return redirect("node_link:notifications")
 
 
 @login_required
@@ -140,68 +133,57 @@ def friends_page(request):
     and those who are your friends.
     """
     current_author = request.user.author_profile
-
-    # Exclude the current user from the list
-    authors = AuthorProfile.objects.exclude(user=request.user).select_related("user")
-
     # Get a list of author IDs that the current user is already following (status='A')
-    following_ids = Follower.objects.filter(
-        user1=current_author, status="A"
-    ).values_list("user2_id", flat=True)
+    following = [
+        a.object
+        for a in list(Follower.objects.filter(actor=current_author, status="a"))
+    ]
 
     # Get a list of author IDs that the current user has pending follow requests with (status='P')
-    pending_request_ids = Follower.objects.filter(
-        user1=current_author, status="P"
-    ).values_list("user2_id", flat=True)
+    pending_request = [
+        a.object
+        for a in list(Follower.objects.filter(actor=current_author, status="p"))
+    ]
 
     # Get a list of author IDs that have denied follow requests (status='D')
-    denied_request_ids = Follower.objects.filter(
-        user1=current_author, status="D"
-    ).values_list("user2_id", flat=True)
+    denied_request = [
+        a.object
+        for a in list(Follower.objects.filter(actor=current_author, status="d"))
+    ]
+
+    # Get a list of author IDs that have requested to follow
+    requested = [
+        (a.actor, a.id)
+        for a in list(Follower.objects.filter(object=current_author, status="p"))
+    ]
 
     # Get a list of friend IDs
-    friend_ids = Friends.objects.filter(
-        Q(user1=current_author) | Q(user2=current_author)
-    ).values_list("user1_id", "user2_id")
+    friend = [
+        a.user2 if a.user1 == current_author else a.user1
+        for a in Friends.objects.filter(
+            Q(user1=current_author) | Q(user2=current_author)
+        )
+    ]
 
-    # Flatten the list of tuples and remove current_author's ID
-    flat_friend_ids = set()
-    for pair in friend_ids:
-        flat_friend_ids.update(pair)
-    flat_friend_ids.discard(current_author.id)
+    exclude_id = [a.id for a in (friend + following + pending_request)]
+    following = [a for a in following if a not in friend]
 
     # Authors the user can follow (not already following, no pending requests, and not already friends)
-    can_follow_authors = (
-        authors.exclude(id__in=following_ids)
-        .exclude(id__in=pending_request_ids)
-        .exclude(id__in=flat_friend_ids)
-    )
-
-    # Authors the user is already following (including friends)
-    already_following_authors = authors.filter(id__in=following_ids)
-    # Removed .exclude(id__in=flat_friend_ids)
-
-    # Authors with denied follow requests (allow resending follow requests)
-    denied_follow_authors = authors.filter(id__in=denied_request_ids).exclude(
-        id__in=flat_friend_ids
-    )
-
-    # Friends
-    friends = AuthorProfile.objects.filter(id__in=flat_friend_ids).select_related(
-        "user"
-    )
+    can_follow_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
 
     context = {
         "can_follow_authors": can_follow_authors,
-        "already_following_authors": already_following_authors,
-        "denied_follow_authors": denied_follow_authors,
-        "friends": friends,
+        "pending_authors": pending_request,
+        "requested_authors": requested,
+        "already_following_authors": following,
+        "denied_follow_authors": denied_request,
+        "friends": friend,
     }
     return render(request, "friends_page.html", context)
 
 
 @login_required
-def follow_author_pyhn(request, author_id):
+def follow_author(request, author_id):
     """
     Handles sending and resending follow requests, as well as unfollowing authors.
     If the user unfollows an author who is also a friend, the friendship is removed.
@@ -209,21 +191,23 @@ def follow_author_pyhn(request, author_id):
     if request.method == "POST":
         current_author = request.user.author_profile
 
-        if current_author.id == author_id:
+        if (
+            current_author.id == author_id
+        ):  #!!! PART 3 NOTE: the ID is not longer unique for multiple nodes
             messages.warning(request, "You cannot follow or unfollow yourself.")
-            return redirect("friends_page")
+            return redirect("authorApp:friends_page")  #!!!34 NOTE: go to previose page
 
         target_author = get_object_or_404(AuthorProfile, id=author_id)
 
         # Check if a follow relationship or request already exists
         existing_relation = Follower.objects.filter(
-            user1=current_author, user2=target_author
+            actor=current_author, object=target_author
         ).first()
 
         if existing_relation:
-            if existing_relation.status == "P":
+            if existing_relation.status == "p":
                 messages.info(request, "A follow request is already pending.")
-            elif existing_relation.status == "A":
+            elif existing_relation.status == "a":
                 # Unfollow the author
                 existing_relation.delete()
 
@@ -252,26 +236,26 @@ def follow_author_pyhn(request, author_id):
                 # if reciprocal_relation:
                 #     reciprocal_relation.delete()
 
-            elif existing_relation.status == "D":
+            elif existing_relation.status == "d":
                 # Resend a follow request
-                existing_relation.status = "P"
+                existing_relation.status = "p"
                 existing_relation.created_at = datetime.now()
                 existing_relation.save()
                 messages.success(request, "Follow request has been re-sent.")
         else:
             # Create a new follow request
             Follower.objects.create(
-                user1=current_author, user2=target_author, created_by=current_author
+                actor=current_author, object=target_author, created_by=current_author
             )
             messages.success(request, "Follow request sent successfully.")
 
-        return redirect("friends_page")
+        return redirect("authorApp:friends_page")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
 @login_required
-def accept_follow_request_pyhn(request, request_id):
+def accept_follow_request(request, request_id):
     """
     Accepts a pending follow request.
     If mutual following is detected, establishes a friendship.
@@ -279,23 +263,23 @@ def accept_follow_request_pyhn(request, request_id):
     if request.method == "POST":
         current_author = request.user.author_profile
         follow_request = get_object_or_404(
-            Follower, id=request_id, user2=current_author, status="P"
+            Follower, id=request_id, object=current_author, status="p"
         )
 
         # Accept the follow request
-        follow_request.status = "A"
+        follow_request.status = "a"
         follow_request.updated_at = datetime.now()
         follow_request.updated_by = current_author
         follow_request.save()
 
         messages.success(
             request,
-            f"You have accepted the follow request from {follow_request.user1.user.username}.",
+            f"You have accepted the follow request from {follow_request.actor.user.username}.",
         )
 
         # Check for mutual following
         mutual_follow = Follower.objects.filter(
-            user1=current_author, user2=follow_request.user1, status="A"
+            actor=current_author, object=follow_request.actor, status="a"
         ).exists()
 
         if mutual_follow:
@@ -303,9 +287,9 @@ def accept_follow_request_pyhn(request, request_id):
             try:
                 # Ensure consistent ordering by user ID
                 user1, user2 = (
-                    (current_author, follow_request.user1)
-                    if current_author.id < follow_request.user1.id
-                    else (follow_request.user1, current_author)
+                    (current_author, follow_request.actor)
+                    if current_author.id < follow_request.actor.id
+                    else (follow_request.actor, current_author)
                 )
 
                 # Create a single Friends instance
@@ -316,36 +300,36 @@ def accept_follow_request_pyhn(request, request_id):
                 )
                 messages.success(
                     request,
-                    f"You are now friends with {follow_request.user1.user.username}.",
+                    f"You are now friends with {follow_request.actor.user.username}.",
                 )
             except IntegrityError:
                 # Friendship already exists
                 messages.info(
                     request,
-                    f"You are already friends with {follow_request.user1.user.username}.",
+                    f"You are already friends with {follow_request.actor.user.username}.",
                 )
-        return redirect("notifications")
+        return redirect("node_link:notifications")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
 @login_required
-def deny_follow_request_pyhn(request, request_id):
+def deny_follow_request(request, request_id):
     """
     Denies a pending follow request.
     """
     if request.method == "POST":
         current_author = request.user.author_profile
         follow_request = get_object_or_404(
-            Follower, id=request_id, user2=current_author, status="P"
+            Follower, id=request_id, object=current_author, status="p"
         )
 
-        follow_request.status = "D"
+        follow_request.status = "d"
         follow_request.updated_at = datetime.now()
         follow_request.updated_by = current_author
         follow_request.save()
 
-        return redirect("notifications")
+        return redirect("node_link:notifications")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
@@ -374,6 +358,6 @@ def unfriend(request, friend_id):
         else:
             messages.info(request, "Friendship does not exist.")
 
-        return redirect("friends_page")
+        return redirect("authorApp:friends_page")
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")

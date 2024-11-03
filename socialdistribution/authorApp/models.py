@@ -96,7 +96,7 @@ class Follower(MixinApp):
         ("a", "Accepted"),
         ("d", "Denied"),
     ]
-    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default="P")
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default="p")
     # API NOTE: Summary might be best done in the serializer bc its not used anywhere else and the data is readily available
     #!!!API NOTE, !!!FRIENDS NOTE there is no friends API, so we can check if (actor = 1, object = 2) and (actor = 2, object = 1) then create a Friend object after doing a API request
     # 1. user1(actor local) sends Follow Request to user2(object remote)

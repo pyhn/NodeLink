@@ -19,11 +19,11 @@
                     {{ notification.message }}
                 {% endif %}
                 {% if notification.notification_type == "pending_follow_request" %}
-                    <form method="post" action="{% url 'accept_follow_request' notification.related_object_id %}" style="display:inline;">
+                    <form method="post" action="{% url 'authorApp:accept_follow_request' notification.related_object_id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success btn-sm">Approve</button>
                     </form>
-                    <form method="post" action="{% url 'deny_follow_request' notification.related_object_id %}" style="display:inline;">
+                    <form method="post" action="{% url 'authorApp:deny_follow_request' notification.related_object_id %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger btn-sm">Deny</button>
                     </form>

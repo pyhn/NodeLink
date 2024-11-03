@@ -20,9 +20,12 @@
                 <h2>{{num_followers}} followers</h2>
                 <h2>{{num_following}} following</h2>
             </span>
-            {% if request.user.author_profile != author.user%}
+            {% if user.author_profile != author and followable%}
             <span id="user_fri/fol">
-                <!--!!!add friends/follow button-->
+                 <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary btn-sm">Follow</button>
+                                    </form>
             </span>
             {%endif%}
 

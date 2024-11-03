@@ -31,17 +31,17 @@ def notify_followers_on_new_post(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Follower)
 def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
     print("follow request signal triggered")
-    if created and instance.status == "P":
+    if created and instance.status == "p":
         print("Follow request created. notifying the followee")
-        author = instance.user1
-        target_author = instance.user2
+        author = instance.actor
+        target_author = instance.object
         message = f"{author.user.username} wants to follow you."
         Notification.objects.create(
             user=target_author,  # Use target_author (AuthorProfile)
             message=message,
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            author_picture_url=author.user.profile_image,
+            # author_picture_url=author.user.profile_image,
         )
         print("notification created")
 
@@ -52,18 +52,18 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
         Notification.objects.filter(
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            user=instance.user2,
+            user=instance.object,
         ).update(
-            message=f"{instance.user1.user.username} is now following you.",
+            message=f"{instance.actor.user.username} is now following you.",
             notification_type="accepted_follow_request",
         )
     elif instance.status == "d":
         Notification.objects.filter(
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            user=instance.user2,
+            user=instance.object,
         ).update(
-            message=f"You have denied the follow request from {instance.user1.user.username}.",
+            message=f"You have denied the follow request from {instance.actor.user.username}.",
             notification_type="denied_follow_request",
         )
 
@@ -102,7 +102,7 @@ def delete_notifications_on_follower_delete(sender, instance, **kwargs):
     Notification.objects.filter(
         notification_type="follow_request",
         related_object_id=str(instance.id),
-        user=instance.user2,
+        user=instance.object,
     ).delete()
 
 
