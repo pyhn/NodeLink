@@ -200,8 +200,8 @@ def friends_page(request):
     ]
 
     exclude_id = [a.id for a in (friend + following + pending_request)]
-    following = [a for a in following if a not in friend]
-    followers = [a for a in followers if a not in friend]
+    following = list(following)
+    followers = list(followers)
 
     # Authors the user can follow (not already following, no pending requests, and not already friends)
     can_follow_authors = AuthorProfile.objects.exclude(id__in=exclude_id)

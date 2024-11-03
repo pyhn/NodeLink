@@ -93,7 +93,6 @@
                             <tr>
                                 <th scope="col" style="width: 50px;">Image</th>
                                 <th scope="col">Username</th>
-                                <th scope="col" style="width: 90px;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -110,12 +109,6 @@
                                     {% endif %}
                                 </td>
                                 <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
-                                <td class="text-center">
-                                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm">Follow</button>
-                                    </form>
-                                </td>
                             </tr>
                             {% empty %}
                             <tr>

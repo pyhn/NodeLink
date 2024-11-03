@@ -32,7 +32,7 @@ def home(request):
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(
-            Follower.objects.filter(Q(actor=user, status=True)).values_list(
+            Follower.objects.filter(Q(actor=user, status="a")).values_list(
                 "object", flat=True
             )
         )
@@ -49,6 +49,7 @@ def home(request):
                     visibility="u",  # all unlisted
                     author_id__in=following,
                 )
+                | Q(author_id=user.id)
             )
             .distinct()
             .order_by("-updated_at")
