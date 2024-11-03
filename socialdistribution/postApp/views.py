@@ -120,23 +120,12 @@ def like_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
-    existing_like = Like.objects.filter(post=post, author=author)
-    if existing_like.exists():
-        existing_like.delete()
-        # Delete the corresponding notification
-        Notification.objects.filter(
-            user=post.author,
-            notification_type="like",
-            related_object_id=str(post.id),
-            message=f"{author.user.username} liked your post.",
-        ).delete()
-    else:
-        Like.objects.create(
-            post=post,
-            author=author,  # Include the author field
-            created_by=author,
-            updated_by=author,
-        )
+    Like.objects.create(
+        post=post,
+        author=author,  # Include the author field
+        created_by=author,
+        updated_by=author,
+    )
 
     return redirect("postApp:post_detail", post_uuid)
 
