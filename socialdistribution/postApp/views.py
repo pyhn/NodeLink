@@ -11,7 +11,6 @@ from rest_framework.permissions import IsAuthenticated
 
 
 # Third-party imports
-from rest_framework import generics, permissions
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
@@ -23,7 +22,6 @@ from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
 from postApp.models import Comment, Like, Post
-from .serializers import PostSerializer
 
 # Package imports
 import commonmark
@@ -195,44 +193,46 @@ def post_detail(request, post_uuid: str):
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
-
 class PostViewSet(viewsets.ModelViewSet):
     """API endpoint for managing posts"""
+
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
-    lookup_field = 'uuid'
+    lookup_field = "uuid"
 
     def get_queryset(self):
-        author_serial = self.kwargs.get('author_serial')
+        author_serial = self.kwargs.get("author_serial")
         if author_serial:
-            return Post.objects.filter(author__user__username=author_serial)
+            return Post.objects.filter(author__user__username=author_serial).order_by(
+                "-created_at"
+            )
         return Post.objects.all()
-
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """API endpoint for managing comments"""
+
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        author_serial = self.kwargs.get('author_serial')
+        author_serial = self.kwargs.get("author_serial")
         if author_serial:
             return Comment.objects.filter(author__user__username=author_serial)
         return Comment.objects.all()
 
 
-
 class LikeViewSet(viewsets.ModelViewSet):
     """API endpoint for managing likes"""
+
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        author_serial = self.kwargs.get('author_serial')
+        author_serial = self.kwargs.get("author_serial")
         if author_serial:
             return Like.objects.filter(author__user__username=author_serial)
         return Like.objects.all()
