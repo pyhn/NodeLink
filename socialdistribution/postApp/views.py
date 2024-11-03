@@ -1,34 +1,24 @@
 # Django imports
-import uuid
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
 
 
-# Third-party imports
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-from rest_framework.decorators import action
-from rest_framework.permissions import BasePermission
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 # Project imports
-from authorApp.models import AuthorProfile, Friends
+from authorApp.models import AuthorProfile
 from node_link.models import Notification
-from node_link.utils.common import has_access
+from node_link.utils.common import has_access, is_approved
 from postApp.models import Comment, Like, Post
 
 # Package imports
 import commonmark
 
 
-@login_required
+@is_approved
 def create_post(request):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
@@ -58,7 +48,7 @@ def create_post(request):
     return render(request, "create_post.html")
 
 
-@login_required
+@is_approved
 def create_comment(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
@@ -82,7 +72,7 @@ def create_comment(request, post_uuid):
     return render(request, "create_comment_card.html", {"post": post})
 
 
-@login_required
+@is_approved
 def like_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
@@ -108,7 +98,7 @@ def like_post(request, post_uuid):
     return redirect("postApp:post_detail", post_uuid)
 
 
-@login_required
+@is_approved
 def delete_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
@@ -121,7 +111,7 @@ def delete_post(request, post_uuid):
 # view post
 
 
-@login_required
+@is_approved
 def post_card(
     request, post_uuid: str
 ):  #!!!POST NOTE: Must be updated with new content handling
@@ -161,7 +151,7 @@ def post_card(
     return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
-@login_required
+@is_approved
 def post_detail(request, post_uuid: str):
     post = get_object_or_404(Post, uuid=post_uuid)
     if has_access(request=request, post_uuid=post_uuid):

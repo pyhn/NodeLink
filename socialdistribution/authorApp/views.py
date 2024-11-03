@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib import messages
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from rest_framework.response import Response
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 
 
@@ -18,13 +18,13 @@ from .models import (
 )
 from node_link.models import Node
 from .forms import SignUpForm, LoginForm
-from node_link.utils.common import has_access
+from node_link.utils.common import has_access, is_approved
 from postApp.models import Post
 
 # Create your views here.
 # sign up
 def signup_view(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home")
     if request.method == "POST":
         form = SignUpForm(request.POST)
@@ -64,7 +64,7 @@ def signup_view(request):
 
 
 def login_view(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home")
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
@@ -85,7 +85,7 @@ def logout_view(request):
     return redirect("authorApp:login")
 
 
-@login_required
+@is_approved
 def profile_display(request, author_un):
     if request.method == "GET":
         author = get_object_or_404(AuthorProfile, user__username=author_un)
@@ -112,7 +112,7 @@ def profile_display(request, author_un):
     return redirect("node_link:home")
 
 
-@login_required
+@is_approved
 def approve_follow_request(request, follow_request_id):
     follow_request = get_object_or_404(
         Follower, id=follow_request_id, user2=request.user.author_profile
@@ -122,7 +122,7 @@ def approve_follow_request(request, follow_request_id):
     return redirect("node_link:notifications")
 
 
-@login_required
+@is_approved
 def deny_follow_request(request, follow_request_id):
     follow_request = get_object_or_404(
         Follower, id=follow_request_id, user2=request.user.author_profile
@@ -147,7 +147,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     # Custom action to list followers of an author
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
         author = get_object_or_404(AuthorProfile, user__username=pk)
         followers = Follower.objects.filter(object=author)
@@ -155,7 +155,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     # Custom action to list friends of an author
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def friends(self, request, pk=None):
         author = get_object_or_404(AuthorProfile, user__username=pk)
         friends = Friends.objects.filter(

@@ -24,7 +24,7 @@ class Command(BaseCommand):
         logger.info("Creating fake Admin...")
 
         admin_user = User.objects.create(
-            username=fake.user_name(),
+            username="admin",
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             email=fake.email(),
@@ -149,3 +149,6 @@ class Command(BaseCommand):
 
         logger.info("Fake data generation completed successfully.")
         logger.info(f"Sample Username: {authors[1]}")
+        logger.info("Sample Password: password123")
+        logger.info(f"Sample Username: {admin_user.username}")
+        logger.info("Sample Password: adminpassword123")
