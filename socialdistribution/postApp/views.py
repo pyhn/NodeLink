@@ -5,13 +5,11 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from rest_framework import viewsets, permissions
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
-from rest_framework.permissions import IsAuthenticated
-
 
 # Third-party imports
-from rest_framework import generics, permissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, permissions
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
@@ -23,7 +21,6 @@ from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
 from postApp.models import Comment, Like, Post
-from .serializers import PostSerializer
 
 # Package imports
 import commonmark
@@ -195,26 +192,26 @@ def post_detail(request, post_uuid: str):
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
-
 class PostViewSet(viewsets.ModelViewSet):
     """API endpoint for managing posts"""
+
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
-    lookup_field = 'uuid'
-
+    lookup_field = "uuid"
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     """API endpoint for managing comments"""
+
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 
 
-
 class LikeViewSet(viewsets.ModelViewSet):
     """API endpoint for managing likes"""
+
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
