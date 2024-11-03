@@ -203,6 +203,12 @@ class PostViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     lookup_field = 'uuid'
 
+    def get_queryset(self):
+        author_serial = self.kwargs.get('author_serial')
+        if author_serial:
+            return Post.objects.filter(author__user__username=author_serial)
+        return Post.objects.all()
+
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -211,6 +217,12 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        author_serial = self.kwargs.get('author_serial')
+        if author_serial:
+            return Comment.objects.filter(author__user__username=author_serial)
+        return Comment.objects.all()
+
 
 
 class LikeViewSet(viewsets.ModelViewSet):
@@ -218,3 +230,9 @@ class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        author_serial = self.kwargs.get('author_serial')
+        if author_serial:
+            return Like.objects.filter(author__user__username=author_serial)
+        return Like.objects.all()

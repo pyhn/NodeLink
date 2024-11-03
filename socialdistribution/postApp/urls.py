@@ -4,11 +4,8 @@ from . import views
 
 app_name = "postApp"
 
-# Initialize the router and register the ViewSets
+# Initialize the router without registering the viewsets directly
 router = DefaultRouter()
-router.register(r'posts', views.PostViewSet, basename='post')
-router.register(r'comments', views.CommentViewSet, basename='comment')
-router.register(r'likes', views.LikeViewSet, basename='like')
 
 # Define urlpatterns for both API and regular views
 urlpatterns = [
@@ -20,6 +17,25 @@ urlpatterns = [
     path("post_card/<uuid:post_uuid>/", views.post_card, name="one_post"),
     path("delete_post/<uuid:post_uuid>/", views.delete_post, name="delete_post"),
 
-    # Include router URLs for ViewSets
-    path("api/", include(router.urls)),  # This provides paths for posts, comments, and likes ViewSets
+
+    path("api/authors/<str:author_serial>/posts/", views.PostViewSet.as_view({'get': 'list', 'post': 'create'}),
+         name="author-posts"),
+    path("api/authors/<str:author_serial>/posts/<uuid:uuid>/", views.PostViewSet.as_view(
+        {'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+         name="author-post-detail"),
+
+    path("api/authors/<str:author_serial>/comments/", views.CommentViewSet.as_view({'get': 'list', 'post': 'create'}),
+         name="author-comments"),
+    path("api/authors/<str:author_serial>/comments/<uuid:uuid>/", views.CommentViewSet.as_view(
+        {'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+         name="author-comment-detail"),
+
+    path("api/authors/<str:author_serial>/likes/", views.LikeViewSet.as_view({'get': 'list', 'post': 'create'}),
+         name="author-likes"),
+    path("api/authors/<str:author_serial>/likes/<uuid:uuid>/", views.LikeViewSet.as_view(
+        {'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}),
+         name="author-like-detail"),
+
+    # Include router URLs for other ViewSets if needed
+    path("api/", include(router.urls)),
 ]
