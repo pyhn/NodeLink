@@ -10,7 +10,6 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 
 
-
 # Project Imports
 from .models import (
     Friends,
