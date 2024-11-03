@@ -1,14 +1,28 @@
 # Django imports
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponseForbidden
-from django.contrib.auth.decorators import login_required
+import uuid
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+from django.http import Http404, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from rest_framework import viewsets, permissions
+from .serializers import PostSerializer, CommentSerializer, LikeSerializer
+from rest_framework.permissions import IsAuthenticated
+
+
+# Third-party imports
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.decorators import action
+from rest_framework.permissions import BasePermission
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 # Project imports
+from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
-from authorApp.models import AuthorProfile
-from postApp.models import Post, Comment, Like  # ,CommentLike !!!POST NOTE
+from postApp.models import Comment, Like, Post
 
 # Package imports
 import commonmark
@@ -178,3 +192,67 @@ def post_detail(request, post_uuid: str):
         )
     else:
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
+
+
+class PostViewSet(viewsets.ModelViewSet):
+    """API endpoint for managing posts"""
+
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "uuid"
+
+    def get_queryset(self):
+        author_serial = self.kwargs.get("author_serial")
+        if author_serial:
+            return Post.objects.filter(author__user__username=author_serial).order_by(
+                "-created_at"
+            )
+        return Post.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user.author_profile,
+            node=self.request.user.author_profile.local_node,
+            created_by=self.request.user.author_profile,
+            updated_by=self.request.user.author_profile,
+        )
+
+
+class LocalPostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Post.objects.filter(
+            visibility__in=["p", "u"], uuid=self.kwargs.get("uuid")
+        )
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """API endpoint for managing comments"""
+
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        author_serial = self.kwargs.get("author_serial")
+        if author_serial:
+            return Comment.objects.filter(author__user__username=author_serial)
+        return Comment.objects.all()
+
+
+class LikeViewSet(viewsets.ModelViewSet):
+    """API endpoint for managing likes"""
+
+    queryset = Like.objects.all()
+    serializer_class = LikeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        author_serial = self.kwargs.get("author_serial")
+        if author_serial:
+            return Like.objects.filter(author__user__username=author_serial)
+        return Like.objects.all()
