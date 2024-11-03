@@ -7,55 +7,9 @@
 
 <!-- All Three Tables Side by Side -->
 <div class="row">
-    <!-- Authors You Can Follow
-    <div class="col-md-3 mb-2">
-        <div class="card h-100">
-            <div class="card-body p-2">
-                <h2 class="card-title text-center">Follow Us!</h2>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" style="width: 50px;">Image</th>
-                                <th scope="col">Username</th>
-                                <th scope="col" style="width: 90px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for author in can_follow_authors %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if author.user.profile_image %}
-                                    <img src="{{ author.user.profile_image }}"
-                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td>{{ author.user.username }}</td>
-                                <td class="text-center">
-                                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-primary btn-sm">Follow</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">No authors available to follow.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>-->
 
     <!-- REQUESTS-->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body p-2">
                 <h2 class="card-title text-center">Requests</h2>
@@ -128,8 +82,54 @@
             </div>
         </div>
     </div>
+    <!-- Authors Following You -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body p-2">
+                <h2 class="card-title text-center">Followers</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" style="width: 50px;">Image</th>
+                                <th scope="col">Username</th>
+                                <th scope="col" style="width: 90px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for author in followers %}
+                            <tr>
+                                <td class="text-center">
+                                    {% if author.user.profile_image %}
+                                    <img src="{{ author.user.profile_image }}"
+                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                        style="width:40px; height:40px;">
+                                    {% else %}
+                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
+                                        class="rounded-circle" style="width:40px; height:40px;">
+                                    {% endif %}
+                                </td>
+                                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
+                                <td class="text-center">
+                                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm">Follow</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">You do not have any followers yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Authors You Are Following -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body p-2">
                 <h2 class="card-title text-center">Following</h2>
@@ -155,7 +155,7 @@
                                         class="rounded-circle" style="width:40px; height:40px;">
                                     {% endif %}
                                 </td>
-                                <td>{{ author.user.username }}</td>
+                                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
                                 <td class="text-center">
                                     <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
                                         {% csrf_token %}
@@ -176,7 +176,7 @@
     </div>
 
     <!-- Your Friends -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-3 mb-4">
         <div class="card h-100">
             <div class="card-body p-2">
                 <h2 class="card-title text-center">Friends</h2>
@@ -202,7 +202,7 @@
                                         class="rounded-circle" style="width:40px; height:40px;">
                                     {% endif %}
                                 </td>
-                                <td>{{ friend.user.username }}</td>
+                                <td><a  href="{% url 'authorApp:profile_display' friend.user.username%}">{{ friend.user.username }}</a></td>
                                 <td class="text-center">
                                     <form action="{% url 'authorApp:unfriend' friend.id %}" method="post">
                                         {% csrf_token %}

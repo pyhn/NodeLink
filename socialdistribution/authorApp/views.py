@@ -164,6 +164,10 @@ def friends_page(request):
         a.object
         for a in list(Follower.objects.filter(actor=current_author, status="a"))
     ]
+    followers = [
+        a.actor
+        for a in list(Follower.objects.filter(object=current_author, status="a"))
+    ]
 
     # Get a list of author IDs that the current user has pending follow requests with (status='P')
     pending_request = [
@@ -193,6 +197,7 @@ def friends_page(request):
 
     exclude_id = [a.id for a in (friend + following + pending_request)]
     following = [a for a in following if a not in friend]
+    followers = [a for a in followers if a not in friend]
 
     # Authors the user can follow (not already following, no pending requests, and not already friends)
     can_follow_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
@@ -204,6 +209,7 @@ def friends_page(request):
         "already_following_authors": following,
         "denied_follow_authors": denied_request,
         "friends": friend,
+        "followers": followers,
     }
     return render(request, "friends_page.html", context)
 
@@ -305,13 +311,18 @@ def unfriend(request, friend_id):
             user1, user2 = friend, current_author
 
         # Fetch the Friends instance
-        friendships = Friends.objects.filter(
+        friendship = Friends.objects.filter(
             Q(user1=user1, user2=user2) | Q(user1=user2, user2=user1)
-        ).all()
+        ).first()
+        following = Follower.objects.filter(
+            actor=current_author, object=friend_id
+        ).first()
 
-        if friendships:
-            for f in friendships:
-                f.delete()
+        if friendship:
+
+            following.delete()
+
+            friendship.delete()
             messages.success(request, f"You have unfriended {friend.user.username}.")
         else:
             messages.info(request, "Friendship does not exist.")
