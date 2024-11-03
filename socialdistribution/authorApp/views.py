@@ -4,6 +4,7 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
+from .forms import EditProfileForm
 
 # Project Imports
 from .models import (
@@ -125,3 +126,14 @@ def deny_follow_request(request, follow_request_id):
     follow_request.status = "denied"
     follow_request.save()
     return redirect("node_link:notifications")
+
+@login_required
+def edit_profile(request):
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect('authorApp:profile_display', author_un=request.user.username)
+    else:
+        form = EditProfileForm(instance=request.user)
+    return render(request, 'authorApp/edit_profile.html', {'form': form})

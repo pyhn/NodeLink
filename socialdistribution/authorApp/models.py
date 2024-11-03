@@ -17,7 +17,7 @@ class User(AbstractUser):
     )
 
     display_name = models.CharField(max_length=50, null=False, blank=False)
-
+    github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
 
     def __str__(self):
