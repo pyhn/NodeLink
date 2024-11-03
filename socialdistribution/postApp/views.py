@@ -1,4 +1,5 @@
 # Django imports
+import uuid
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -208,6 +209,25 @@ class PostViewSet(viewsets.ModelViewSet):
                 "-created_at"
             )
         return Post.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user.author_profile,
+            node=self.request.user.author_profile.local_node,
+            created_by=self.request.user.author_profile,
+            updated_by=self.request.user.author_profile,
+        )
+
+
+class LocalPostViewSet(viewsets.ModelViewSet):
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Post.objects.filter(
+            visibility__in=["p", "u"], uuid=self.kwargs.get("uuid")
+        )
 
 
 class CommentViewSet(viewsets.ModelViewSet):

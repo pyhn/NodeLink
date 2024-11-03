@@ -33,7 +33,7 @@ class Post(MixinApp):
     author = models.ForeignKey(
         "authorApp.AuthorProfile", on_delete=models.PROTECT, related_name="posts"
     )
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=True)
     contentType = models.CharField(
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
