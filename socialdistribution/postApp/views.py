@@ -1,14 +1,16 @@
 # Django imports
 import uuid
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets, permissions
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
+from django.http import JsonResponse
 
 
 # Third-party imports
@@ -192,6 +194,55 @@ def post_detail(request, post_uuid: str):
         )
     else:
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
+
+
+# renders the form for sharing the post to other authors
+@login_required
+def render_share_form(request, author_serial, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+
+    if post.visibility != "p":
+        return HttpResponseForbidden("You can only share public posts.")
+
+    authors = AuthorProfile.objects.exclude(user=request.user)
+    context = {
+        "post": post,
+        "authors": authors,
+    }
+    return render(request, "share_post_form.html", context)
+
+
+@login_required
+def handle_share_post(request, author_serial, post_uuid):
+    # POST Request
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+
+    # ensure that the post is actually public
+    if post.visibility != "p":
+        return HttpResponseForbidden("You can only share public posts.")
+
+    recipient_ids = request.POST.getlist("recipients")
+    recipients = AuthorProfile.objects.filter(id__in=recipient_ids).exclude(
+        user=request.user
+    )
+
+    for recipient in recipients:
+        message = f"{request.user.username} shared a post with you."
+        link_url = reverse("postApp:post_detail", args=[post.uuid])
+        Notification.objects.create(
+            user=recipient,
+            message=message,
+            notification_type="shared_post",
+            related_object_id=str(post.id),
+            author_picture_url=request.user.author_profile.user.profileImage,
+            link_url=link_url,
+        )
+
+        # Response to close the modal
+        return JsonResponse({"success": True})
 
 
 class PostViewSet(viewsets.ModelViewSet):
