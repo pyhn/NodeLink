@@ -77,7 +77,7 @@ def submit_post(request):
 
                     # Convert image to base64
                     img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                    content = f"data:image/{detected_type};base64,{img_base64}"
+                    content = f"data:image/{actual_content_type};base64,{img_base64}"
 
                 except IOError as exc:
                     # The file is not a valid image
@@ -238,7 +238,7 @@ def submit_edit_post(request, post_uuid):
 
                 # Convert image to base64
                 img_base64 = base64.b64encode(img.read()).decode("utf-8")
-                content = f"data:image/{detected_type};base64,{img_base64}"
+                content = f"data:image/{actual_content_type};base64,{img_base64}"
                 content_type = actual_content_type
 
             except (IOError, SyntaxError):
