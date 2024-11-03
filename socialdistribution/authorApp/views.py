@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from django.db import IntegrityError
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 
 # Project Imports
 from .models import (
@@ -88,25 +88,48 @@ def logout_view(request):
 @login_required
 def profile_display(request, author_un):
     if request.method == "GET":
+        current_user = request.user.author_profile
         author = get_object_or_404(AuthorProfile, user__username=author_un)
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
-        num_following = Follower.objects.filter(actor=author).count()
-        num_friends = Friends.objects.filter(Q(user1=author) | Q(user2=author)).count()
-        num_followers = Follower.objects.filter(object=author).count()
-        followable = True
 
-        if Follower.objects.filter(
-            object=author, actor=request.user.author_profile
-        ).exists():
-            if (
-                Follower.objects.filter(
-                    object=author, actor=request.user.author_profile
-                )
-                .first()
-                .status
-                != "d"
-            ):
-                followable = False
+        # Determine the button to display
+        is_friend = Friends.objects.filter(
+            Q(user1=current_user, user2=author) | Q(user1=author, user2=current_user)
+        ).exists()
+
+        follow_status = Follower.objects.filter(
+            actor=current_user, object=author
+        ).first()
+
+        requested_by_author = Follower.objects.filter(
+            actor=author, object=current_user, status="p"
+        ).exists()
+        ff_request = ""
+        if is_friend:
+            button_type = "unfriend"
+            ff_request = Friends.objects.filter(
+                Q(user1=current_user, user2=author)
+                | Q(user1=author, user2=current_user)
+            ).first()
+        elif follow_status and follow_status.status == "a" and requested_by_author:
+            button_type = "unfollow/accept_or_deny"
+            ff_request = Follower.objects.filter(
+                actor=author, object=current_user, status="p"
+            ).first()
+        elif follow_status and follow_status.status == "a":
+            button_type = "unfollow"
+            ff_request = follow_status
+        elif requested_by_author:
+            button_type = "accept_or_deny"
+            ff_request = Follower.objects.filter(
+                actor=author, object=current_user, status="p"
+            ).first()
+        elif follow_status and follow_status.status == "p":
+            button_type = "pending"
+            ff_request = follow_status
+
+        else:
+            button_type = "follow"
 
         filtered_ids = []
         for a in all_ids:
@@ -115,11 +138,14 @@ def profile_display(request, author_un):
 
         context = {
             "all_ids": filtered_ids,
-            "num_following": num_following,
-            "num_friends": num_friends,
-            "num_followers": num_followers,
             "author": author,
-            "followable": followable,
+            "button_type": button_type,
+            "ff_request": ff_request,
+            "num_following": Follower.objects.filter(actor=author).count(),
+            "num_friends": Friends.objects.filter(
+                Q(user1=author) | Q(user2=author)
+            ).count(),
+            "num_followers": Follower.objects.filter(object=author).count(),
         }
         return render(request, "user_profile.html", context)
     return redirect("node_link:home")
@@ -183,78 +209,6 @@ def friends_page(request):
 
 
 @login_required
-def follow_author(request, author_id):
-    """
-    Handles sending and resending follow requests, as well as unfollowing authors.
-    If the user unfollows an author who is also a friend, the friendship is removed.
-    """
-    if request.method == "POST":
-        current_author = request.user.author_profile
-
-        if (
-            current_author.id == author_id
-        ):  #!!! PART 3 NOTE: the ID is not longer unique for multiple nodes
-            messages.warning(request, "You cannot follow or unfollow yourself.")
-            return redirect("authorApp:friends_page")  #!!!34 NOTE: go to previose page
-
-        target_author = get_object_or_404(AuthorProfile, id=author_id)
-
-        # Check if a follow relationship or request already exists
-        existing_relation = Follower.objects.filter(
-            actor=current_author, object=target_author
-        ).first()
-
-        if existing_relation:
-            if existing_relation.status == "p":
-                messages.info(request, "A follow request is already pending.")
-            elif existing_relation.status == "a":
-                # Unfollow the author
-                existing_relation.delete()
-
-                # Remove friendship if it exists
-                friendship = Friends.objects.filter(
-                    Q(user1=current_author, user2=target_author)
-                    | Q(user1=target_author, user2=current_author)
-                ).first()
-
-                if friendship:
-                    friendship.delete()
-                    messages.success(
-                        request,
-                        f"You have unfollowed and unfriended {target_author.user.username}.",
-                    )
-                else:
-                    messages.success(
-                        request, f"You have unfollowed {target_author.user.username}."
-                    )
-
-                # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
-                # Uncomment the following lines if needed:
-                # reciprocal_relation = Follower.objects.filter(
-                #     user1=target_author, user2=current_author
-                # ).first()
-                # if reciprocal_relation:
-                #     reciprocal_relation.delete()
-
-            elif existing_relation.status == "d":
-                # Resend a follow request
-                existing_relation.status = "p"
-                existing_relation.created_at = datetime.now()
-                existing_relation.save()
-                messages.success(request, "Follow request has been re-sent.")
-        else:
-            # Create a new follow request
-            Follower.objects.create(
-                actor=current_author, object=target_author, created_by=current_author
-            )
-            messages.success(request, "Follow request sent successfully.")
-
-        return redirect("authorApp:friends_page")
-    else:
-        return HttpResponseNotAllowed(["POST"], "Invalid request method.")
-
-
-@login_required
 def accept_follow_request(request, request_id):
     """
     Accepts a pending follow request.
@@ -308,7 +262,8 @@ def accept_follow_request(request, request_id):
                     request,
                     f"You are already friends with {follow_request.actor.user.username}.",
                 )
-        return redirect("node_link:notifications")
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
@@ -329,7 +284,7 @@ def deny_follow_request(request, request_id):
         follow_request.updated_by = current_author
         follow_request.save()
 
-        return redirect("node_link:notifications")
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
@@ -350,14 +305,91 @@ def unfriend(request, friend_id):
             user1, user2 = friend, current_author
 
         # Fetch the Friends instance
-        friendship = Friends.objects.filter(user1=user1, user2=user2).first()
+        friendships = Friends.objects.filter(
+            Q(user1=user1, user2=user2) | Q(user1=user2, user2=user1)
+        ).all()
 
-        if friendship:
-            friendship.delete()
+        if friendships:
+            for f in friendships:
+                f.delete()
             messages.success(request, f"You have unfriended {friend.user.username}.")
         else:
             messages.info(request, "Friendship does not exist.")
 
-        return redirect("authorApp:friends_page")
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
+    else:
+        return HttpResponseNotAllowed(["POST"], "Invalid request method.")
+
+
+@login_required
+def follow_author(request, author_id):
+    """
+    Handles sending and resending follow requests, as well as unfollowing authors.
+    If the user unfollows an author who is also a friend, the friendship is removed.
+    """
+    if request.method == "POST":
+        current_author = request.user.author_profile
+
+        if (
+            current_author.id == author_id
+        ):  #!!! PART 3 NOTE: the ID is not longer unique for multiple nodes
+            messages.warning(request, "You cannot follow or unfollow yourself.")
+            return redirect("authorApp:friends_page")
+
+        target_author = get_object_or_404(AuthorProfile, id=author_id)
+
+        # Check if a follow relationship or request already exists
+        existing_relation = Follower.objects.filter(
+            actor=current_author, object=target_author
+        ).first()
+
+        if existing_relation:
+            if existing_relation.status == "p":
+                messages.info(request, "A follow request is already pending.")
+            elif existing_relation.status == "a":
+                # Unfollow the author
+                existing_relation.delete()
+
+                # Remove friendship if it exists
+                friendship = Friends.objects.filter(
+                    Q(user1=current_author, user2=target_author)
+                    | Q(user1=target_author, user2=current_author)
+                ).first()
+
+                if friendship:
+                    friendship.delete()
+                    messages.success(
+                        request,
+                        f"You have unfollowed and unfriended {target_author.user.username}.",
+                    )
+                else:
+                    messages.success(
+                        request, f"You have unfollowed {target_author.user.username}."
+                    )
+
+                # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
+                # Uncomment the following lines if needed:
+                # reciprocal_relation = Follower.objects.filter(
+                #     user1=target_author, user2=current_author
+                # ).first()
+                # if reciprocal_relation:
+                #     reciprocal_relation.delete()
+
+            elif existing_relation.status == "d":
+                # Resend a follow request
+                existing_relation.status = "p"
+                existing_relation.created_at = datetime.now()
+                existing_relation.save()
+                messages.success(request, "Follow request has been re-sent.")
+        else:
+            # Create a new follow request
+            Follower.objects.create(
+                actor=current_author, object=target_author, created_by=current_author
+            )
+            messages.success(request, "Follow request sent successfully.")
+
+        return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
+
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
