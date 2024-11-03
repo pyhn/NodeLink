@@ -1,10 +1,14 @@
-# Django Imports
-from django.urls import path
-
-# Project Imports
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-app_name = "authorApp"
+app_name = "authorApp"  # namspace
+
+# Initialize the router
+router = DefaultRouter()
+router.register(r'authors', views.AuthorProfileViewSet, basename='author')
+
+# Define other URLs
 urlpatterns = [
     path("signup/", views.signup_view, name="signup"),
     path("login/", views.login_view, name="login"),
@@ -13,3 +17,6 @@ urlpatterns = [
     path("edit-profile/", views.edit_profile, name="edit_profile"),
 
 ]
+
+# Include router URLs
+urlpatterns += router.urls
