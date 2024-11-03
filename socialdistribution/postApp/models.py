@@ -56,7 +56,7 @@ class Comment(MixinApp):
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     def __str__(self):
-        return f"Comment by {self.author.user.displayName} on {self.post.title}"
+        return f"Comment by {self.author.user.display_name} on {self.post.title}"
 
 
 class CommentLike(MixinApp):
@@ -75,7 +75,7 @@ class CommentLike(MixinApp):
         ]
 
     def __str__(self):
-        return f"{self.author.user.displayName} liked '{self.comment}'"
+        return f"{self.author.user.display_name} liked '{self.comment}'"
 
 
 class Like(MixinApp):

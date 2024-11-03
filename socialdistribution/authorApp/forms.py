@@ -25,6 +25,12 @@ class SignUpForm(UserCreationForm):
             attrs={"class": "form-control", "placeholder": "Last Name"}
         ),
     )
+    display_name = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(
+        attrs={"class": "form-control", "placeholder": "Display Name"}
+    ),
+    )
     description = forms.CharField(
         widget=forms.Textarea(
             attrs={"class": "form-control", "placeholder": "Description"}
@@ -38,6 +44,7 @@ class SignUpForm(UserCreationForm):
             "email",
             "first_name",
             "last_name",
+            "display_name",
             "description",
             "password1",
             "password2",

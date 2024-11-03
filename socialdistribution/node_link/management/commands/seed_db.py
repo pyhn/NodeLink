@@ -51,7 +51,7 @@ class Command(BaseCommand):
                 email=fake.email(),
                 password=make_password("password123"),
                 date_ob=fake.date(),  # Optional: set a random date of birth
-                displayName=fake.name(),
+                display_name=fake.name(),
             )
             author_profile = AuthorProfile.objects.create(
                 user=user,

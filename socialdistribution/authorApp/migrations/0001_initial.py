@@ -187,7 +187,7 @@ class Migration(migrations.Migration):
                         upload_to="profile_images/",
                     ),
                 ),
-                ("displayName", models.CharField(max_length=50)),
+                ("display_name", models.CharField(max_length=50)),
                 ("description", models.TextField(blank=True, null=True)),
                 (
                     "groups",
