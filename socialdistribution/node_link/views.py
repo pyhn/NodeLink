@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+
 # post edit/create methods
 
 
@@ -72,10 +73,11 @@ def notifications_view(request):
 
 class NodeViewSet(viewsets.ModelViewSet):
     """API endpoint for Node objects"""
+
     queryset = Node.objects.all()
     serializer_class = NodeSerializer
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
         operation_description="Retrieve a list of all nodes.",
         responses={
@@ -83,7 +85,7 @@ class NodeViewSet(viewsets.ModelViewSet):
                 description="A list of nodes.",
                 schema=NodeSerializer(many=True),
                 examples={
-                    'application/json': [
+                    "application/json": [
                         {
                             "id": 1,
                             "name": "Node 1",
@@ -91,11 +93,11 @@ class NodeViewSet(viewsets.ModelViewSet):
                             "deleted_at": None,
                         },
                     ]
-                }
+                },
             ),
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
-        tags=['Nodes'],
+        tags=["Nodes"],
     )
     def list(self, request, *args, **kwargs):
         """
@@ -128,27 +130,27 @@ class NodeViewSet(viewsets.ModelViewSet):
         ```
         """
         return super().list(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
-    operation_description="Create a new node.",
-    request_body=NodeSerializer,
-    responses={
-        201: openapi.Response(
-            description="Node created successfully.",
-            schema=NodeSerializer(),
-            examples={
-                'application/json': {
-                    "id": 2,
-                    "name": "Node 2",
-                    "host": "http://node2.example.com",
-                    "deleted_at": "null",
-                }
-            }
-        ),
-        400: 'Bad Request - Invalid data.',
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Create a new node.",
+        request_body=NodeSerializer,
+        responses={
+            201: openapi.Response(
+                description="Node created successfully.",
+                schema=NodeSerializer(),
+                examples={
+                    "application/json": {
+                        "id": 2,
+                        "name": "Node 2",
+                        "host": "http://node2.example.com",
+                        "deleted_at": "null",
+                    }
+                },
+            ),
+            400: "Bad Request - Invalid data.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
     def create(self, request, *args, **kwargs):
         """
@@ -192,35 +194,36 @@ class NodeViewSet(viewsets.ModelViewSet):
         ```
         """
         return super().create(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
-    operation_description="Retrieve a specific node by ID.",
-    manual_parameters=[
-        openapi.Parameter(
-            'id', openapi.IN_PATH,
-            description="ID of the node.",
-            type=openapi.TYPE_INTEGER,
-            required=True,
-            example=1
-        ),
-    ],
-    responses={
-        200: openapi.Response(
-            description="Node retrieved successfully.",
-            schema=NodeSerializer(),
-            examples={
-                'application/json': {
-                    "id": 1,
-                    "name": "Node 1",
-                    "host": "http://node1.example.com",
-                    "deleted_at": "null",
-                }
-            }
-        ),
-        404: 'Not Found - Node does not exist.',
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Retrieve a specific node by ID.",
+        manual_parameters=[
+            openapi.Parameter(
+                "id",
+                openapi.IN_PATH,
+                description="ID of the node.",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+                example=1,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Node retrieved successfully.",
+                schema=NodeSerializer(),
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "name": "Node 1",
+                        "host": "http://node1.example.com",
+                        "deleted_at": "null",
+                    }
+                },
+            ),
+            404: "Not Found - Node does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
     def retrieve(self, request, *args, **kwargs):
         """
@@ -251,37 +254,38 @@ class NodeViewSet(viewsets.ModelViewSet):
         ```
         """
         return super().retrieve(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
-    operation_description="Update a node entirely.",
-    manual_parameters=[
-        openapi.Parameter(
-            'id', openapi.IN_PATH,
-            description="ID of the node.",
-            type=openapi.TYPE_INTEGER,
-            required=True,
-            example=1
-        ),
-    ],
-    request_body=NodeSerializer,
-    responses={
-        200: openapi.Response(
-            description="Node updated successfully.",
-            schema=NodeSerializer(),
-            examples={
-                'application/json': {
-                    "id": 1,
-                    "name": "Updated Node Name",
-                    "host": "http://updatednode.example.com",
-                    "deleted_at": "null",
-                }
-            }
-        ),
-        400: 'Bad Request - Invalid data.',
-        404: 'Not Found - Node does not exist.',
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Update a node entirely.",
+        manual_parameters=[
+            openapi.Parameter(
+                "id",
+                openapi.IN_PATH,
+                description="ID of the node.",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+                example=1,
+            ),
+        ],
+        request_body=NodeSerializer,
+        responses={
+            200: openapi.Response(
+                description="Node updated successfully.",
+                schema=NodeSerializer(),
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "name": "Updated Node Name",
+                        "host": "http://updatednode.example.com",
+                        "deleted_at": "null",
+                    }
+                },
+            ),
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Node does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
     def update(self, request, *args, **kwargs):
         """
@@ -317,35 +321,36 @@ class NodeViewSet(viewsets.ModelViewSet):
         ```
         """
         return super().update(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
-    operation_description="Partially update a node.",
-    manual_parameters=[
-        openapi.Parameter(
-            'id', openapi.IN_PATH,
-            description="ID of the node.",
-            type=openapi.TYPE_INTEGER,
-            required=True,
-            example=1
-        ),
-    ],
-    request_body=NodeSerializer,
-    responses={
-        200: openapi.Response(
-            description="Node partially updated successfully.",
-            schema=NodeSerializer(),
-            examples={
-                'application/json': {
-                    "id": 1,
-                    "name": "Partially Updated Node Name",
-                }
-            }
-        ),
-        400: 'Bad Request - Invalid data.',
-        404: 'Not Found - Node does not exist.',
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Partially update a node.",
+        manual_parameters=[
+            openapi.Parameter(
+                "id",
+                openapi.IN_PATH,
+                description="ID of the node.",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+                example=1,
+            ),
+        ],
+        request_body=NodeSerializer,
+        responses={
+            200: openapi.Response(
+                description="Node partially updated successfully.",
+                schema=NodeSerializer(),
+                examples={
+                    "application/json": {
+                        "id": 1,
+                        "name": "Partially Updated Node Name",
+                    }
+                },
+            ),
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Node does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
     def partial_update(self, request, *args, **kwargs):
         """
@@ -379,24 +384,25 @@ class NodeViewSet(viewsets.ModelViewSet):
         ```
         """
         return super().partial_update(request, *args, **kwargs)
-    
+
     @swagger_auto_schema(
-    operation_description="Delete a node.",
-    manual_parameters=[
-        openapi.Parameter(
-            'id', openapi.IN_PATH,
-            description="ID of the node.",
-            type=openapi.TYPE_INTEGER,
-            required=True,
-            example=1
-        ),
-    ],
-    responses={
-        204: 'No Content - Node deleted successfully.',
-        404: 'Not Found - Node does not exist.',
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Delete a node.",
+        manual_parameters=[
+            openapi.Parameter(
+                "id",
+                openapi.IN_PATH,
+                description="ID of the node.",
+                type=openapi.TYPE_INTEGER,
+                required=True,
+                example=1,
+            ),
+        ],
+        responses={
+            204: "No Content - Node deleted successfully.",
+            404: "Not Found - Node does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
     def destroy(self, request, *args, **kwargs):
         """
@@ -420,64 +426,66 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     @swagger_auto_schema(
-    operation_description="Retrieve a list of active nodes.",
-    responses={
-        200: openapi.Response(
-            description="A list of active nodes.",
-            schema=NodeSerializer(many=True),
-            examples={
-                'application/json': [
-                    {
-                        "id": 1,
-                        "name": "Active Node 1",
-                        "host": "http://activenode1.example.com",
-                        "deleted_at": "null"
-                    },
-                ]
-            }
-        ),
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Nodes'],
+        operation_description="Retrieve a list of active nodes.",
+        responses={
+            200: openapi.Response(
+                description="A list of active nodes.",
+                schema=NodeSerializer(many=True),
+                examples={
+                    "application/json": [
+                        {
+                            "id": 1,
+                            "name": "Active Node 1",
+                            "host": "http://activenode1.example.com",
+                            "deleted_at": "null",
+                        },
+                    ]
+                },
+            ),
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Nodes"],
     )
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def active_nodes(self, request, pk=None):
         """List only active nodes"""
         active_nodes = Node.objects.filter(deleted_at__isnull=True)
         serializer = self.get_serializer(active_nodes, many=True)
         return Response(serializer.data)
 
+
 class NotificationViewSet(viewsets.ModelViewSet):
     """API endpoint for Notification objects"""
+
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
-    
+
     @swagger_auto_schema(
-    operation_description="Retrieve a list of notifications.",
-    responses={
-        200: openapi.Response(
-            description="List of notifications retrieved successfully.",
-            schema=NotificationSerializer(many=True),
-            examples={
-                'application/json': [
-                    {
-                        "id": 1,
-                        "user": {
-                            "id": 5,
-                            "username": "johndoe",
+        operation_description="Retrieve a list of notifications.",
+        responses={
+            200: openapi.Response(
+                description="List of notifications retrieved successfully.",
+                schema=NotificationSerializer(many=True),
+                examples={
+                    "application/json": [
+                        {
+                            "id": 1,
+                            "user": {
+                                "id": 5,
+                                "username": "johndoe",
+                            },
+                            "message": "You have a new follower.",
+                            "is_read": False,
+                            "created_at": "2024-11-02T18:00:00Z",
                         },
-                        "message": "You have a new follower.",
-                        "is_read": False,
-                        "created_at": "2024-11-02T18:00:00Z",
-                    },
-                ]
-            }
-        ),
-        401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
-    },
-    tags=['Notifications'],
-)
+                    ]
+                },
+            ),
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        tags=["Notifications"],
+    )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -489,7 +497,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 description="Notification created successfully.",
                 schema=NotificationSerializer(),
                 examples={
-                    'application/json': {
+                    "application/json": {
                         "id": 2,
                         "user": {
                             "id": 5,
@@ -499,12 +507,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
                         "is_read": False,
                         "created_at": "2024-11-02T19:00:00Z",
                     }
-                }
+                },
             ),
-            400: 'Bad Request - Invalid data.',
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            400: "Bad Request - Invalid data.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
@@ -516,7 +524,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 description="Notification retrieved successfully.",
                 schema=NotificationSerializer(),
                 examples={
-                    'application/json': {
+                    "application/json": {
                         "id": 1,
                         "user": {
                             "id": 5,
@@ -526,21 +534,22 @@ class NotificationViewSet(viewsets.ModelViewSet):
                         "is_read": False,
                         "created_at": "2024-11-02T18:00:00Z",
                     }
-                }
+                },
             ),
-            404: 'Not Found - Notification does not exist.',
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
         manual_parameters=[
             openapi.Parameter(
-                'id', openapi.IN_PATH,
+                "id",
+                openapi.IN_PATH,
                 description="ID of the notification.",
                 type=openapi.TYPE_INTEGER,
                 required=True,
-                example=1
+                example=1,
             ),
         ],
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
@@ -553,7 +562,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 description="Notification updated successfully.",
                 schema=NotificationSerializer(),
                 examples={
-                    'application/json': {
+                    "application/json": {
                         "id": 1,
                         "user": {
                             "id": 5,
@@ -563,22 +572,23 @@ class NotificationViewSet(viewsets.ModelViewSet):
                         "is_read": True,
                         "created_at": "2024-11-02T18:00:00Z",
                     }
-                }
+                },
             ),
-            400: 'Bad Request - Invalid data.',
-            404: 'Not Found - Notification does not exist.',
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
         manual_parameters=[
             openapi.Parameter(
-                'id', openapi.IN_PATH,
+                "id",
+                openapi.IN_PATH,
                 description="ID of the notification.",
                 type=openapi.TYPE_INTEGER,
                 required=True,
-                example=1
+                example=1,
             ),
         ],
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
@@ -591,26 +601,27 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 description="Notification partially updated successfully.",
                 schema=NotificationSerializer(),
                 examples={
-                    'application/json': {
+                    "application/json": {
                         "id": 1,
                         "is_read": True,
                     }
-                }
+                },
             ),
-            400: 'Bad Request - Invalid data.',
-            404: 'Not Found - Notification does not exist.',
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
         manual_parameters=[
             openapi.Parameter(
-                'id', openapi.IN_PATH,
+                "id",
+                openapi.IN_PATH,
                 description="ID of the notification.",
                 type=openapi.TYPE_INTEGER,
                 required=True,
-                example=1
+                example=1,
             ),
         ],
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
@@ -618,20 +629,21 @@ class NotificationViewSet(viewsets.ModelViewSet):
     @swagger_auto_schema(
         operation_description="Delete a notification.",
         responses={
-            204: 'No Content - Notification deleted successfully.',
-            404: 'Not Found - Notification does not exist.',
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            204: "No Content - Notification deleted successfully.",
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
         manual_parameters=[
             openapi.Parameter(
-                'id', openapi.IN_PATH,
+                "id",
+                openapi.IN_PATH,
                 description="ID of the notification.",
                 type=openapi.TYPE_INTEGER,
                 required=True,
-                example=1
+                example=1,
             ),
         ],
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
@@ -643,7 +655,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
                 description="List of unread notifications retrieved successfully.",
                 schema=NotificationSerializer(many=True),
                 examples={
-                    'application/json': [
+                    "application/json": [
                         {
                             "id": 3,
                             "user": {
@@ -655,16 +667,17 @@ class NotificationViewSet(viewsets.ModelViewSet):
                             "created_at": "2024-11-02T20:00:00Z",
                         },
                     ]
-                }
+                },
             ),
-            401: 'Unauthorized - Authentication credentials were not provided or are invalid.',
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
         },
-        tags=['Notifications'],
+        tags=["Notifications"],
     )
-
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def unread(self, request):
         """List only unread notifications"""
-        unread_notifications = Notification.objects.filter(user=request.user.author_profile, is_read=False)
+        unread_notifications = Notification.objects.filter(
+            user=request.user.author_profile, is_read=False
+        )
         serializer = self.get_serializer(unread_notifications, many=True)
         return Response(serializer.data)

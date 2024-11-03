@@ -69,7 +69,7 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
 
     def get_published(self, obj):
-        return obj.created_at.isoformat() if hasattr(obj, 'created_at') else None
+        return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
     def create(self, validated_data):
         return Comment.objects.create(**validated_data)
@@ -96,7 +96,7 @@ class LikeSerializer(serializers.ModelSerializer):
         ]
 
     def get_published(self, obj):
-        return obj.created_at.isoformat() if hasattr(obj, 'created_at') else None
+        return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
     def create(self, validated_data):
         return Like.objects.create(**validated_data)

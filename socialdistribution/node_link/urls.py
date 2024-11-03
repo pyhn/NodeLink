@@ -6,8 +6,8 @@ app_name = "node_link"
 
 # Initialize the router
 router = DefaultRouter()
-router.register(r'nodes', views.NodeViewSet, basename='node')
-router.register(r'notifications', views.NotificationViewSet, basename='notification')
+router.register(r"nodes", views.NodeViewSet, basename="node")
+router.register(r"notifications", views.NotificationViewSet, basename="notification")
 
 
 urlpatterns = [

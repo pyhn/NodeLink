@@ -25,28 +25,36 @@ from drf_yasg import openapi
 
 # Schema view configuration
 schema_view = get_schema_view(
-   openapi.Info(
-      title="Node Link API",
-      default_version='v1',
-      description="API documentation for Node Link",
-      terms_of_service="https://www.example.com/terms/",
-      contact=openapi.Contact(email="contact@example.com"),
-      license=openapi.License(name="BSD License"),
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
+    openapi.Info(
+        title="Node Link API",
+        default_version="v1",
+        description="API documentation for Node Link",
+        terms_of_service="https://www.example.com/terms/",
+        contact=openapi.Contact(email="contact@example.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
 )
 
 urlpatterns = [
     path("", include("node_link.urls")),  # Root URL directed to node_link app
-    path("authorApp/", include("authorApp.urls", namespace="authorApp")),  # URL for authorApp
+    path(
+        "authorApp/", include("authorApp.urls", namespace="authorApp")
+    ),  # URL for authorApp
     path("postApp/", include("postApp.urls")),  # URL for postApp
     path("admin/", admin.site.urls),  # Admin panel URL
     # Swagger Stuff
-    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path(
+        "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
+    ),
+    path(
+        "swagger/",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
     # ReDoc URL
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]
 
 if settings.DEBUG:
