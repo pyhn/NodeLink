@@ -50,7 +50,14 @@ class NodeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Node
-        fields = ['url', 'created_at', 'created_by', 'updated_at', 'deleted_at', 'deleted_by']
+        fields = [
+            "url",
+            "created_at",
+            "created_by",
+            "updated_at",
+            "deleted_at",
+            "deleted_by",
+        ]
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -59,13 +66,13 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = [
-            'user',
-            'message',
-            'created_at',
-            'is_read',
-            'notification_type',
-            'related_object_id',
-            'author_picture_url',
-            'follow_request_message',
-            'link_url'
+            "user",
+            "message",
+            "created_at",
+            "is_read",
+            "notification_type",
+            "related_object_id",
+            "author_picture_url",
+            "follow_request_message",
+            "link_url",
         ]
