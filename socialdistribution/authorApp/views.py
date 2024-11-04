@@ -4,6 +4,7 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
+from .forms import EditProfileForm
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets
@@ -408,6 +409,20 @@ def follow_author(request, author_id):
 
     else:
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
+
+
+@login_required
+def edit_profile(request):
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect(
+                "authorApp:profile_display", author_un=request.user.username
+            )
+    else:
+        form = EditProfileForm(instance=request.user)
+    return render(request, "authorApp/edit_profile.html", {"form": form})
 
 
 # ViewSet for AuthorProfile API

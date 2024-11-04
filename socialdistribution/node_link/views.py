@@ -50,7 +50,7 @@ def home(request):
                     visibility="u",  # all unlisted
                     author_id__in=following,
                 )
-                | Q(author_id=user.id)
+                | Q(author_id=user.id) & ~Q(visibility="d")
             )
             .distinct()
             .order_by("-updated_at")

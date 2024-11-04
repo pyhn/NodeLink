@@ -16,7 +16,7 @@ class AuthorsSerializer(serializers.ModelSerializer):
             "type",
             "id",
             "host",
-            "displayName",
+            "display_name",
             "github",
             "profileImage",
         ]
