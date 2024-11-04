@@ -58,7 +58,9 @@ def submit_post(request, username):
                     content, _ = check_image(img, content_type, True)
                 except (IOError, SyntaxError):
                     # The file is not a valid image
-                    return redirect("postApp:create_post")  # Early exit
+                    return redirect(
+                        "postApp:create_post", username=username
+                    )  # Early exit
             else:
                 # If no image is uploaded but content_type expects one
                 raise ValidationError("Image file is required for image posts.")
@@ -77,7 +79,7 @@ def submit_post(request, username):
         )
         # Redirect to the post list page
         return redirect("node_link:home", username=username)
-    return redirect("node_link:home")
+    return redirect("node_link:home", username=username)
 
 
 @is_approved
