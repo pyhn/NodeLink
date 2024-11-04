@@ -1,6 +1,7 @@
 # Django Imports
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 
 # Project Imports
 from node_link.utils.mixin import MixinApp
@@ -8,7 +9,7 @@ from node_link.utils.mixin import MixinApp
 
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
-
+    is_approved = models.BooleanField(default=False)  # Track approval status
     profileImage = models.ImageField(  #!!!IMAGE NOTE: change to a url
         upload_to="profile_images/",
         null=True,
@@ -34,7 +35,7 @@ class AuthorProfile(models.Model):
     github = models.CharField(max_length=255, null=True, blank=True)
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
-    local_node = models.ForeignKey("node_link.Node", on_delete=models.PROTECT)
+    local_node = models.ForeignKey("node_link.Node", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.user.username} (Author)"
@@ -51,11 +52,27 @@ class Friends(MixinApp):
         on_delete=models.CASCADE,
         related_name="friendships_received",
     )
-    status = models.BooleanField(default=False)
+
+    def clean(self):
+        if self.user1 == self.user2:
+            raise ValidationError("Users cannot be friends with themselves.")
+        if self.user1.id > self.user2.id:
+            raise ValidationError(
+                "user1 ID must be less than user2 ID to maintain order."
+            )
+
+    def save(self, *args, **kwargs):
+        if self.user1.id > self.user2.id:
+            self.user1, self.user2 = self.user2, self.user1
+        super().save(*args, **kwargs)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user1", "user2"], name="unique_friendship")
+            models.UniqueConstraint(
+                fields=["user1", "user2"],
+                name="unique_friendship",
+                condition=models.Q(user1__lt=models.F("user2")),
+            )
         ]
 
 
@@ -73,7 +90,13 @@ class Follower(MixinApp):
         related_name="followers_received",
     )
 
-    status = models.CharField(max_length=20, default="pending")
+    # Status of the follow request
+    STATUS_CHOICES = [
+        ("p", "Pending"),
+        ("a", "Accepted"),
+        ("d", "Denied"),
+    ]
+    status = models.CharField(max_length=1, choices=STATUS_CHOICES, default="p")
     # API NOTE: Summary might be best done in the serializer bc its not used anywhere else and the data is readily available
     #!!!API NOTE, !!!FRIENDS NOTE there is no friends API, so we can check if (actor = 1, object = 2) and (actor = 2, object = 1) then create a Friend object after doing a API request
     # 1. user1(actor local) sends Follow Request to user2(object remote)
@@ -82,6 +105,9 @@ class Follower(MixinApp):
     # 4. then user2 sends Follow Request
     # 5. Ask for Followers API for user1
     # 6. If user1 approves then make Friends obj (FIND OUT THROUGH Local query API for local users)
+    def clean(self):
+        if self.user1 == self.user2:
+            raise ValidationError("Users cannot follow themselves.")
 
     class Meta:
         constraints = [
