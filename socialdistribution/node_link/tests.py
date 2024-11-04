@@ -4,17 +4,19 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from rest_framework.test import APITestCase
+from rest_framework import status  # You can keep this if you're using DRF status codes
 
 from authorApp.models import AuthorProfile, Friends, Follower
 from postApp.models import Post
-from node_link.models import Node
+from node_link.models import Node, Notification
+
+User = get_user_model()
 
 
 class HomeViewTestCase(TestCase):
     def setUp(self):
         # Get the custom User model
-        User = get_user_model()
-
         # Initialize the test client
         self.client = Client()
 
@@ -202,7 +204,6 @@ class HomeViewTestCase(TestCase):
         self.assertNotIn(self.post_deleted.uuid, post_ids)
 
     def test_home_view_user_with_no_friends_followers(self):
-        User = get_user_model()
         # Login as a new user with no friends or followers
         user4 = User.objects.create_user(
             username="user4",
@@ -247,3 +248,112 @@ class HomeViewTestCase(TestCase):
 
         post_ids = response.context["all_ids"]
         self.assertIn(self.post_user1.uuid, post_ids)
+
+
+class NodeLinkTests(APITestCase):
+    def setUp(self):
+        # Create a user and an author profile
+        self.user = User.objects.create_user(
+            username="author1",
+            password="password1",
+            display_name="Author One",
+            is_approved=True,
+        )
+        self.client.login(username="author1", password="password1")
+        self.author_profile = AuthorProfile.objects.create(
+            user=self.user,
+            local_node=Node.objects.create(
+                url="http://localhost:8000", created_by=self.user
+            ),
+        )
+
+        # Create an active Node for testing
+        self.node = Node.objects.create(url="http://testnode.com", created_by=self.user)
+        self.notification = Notification.objects.create(
+            user=self.author_profile,
+            message="Test notification",
+            notification_type="follow_request",
+        )
+
+    def test_list_nodes(self):
+        """Test listing all nodes"""
+        url = reverse("node_link:node-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)  # Ensure nodes are returned
+
+    def test_retrieve_node(self):
+        """Test retrieving a specific node"""
+        url = reverse("node_link:node-detail", args=[self.node.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["url"], "http://testnode.com")
+
+    def test_create_node(self):
+        """Test creating a new node"""
+        url = reverse("node_link:node-list")
+        data = {"url": "http://newnode.com", "created_by": self.user.id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["url"], "http://newnode.com")
+
+    def test_update_node(self):
+        """Test updating a node"""
+        url = reverse("node_link:node-detail", args=[self.node.id])
+        data = {"url": "http://updatednode.com", "created_by": self.user.id}
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["url"], "http://updatednode.com")
+
+    def test_delete_node(self):
+        """Test deleting a node"""
+        url = reverse("node_link:node-detail", args=[self.node.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_list_notifications(self):
+        """Test listing all notifications"""
+        url = reverse("node_link:notification-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
+
+    def test_retrieve_notification(self):
+        """Test retrieving a specific notification"""
+        url = reverse("node_link:notification-detail", args=[self.notification.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Test notification")
+
+    def test_create_notification(self):
+        """Test creating a new notification"""
+        url = reverse("node_link:notification-list")
+        data = {
+            "user": self.author_profile.id,
+            "message": "New notification",
+            "notification_type": "new_post",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["message"], "New notification")
+
+    def test_delete_notification(self):
+        """Test deleting a notification"""
+        url = reverse("node_link:notification-detail", args=[self.notification.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_unread_notifications(self):
+        """Test retrieving only unread notifications"""
+        url = reverse("node_link:notification-unread")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)
+        self.assertFalse(response.data[0]["is_read"])  # Ensure it's unread
+
+    def test_home_view(self):
+        """Test home view that returns filtered posts for the user"""
+        url = reverse("node_link:home")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("all_ids", response.context)  # Check for posts context data
