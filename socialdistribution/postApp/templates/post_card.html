@@ -63,10 +63,52 @@
     </div>
 
 
-    <div class="icon-button">
-        <form action="" method="post"><!--!!! url-->
+    <!-- Share button -->
+    {% if post.visibility == 'p' %}
+        <div class="icon-button">
             {% csrf_token %}
-            <button class="icon" type="submit"><img src="{% static 'icons/send.svg' %}" alt="send button"></button>
-        </form>
+            <!-- Clicking the button triggers HTMX request to load the share form via GET request to share_post into the
+             shareModel structure (popup)-->
+            <button class="icon" type="button"
+                    hx-get="{% url 'postApp:render_share_form' author_serial=post.author.user.username post_uuid=post.uuid %}"
+                    hx-target="#shareModalContent"
+                    hx-trigger="click"
+                    hx-swap="innerHTML">
+                <img src="{% static 'icons/send.svg' %}" alt="send button">
+            </button>
+    </div>
+    {% endif %}
+
+    <!-- Modal Structure -->
+    <div id="shareModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="shareModalContent">
+                <!-- Content loaded via HTMX -->
+            </div>
+        </div>
     </div>
 </div>
+<script src="https://unpkg.com/htmx.org"></script>
+
+    <!-- Modal JavaScript -->
+    <script>
+    function closeModal() {
+        document.getElementById('shareModal').style.display = 'none';
+    }
+
+    // Show modal when content is loaded via HTMX
+    document.addEventListener('htmx:afterSwap', (e) => {
+        if (e.detail.target.id === 'shareModalContent') {
+            document.getElementById('shareModal').style.display = 'block';
+        }
+    });
+
+    // Close modal when clicking outside of the modal content
+    window.onclick = function(event) {
+        const modal = document.getElementById('shareModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    };
+    </script>
