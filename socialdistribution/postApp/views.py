@@ -329,7 +329,9 @@ def handle_share_post(request, author_serial, post_uuid):
 
     for recipient in recipients:
         message = f"{request.user.username} shared a post with you."
-        link_url = reverse("postApp:post_detail", args=[post.uuid])
+        link_url = reverse(
+            "postApp:post_detail", args=[post.author.user.username, post.uuid]
+        )
         Notification.objects.create(
             user=recipient,
             message=message,
