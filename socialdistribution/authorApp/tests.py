@@ -155,7 +155,12 @@ class AuthorAppViewsTestCase(TestCase):
                 "password": "testpassword1",
             },
         )
-        self.assertRedirects(response, reverse("node_link:home"))
+        # Generate the URL with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": "testuser1"})
+
+        # Assert that the response redirects to the correct home URL
+        self.assertRedirects(response, home_url)
+
         # Check that the user is logged in
         user = auth.get_user(self.client)
         self.assertTrue(user.is_authenticated)

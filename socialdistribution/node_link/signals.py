@@ -43,7 +43,7 @@ def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
             message=message,
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            author_picture_url=author.user.profile_image,
+            author_picture_url=author.user.profileImage,
         )
         print("notification created")
 
