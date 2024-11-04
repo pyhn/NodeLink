@@ -11,7 +11,7 @@ router.register(r"notifications", views.NotificationViewSet, basename="notificat
 
 
 urlpatterns = [
-    path("", views.home, name="home"),
+    path("<str:username>/", views.home, name="home"),
     path("notifications/", views.notifications_view, name="notifications"),
     path("api/", include(router.urls)),  # Include router-generated API URLs
 ]

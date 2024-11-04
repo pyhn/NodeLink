@@ -17,7 +17,7 @@
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="{% url 'node_link:home' %}">Node Link</a>
+            <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}">Node Link</a>
             <button
                 class="navbar-toggler"
                 type="button"
@@ -32,7 +32,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item active">
-                        <a class="nav-link" href="{% url 'node_link:home' %}">Home</a>
+                        <a class="nav-link" href="{% url 'node_link:home' request.user.username %}">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'authorApp:friends_page' %}">Friends</a>
@@ -41,7 +41,7 @@
                         <a class="nav-link" href="{% url 'node_link:notifications' %}">Notifications</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'postApp:create_post'%}">Create Post</a>
+                        <a class="nav-link" href="{% url 'postApp:create_post' request.user.username%}">Create Post</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">

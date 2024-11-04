@@ -35,12 +35,12 @@ from PIL import Image
 
 
 @is_approved
-def create_post(request):
+def create_post(request, username):
     return render(request, "create_post.html")
 
 
 @is_approved
-def submit_post(request):
+def submit_post(request, username):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
         description = request.POST.get("description", "")
@@ -75,12 +75,12 @@ def submit_post(request):
             updated_by=author,
         )
         # Redirect to the post list page
-        return redirect("node_link:home")
+        return redirect("node_link:home", username=username)
     return redirect("node_link:home")
 
 
 @is_approved
-def create_comment(request, post_uuid):
+def create_comment(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
     if request.method == "POST":
@@ -104,7 +104,7 @@ def create_comment(request, post_uuid):
 
 
 @is_approved
-def like_post(request, post_uuid):
+def like_post(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
@@ -115,17 +115,17 @@ def like_post(request, post_uuid):
         updated_by=author,
     )
 
-    return redirect("postApp:post_detail", post_uuid)
+    return redirect("postApp:post_detail", username, post_uuid)
 
 
 @is_approved
-def delete_post(request, post_uuid):
+def delete_post(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
     if post.author.user == request.user:
         post.visibility = "d"
         post.save()
-    return redirect("node_link:home")
+    return redirect("node_link:home", username=username)
 
 
 @is_approved
@@ -222,7 +222,7 @@ def submit_edit_post(request, post_uuid):
 
 @is_approved
 def post_card(
-    request, post_uuid: str
+    request, username, post_uuid: str
 ):  #!!!POST NOTE: Must be updated with new content handling
     """renders a single card
 
@@ -261,7 +261,7 @@ def post_card(
 
 
 @is_approved
-def post_detail(request, post_uuid: str):
+def post_detail(request, username, post_uuid: str):
     post = get_object_or_404(Post, uuid=post_uuid)
     if has_access(request=request, post_uuid=post_uuid):
         user_has_liked = False
