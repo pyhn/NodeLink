@@ -6,7 +6,7 @@ class MixinApp(models.Model):
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
         "authorApp.AuthorProfile",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="%(class)s_created",
     )
 
@@ -16,7 +16,7 @@ class MixinApp(models.Model):
         "authorApp.AuthorProfile",
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="%(class)s_updated",
     )
 

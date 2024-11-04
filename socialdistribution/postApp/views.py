@@ -1,31 +1,20 @@
 # Django imports
-import uuid
 from django.urls import reverse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden, HttpResponseNotAllowed
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
-from django.http import JsonResponse
 
-
-# Third-party imports
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-from rest_framework.decorators import action
-from rest_framework.permissions import BasePermission
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 # Project imports
-from authorApp.models import AuthorProfile, Friends
+from authorApp.models import AuthorProfile
 from node_link.models import Notification
-from node_link.utils.common import has_access
+from node_link.utils.common import has_access, is_approved
 from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
 
@@ -36,7 +25,7 @@ from datetime import datetime
 from PIL import Image
 
 
-@login_required
+@is_approved
 def create_post(request):
     return render(request, "create_post.html")
 
@@ -81,7 +70,7 @@ def submit_post(request):
     return redirect("node_link:home")
 
 
-@login_required
+@is_approved
 def create_comment(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
@@ -105,7 +94,7 @@ def create_comment(request, post_uuid):
     return render(request, "create_comment_card.html", {"post": post})
 
 
-@login_required
+@is_approved
 def like_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
@@ -120,7 +109,7 @@ def like_post(request, post_uuid):
     return redirect("postApp:post_detail", post_uuid)
 
 
-@login_required
+@is_approved
 def delete_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
@@ -222,7 +211,7 @@ def submit_edit_post(request, post_uuid):
 # view post
 
 
-@login_required
+@is_approved
 def post_card(
     request, post_uuid: str
 ):  #!!!POST NOTE: Must be updated with new content handling
@@ -262,7 +251,7 @@ def post_card(
     return HttpResponseForbidden("You are not supposed to be here. Go Home!")
 
 
-@login_required
+@is_approved
 def post_detail(request, post_uuid: str):
     post = get_object_or_404(Post, uuid=post_uuid)
     if has_access(request=request, post_uuid=post_uuid):
@@ -296,7 +285,7 @@ def post_detail(request, post_uuid: str):
 
 
 # renders the form for sharing the post to other authors
-@login_required
+@is_approved
 def render_share_form(request, author_serial, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
 
@@ -311,7 +300,7 @@ def render_share_form(request, author_serial, post_uuid):
     return render(request, "share_post_form.html", context)
 
 
-@login_required
+@is_approved
 def handle_share_post(request, author_serial, post_uuid):
     # POST Request
     if request.method != "POST":

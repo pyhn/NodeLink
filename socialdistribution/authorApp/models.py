@@ -8,7 +8,7 @@ from node_link.utils.mixin import MixinApp
 
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
-
+    is_approved = models.BooleanField(default=False)  # Track approval status
     profileImage = models.ImageField(  #!!!IMAGE NOTE: change to a url
         upload_to="profile_images/",
         null=True,
@@ -34,7 +34,7 @@ class AuthorProfile(models.Model):
     github = models.CharField(max_length=255, null=True, blank=True)
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
-    local_node = models.ForeignKey("node_link.Node", on_delete=models.PROTECT)
+    local_node = models.ForeignKey("node_link.Node", on_delete=models.CASCADE)
 
     def __str__(self):
         return f"{self.user.username} (Author)"
