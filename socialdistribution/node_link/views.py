@@ -22,7 +22,7 @@ from node_link.utils.common import is_approved
 
 
 @is_approved
-def home(request):
+def home(request, username):
 
     if request.method == "GET":
         template_name = "home.html"

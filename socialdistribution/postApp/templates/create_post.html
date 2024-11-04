@@ -1,260 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Post</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            text-align: center;
-        }
-        /* Tab container */
-        .tab-container {
-            max-width: 700px;
-            margin: 0 auto;
-            background-color: rgb(230, 230, 230);
-            padding: 20px;
-            border-radius: 8px;
-        }
-        /* Tab buttons */
-        .tabs {
-            overflow: hidden;
-            border-bottom: 1px solid #ccc;
-        }
-        .tabs button {
-            background-color: inherit;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 14px 16px;
-            transition: background-color 0.3s;
-            font-size: 17px;
-        }
-        .tabs button:hover {
-            background-color: #ddd;
-        }
-        .tabs button.active {
-            background-color: #ccc;
-        }
-        /* Tab content */
-        .tab-content {
-            display: none;
-            padding: 20px 0;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        /* Common form styles */
-        input[type="text"], textarea, select {
-            width: 95%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        input[type="file"] {
-            display: block;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #fff;
-            cursor: pointer;
-            width: 95%;
-            max-width: 95%;
-            margin-bottom: 20px;
-        }
-        input[type="file"]:hover {
-            border-color: #888;
-        }
-        button.submit-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button.submit-btn:hover {
-            background-color: #218838;
-        }
-    </style>
-</head>
-<body>
-    <h1>Create a New Post</h1>
-
-    <div class="tab-container">
-        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_post' %}">
-            {% csrf_token %}
-
-            <!-- Tab Buttons -->
-            <div class="tabs">
-                <button type="button" class="tab-link active" onclick="openTab(event, 'PlainText')">Plain Text</button>
-                <button type="button" class="tab-link" onclick="openTab(event, 'Markdown')">Markdown</button>
-                <button type="button" class="tab-link" onclick="openTab(event, 'Image')">Image</button>
-            </div>
-
-            <!-- Hidden input to store contentType -->
-            <input type="hidden" id="contentType" name="contentType" value="p">
-
-            <!-- Plain Text Tab Content -->
-            <div id="PlainText" class="tab-content active">
-                <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
-
-                <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
-
-                <!-- Textarea for plain text content -->
-                <textarea name="content" rows="10" placeholder="Write your plain text post..."></textarea>
-
-                <!-- Select for post visibility -->
-                <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
-                </select>
-
-                <!-- Submit button -->
-                <button type="submit" class="submit-btn">Submit Plain Text Post</button>
-            </div>
-
-            <!-- Markdown Tab Content -->
-            <div id="Markdown" class="tab-content">
-                <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
-
-                <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
-
-                <!-- Textarea for markdown content -->
-                <textarea name="content" rows="10" placeholder="Write your Markdown post..."></textarea>
-
-                <!-- Select for post visibility -->
-                <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
-                </select>
-
-                <!-- Submit button -->
-                <button type="submit" class="submit-btn">Submit Markdown Post</button>
-            </div>
-
-            <!-- Image Tab Content -->
-            <div id="Image" class="tab-content">
-                <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
-
-                <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your image..."></textarea>
-
-                <!-- Input for image file -->
-                <input type="file" name="img" accept="image/*" required>
-
-                <!-- Select for post visibility -->
-                <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
-                </select>
-
-                <!-- Submit button -->
-                <button type="submit" class="submit-btn">Submit Image Post</button>
-            </div>
-        </form>
-    </div>
-
-    <script>
-        function openTab(evt, tabName) {
-            // Get all elements with class="tab-content"
-            var tabContents = document.getElementsByClassName("tab-content");
-            for (var i = 0; i < tabContents.length; i++) {
-                // Hide the tab content
-                tabContents[i].classList.remove("active");
-                // Disable all inputs in the tab content
-                var inputs = tabContents[i].querySelectorAll("input, textarea, select, button");
-                for (var j = 0; j < inputs.length; j++) {
-                    inputs[j].disabled = true;
-                }
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Create New Post</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f4f4f4;
             }
-
-            // Get all elements with class="tab-link" and remove "active"
-            var tabLinks = document.getElementsByClassName("tab-link");
-            for (var i = 0; i < tabLinks.length; i++) {
-                tabLinks[i].classList.remove("active");
+            h1 {
+                text-align: center;
             }
-
-            // Show the current tab and enable its inputs
-            var activeTabContent = document.getElementById(tabName);
-            activeTabContent.classList.add("active");
-            evt.currentTarget.classList.add("active");
-            var activeInputs = activeTabContent.querySelectorAll("input, textarea, select, button");
-            for (var i = 0; i < activeInputs.length; i++) {
-                activeInputs[i].disabled = false;
+            /* Tab container */
+            .tab-container {
+                max-width: 700px;
+                margin: 0 auto;
+                background-color: rgb(230, 230, 230);
+                padding: 20px;
+                border-radius: 8px;
             }
-
-            // Set the hidden contentType based on the selected tab
-            var contentTypeInput = document.getElementById("contentType");
-            if (tabName === "PlainText") {
-                contentTypeInput.value = "p";
-            } else if (tabName === "Markdown") {
-                contentTypeInput.value = "m";
-            } else if (tabName === "Image") {
-                // Initially set to 'a' for application/base64
-                contentTypeInput.value = "a";
+            /* Tab buttons */
+            .tabs {
+                overflow: hidden;
+                border-bottom: 1px solid #ccc;
             }
-        }
+            .tabs button {
+                background-color: inherit;
+                border: none;
+                outline: none;
+                cursor: pointer;
+                padding: 14px 16px;
+                transition: background-color 0.3s;
+                font-size: 17px;
+            }
+            .tabs button:hover {
+                background-color: #ddd;
+            }
+            .tabs button.active {
+                background-color: #ccc;
+            }
+            /* Tab content */
+            .tab-content {
+                display: none;
+                padding: 20px 0;
+            }
+            .tab-content.active {
+                display: block;
+            }
+            /* Common form styles */
+            input[type="text"],
+            textarea,
+            select {
+                width: 95%;
+                padding: 10px;
+                margin-bottom: 20px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            input[type="file"] {
+                display: block;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background-color: #fff;
+                cursor: pointer;
+                width: 95%;
+                max-width: 95%;
+                margin-bottom: 20px;
+            }
+            input[type="file"]:hover {
+                border-color: #888;
+            }
+            button.submit-btn {
+                background-color: #28a745;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            button.submit-btn:hover {
+                background-color: #218838;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Create a New Post</h1>
 
-        // Initialize by disabling inputs in inactive tabs
-        window.onload = function() {
-            var tabContents = document.getElementsByClassName("tab-content");
-            for (var i = 0; i < tabContents.length; i++) {
-                if (!tabContents[i].classList.contains("active")) {
+        <div class="tab-container">
+            <form
+                method="POST"
+                enctype="multipart/form-data"
+                action="{% url 'postApp:submit_post'  request.user.username %}"
+            >
+                {% csrf_token %}
+
+                <!-- Tab Buttons -->
+                <div class="tabs">
+                    <button type="button" class="tab-link active" onclick="openTab(event, 'PlainText')">
+                        Plain Text
+                    </button>
+                    <button type="button" class="tab-link" onclick="openTab(event, 'Markdown')">Markdown</button>
+                    <button type="button" class="tab-link" onclick="openTab(event, 'Image')">Image</button>
+                </div>
+
+                <!-- Hidden input to store contentType -->
+                <input type="hidden" id="contentType" name="contentType" value="p" />
+
+                <!-- Plain Text Tab Content -->
+                <div id="PlainText" class="tab-content active">
+                    <!-- Input for post title -->
+                    <input type="text" name="title" placeholder="Enter the post title" required />
+
+                    <!-- Input for description -->
+                    <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
+
+                    <!-- Textarea for plain text content -->
+                    <textarea name="content" rows="10" placeholder="Write your plain text post..."></textarea>
+
+                    <!-- Select for post visibility -->
+                    <select name="visibility">
+                        <option value="p">Public</option>
+                        <option value="u">Unlisted</option>
+                        <option value="fo">Friends-Only</option>
+                    </select>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="submit-btn">Submit Plain Text Post</button>
+                </div>
+
+                <!-- Markdown Tab Content -->
+                <div id="Markdown" class="tab-content">
+                    <!-- Input for post title -->
+                    <input type="text" name="title" placeholder="Enter the post title" required />
+
+                    <!-- Input for description -->
+                    <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
+
+                    <!-- Textarea for markdown content -->
+                    <textarea name="content" rows="10" placeholder="Write your Markdown post..."></textarea>
+
+                    <!-- Select for post visibility -->
+                    <select name="visibility">
+                        <option value="p">Public</option>
+                        <option value="u">Unlisted</option>
+                        <option value="fo">Friends-Only</option>
+                    </select>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="submit-btn">Submit Markdown Post</button>
+                </div>
+
+                <!-- Image Tab Content -->
+                <div id="Image" class="tab-content">
+                    <!-- Input for post title -->
+                    <input type="text" name="title" placeholder="Enter the post title" required />
+
+                    <!-- Input for description -->
+                    <textarea
+                        name="description"
+                        rows="3"
+                        placeholder="Enter a description for your image..."
+                    ></textarea>
+
+                    <!-- Input for image file -->
+                    <input type="file" name="img" accept="image/*" required />
+
+                    <!-- Select for post visibility -->
+                    <select name="visibility">
+                        <option value="p">Public</option>
+                        <option value="u">Unlisted</option>
+                        <option value="fo">Friends-Only</option>
+                    </select>
+
+                    <!-- Submit button -->
+                    <button type="submit" class="submit-btn">Submit Image Post</button>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            function openTab(evt, tabName) {
+                // Get all elements with class="tab-content"
+                var tabContents = document.getElementsByClassName("tab-content");
+                for (var i = 0; i < tabContents.length; i++) {
+                    // Hide the tab content
+                    tabContents[i].classList.remove("active");
+                    // Disable all inputs in the tab content
                     var inputs = tabContents[i].querySelectorAll("input, textarea, select, button");
                     for (var j = 0; j < inputs.length; j++) {
                         inputs[j].disabled = true;
                     }
                 }
+
+                // Get all elements with class="tab-link" and remove "active"
+                var tabLinks = document.getElementsByClassName("tab-link");
+                for (var i = 0; i < tabLinks.length; i++) {
+                    tabLinks[i].classList.remove("active");
+                }
+
+                // Show the current tab and enable its inputs
+                var activeTabContent = document.getElementById(tabName);
+                activeTabContent.classList.add("active");
+                evt.currentTarget.classList.add("active");
+                var activeInputs = activeTabContent.querySelectorAll("input, textarea, select, button");
+                for (var i = 0; i < activeInputs.length; i++) {
+                    activeInputs[i].disabled = false;
+                }
+
+                // Set the hidden contentType based on the selected tab
+                var contentTypeInput = document.getElementById("contentType");
+                if (tabName === "PlainText") {
+                    contentTypeInput.value = "p";
+                } else if (tabName === "Markdown") {
+                    contentTypeInput.value = "m";
+                } else if (tabName === "Image") {
+                    // Initially set to 'a' for application/base64
+                    contentTypeInput.value = "a";
+                }
             }
-            // Add event listener to the image file input
-            var imageInput = document.querySelector('input[name="img"]');
-            if (imageInput) {
-                imageInput.addEventListener('change', function(event) {
-                    var file = event.target.files[0];
-                    if (file) {
-                        // Get the MIME type of the file
-                        var mimeType = file.type;
 
-                        // Map MIME type to your contentType choices
-                        var contentTypeMapping = {
-                            'image/png': 'png',
-                            'image/jpeg': 'jpeg',
-                            'image/jpg': 'jpeg',
-                            // Add more mappings if needed
-                        };
-
-                        // Get the corresponding contentType value
-                        var contentTypeValue = contentTypeMapping[mimeType] || 'a'; // Default to 'a' if unknown
-
-                        // Set the hidden input value
-                        document.getElementById('contentType').value = contentTypeValue;
+            // Initialize by disabling inputs in inactive tabs
+            window.onload = function () {
+                var tabContents = document.getElementsByClassName("tab-content");
+                for (var i = 0; i < tabContents.length; i++) {
+                    if (!tabContents[i].classList.contains("active")) {
+                        var inputs = tabContents[i].querySelectorAll("input, textarea, select, button");
+                        for (var j = 0; j < inputs.length; j++) {
+                            inputs[j].disabled = true;
+                        }
                     }
-                });
-            }
-        };
+                }
+                // Add event listener to the image file input
+                var imageInput = document.querySelector('input[name="img"]');
+                if (imageInput) {
+                    imageInput.addEventListener("change", function (event) {
+                        var file = event.target.files[0];
+                        if (file) {
+                            // Get the MIME type of the file
+                            var mimeType = file.type;
 
-        // Ensure that only the active tab's submit button is active
-        // Prevent multiple posts with the same title and description
-        // Optionally, you can add more JavaScript for enhanced functionality
-    </script>
-</body>
+                            // Map MIME type to your contentType choices
+                            var contentTypeMapping = {
+                                "image/png": "png",
+                                "image/jpeg": "jpeg",
+                                "image/jpg": "jpeg",
+                                // Add more mappings if needed
+                            };
+
+                            // Get the corresponding contentType value
+                            var contentTypeValue = contentTypeMapping[mimeType] || "a"; // Default to 'a' if unknown
+
+                            // Set the hidden input value
+                            document.getElementById("contentType").value = contentTypeValue;
+                        }
+                    });
+                }
+            };
+
+            // Ensure that only the active tab's submit button is active
+            // Prevent multiple posts with the same title and description
+            // Optionally, you can add more JavaScript for enhanced functionality
+        </script>
+    </body>
 </html>

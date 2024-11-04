@@ -17,7 +17,7 @@ def notify_followers_on_new_post(sender, instance, created, **kwargs):
         )  #!!!FRIENDS NOTE: Please double check
         for follower in followers:
             message = f"{author.user.username} has made a new post."
-            link_url = reverse("postApp:post_detail", args=[instance.uuid])
+            link_url = reverse("postApp:post_detail", args=[instance.uuid, username])
             Notification.objects.create(
                 user=follower.actor,
                 message=message,
@@ -77,7 +77,7 @@ def notify_author_on_new_like(sender, instance, created, **kwargs):
         if post.author != author:
             print("Like created, notifying author via notification")
             message = f"{author.user.username} liked your post."
-            link_url = reverse("postApp:post_detail", args=[post.uuid])
+            link_url = reverse("postApp:post_detail", args=[post.uuid, username])
             Notification.objects.create(
                 user=post.author,  # Use post.author (AuthorProfile)
                 message=message,
