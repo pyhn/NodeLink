@@ -1,7 +1,6 @@
-<!-- notifications.html -->
 <!DOCTYPE html>
 <html lang="en">
-    {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+    {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Notifications{% endblock %}
@@ -17,12 +16,16 @@
                         <img src="{{notification.author_picture_url}}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
                         {{ notification.message }}
                     </a>
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
+                {% else %}
+                    <img src="{{notification.author_picture_url}}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
+                    {{ notification.message }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 {% endblock %}
 </html>
