@@ -3,18 +3,15 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.exceptions import ValidationError
 
-from authorApp.models import AuthorProfile, User, Friends
+from authorApp.models import AuthorProfile, User
 from postApp.models import Post, Comment, Like
 from node_link.models import Node, Notification
 
-from rest_framework.test import APIClient
+from rest_framework.test import APITestCase
 from rest_framework import status
 
-import tempfile
 import uuid
-import base64
 from PIL import Image
 import io
 
@@ -617,3 +614,98 @@ class PostAppViewsTestCase(TestCase):
             data=share_data,
         )
         self.assertEqual(response.status_code, 403)  # Forbidden
+
+
+class PostAppTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="password",
+            is_approved=True,
+            display_name="Test User",
+        )
+        self.node = Node.objects.create(
+            url="http://localhost:8000",
+            created_by=self.user,
+        )
+        self.author = AuthorProfile.objects.create(user=self.user, local_node=self.node)
+        self.post = Post.objects.create(
+            title="Test Post",
+            content="This is a test post.",
+            visibility="p",
+            contentType="p",
+            node=self.node,
+            author=self.author,
+            created_by=self.author,
+            updated_by=self.author,
+        )
+
+        # Force authenticate the client with the user
+        self.client.login(username="testuser", password="password")
+
+    def test_create_post(self):
+        url = reverse("postApp:author-posts", args=[self.author.user.username])
+        data = {
+            "title": "New Post",
+            "content": "This is the content of the new post.",
+            "visibility": "p",
+            "contentType": "p",
+            "node": self.node.id,  # Ensure node is set
+            "author": self.author.id,  # Ensure the author field is set
+            "created_by": self.author.id,  # Ensure created_by is set
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["title"], "New Post")
+
+    def test_retrieve_post(self):
+        url = reverse(
+            "postApp:author-post-detail",
+            args=[self.author.user.username, self.post.uuid],
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "Test Post")
+
+    def test_update_post(self):
+        url = reverse(
+            "postApp:author-post-detail",
+            args=[self.author.user.username, self.post.uuid],
+        )
+        data = {
+            "title": "Updated Title",
+            "content": "Updated content of the post.",
+            "node": self.node.id,
+            "created_by": self.author.id,
+            "updated_by": self.author.id,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "Updated Title")
+        self.assertEqual(response.data["content"], "Updated content of the post.")
+
+    def test_like_post(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse("postApp:like_post", args=[self.post.uuid])
+        print(f"pyhn {url}")
+        response = self.client.post(url)
+        print(f"pyhn resposne: {response}")
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertTrue(
+            Like.objects.filter(post=self.post, author=self.author).exists()
+        )
+
+    def test_comment_on_post(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse("postApp:create_comment", args=[self.post.uuid])
+        data = {
+            "content": "This is a comment",
+            "author": self.author.id,
+            "created_by": self.author.id,
+            "updated_by": self.author.id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            Comment.objects.filter(post=self.post, content="This is a comment").exists()
+        )
