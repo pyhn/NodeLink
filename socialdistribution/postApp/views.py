@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 
 
 # Third-party imports
@@ -57,7 +58,9 @@ def submit_post(request, username):
                     content, _ = check_image(img, content_type, True)
                 except (IOError, SyntaxError):
                     # The file is not a valid image
-                    return redirect("postApp:create_post")  # Early exit
+                    return redirect(
+                        "postApp:create_post", username=username
+                    )  # Early exit
             else:
                 # If no image is uploaded but content_type expects one
                 raise ValidationError("Image file is required for image posts.")
@@ -76,7 +79,7 @@ def submit_post(request, username):
         )
         # Redirect to the post list page
         return redirect("node_link:home", username=username)
-    return redirect("node_link:home")
+    return redirect("node_link:home", username=username)
 
 
 @is_approved
@@ -214,7 +217,9 @@ def submit_edit_post(request, post_uuid):
     post.updated_at = datetime.now()
     post.save()
 
-    return redirect("postApp:post_detail", post_uuid=post_uuid)
+    return redirect(
+        "postApp:post_detail", username=request.user.username, post_uuid=post_uuid
+    )
 
 
 # view post
@@ -328,7 +333,9 @@ def handle_share_post(request, author_serial, post_uuid):
 
     for recipient in recipients:
         message = f"{request.user.username} shared a post with you."
-        link_url = reverse("postApp:post_detail", args=[post.uuid])
+        link_url = reverse(
+            "postApp:post_detail", args=[post.author.user.username, post.uuid]
+        )
         Notification.objects.create(
             user=recipient,
             message=message,
@@ -612,6 +619,7 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user.author_profile,

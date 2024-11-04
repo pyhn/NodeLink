@@ -42,7 +42,15 @@ class PostAppViewsTestCase(TestCase):
         """
         Test that the create_post view renders the create_post.html template for a GET request.
         """
-        response = self.client.get(reverse("postApp:create_post"))
+        # Generate the URL for 'create_post' with the required 'username' argument
+        create_post_url = reverse(
+            "postApp:create_post", kwargs={"username": self.user.username}
+        )
+
+        # Make a GET request to 'create_post'
+        response = self.client.get(create_post_url)
+
+        # Assertions
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "create_post.html")
 
@@ -57,11 +65,22 @@ class PostAppViewsTestCase(TestCase):
             "visibility": "p",  # Public
             "contentType": "p",  # Plain text
         }
-        response = self.client.post(reverse("postApp:submit_post"), data=post_data)
+
+        # Generate the URL for 'submit_post' with the required 'username' argument
+        submit_post_url = reverse(
+            "postApp:submit_post", kwargs={"username": self.user.username}
+        )
+
+        response = self.client.post(submit_post_url, data=post_data)
+
         self.assertEqual(
             response.status_code, 302
         )  # Should redirect after successful post
-        self.assertRedirects(response, reverse("node_link:home"))
+
+        # Generate the URL for 'home' with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": self.user.username})
+
+        self.assertRedirects(response, home_url)
         # Verify that the post was created
         post_exists = Post.objects.filter(
             title="Test Post",
@@ -92,11 +111,21 @@ class PostAppViewsTestCase(TestCase):
             "contentType": "png",  # Image PNG
             "img": image_file,
         }
-        response = self.client.post(reverse("postApp:submit_post"), data=post_data)
+        # Generate the URL for 'submit_post' with the required 'username' argument
+        submit_post_url = reverse(
+            "postApp:submit_post", kwargs={"username": self.user.username}
+        )
+
+        response = self.client.post(submit_post_url, data=post_data)
+
         self.assertEqual(
             response.status_code, 302
         )  # Should redirect after successful post
-        self.assertRedirects(response, reverse("node_link:home"))
+
+        # Generate the URL for 'home' with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": self.user.username})
+
+        self.assertRedirects(response, home_url)
         # Verify that the post was created
         post = Post.objects.get(title="Test Image Post", author=self.author_profile)
         self.assertIsNotNone(post)
@@ -116,9 +145,20 @@ class PostAppViewsTestCase(TestCase):
             "contentType": "png",  # Image PNG
             "img": invalid_image_file,
         }
-        response = self.client.post(reverse("postApp:submit_post"), data=post_data)
+        # Generate the URL for 'submit_post' with the required 'username' argument
+        submit_post_url = reverse(
+            "postApp:submit_post", kwargs={"username": self.user.username}
+        )
+
+        response = self.client.post(submit_post_url, data=post_data)
+
+        # Generate the URL for 'create_post' with the required 'username' argument
+        create_post_url = reverse(
+            "postApp:create_post", kwargs={"username": self.user.username}
+        )
+
         # Should redirect back to create_post page due to invalid image
-        self.assertRedirects(response, reverse("postApp:create_post"))
+        self.assertRedirects(response, create_post_url)
 
     def test_create_comment_view_post(self):
         """
@@ -137,8 +177,15 @@ class PostAppViewsTestCase(TestCase):
             updated_by=self.author_profile,
         )
         comment_data = {"content": "This is a test comment."}
+
+        # Generate the URL for 'create_comment' with required 'username' and 'post_uuid' arguments
+        create_comment_url = reverse(
+            "postApp:create_comment",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+
         response = self.client.post(
-            reverse("postApp:create_comment", args=[post.uuid]),
+            create_comment_url,
             data=comment_data,
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",  # To simulate AJAX if necessary
         )
@@ -158,24 +205,48 @@ class PostAppViewsTestCase(TestCase):
         unapproved_user = User.objects.create_user(
             username="unapproveduser",
             password="testpassword",
-            is_approved=False,
-            display_name="Unapproved User",
+            is_approved=False,  # Ensure your User model supports this field
+            display_name="Unapproved User",  # Ensure your User model supports this field
         )
         AuthorProfile.objects.create(user=unapproved_user, local_node=self.node)
         self.client.login(username="unapproveduser", password="testpassword")
-        response = self.client.get(reverse("postApp:create_post"))
+
+        # Generate the URL for 'create_post' with the required 'username' argument
+        create_post_url = reverse(
+            "postApp:create_post", kwargs={"username": unapproved_user.username}
+        )
+
+        # Make a GET request to 'create_post'
+        response = self.client.get(create_post_url)
+
+        # Assert that the response is a redirect (status code 302)
         self.assertEqual(
             response.status_code, 302
         )  # Should redirect due to is_approved decorator
+
+        # Assert that the redirect is to the login page
         self.assertRedirects(response, reverse("authorApp:login"))
 
     def test_submit_post_view_get(self):
         """
         Test that a GET request to submit_post redirects to home.
         """
-        response = self.client.get(reverse("postApp:submit_post"))
+        # Generate the URL for 'submit_post' with the required 'username' argument
+        submit_post_url = reverse(
+            "postApp:submit_post", kwargs={"username": self.user.username}
+        )
+
+        # Generate the URL for 'home' with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": self.user.username})
+
+        # Make a GET request to 'submit_post'
+        response = self.client.get(submit_post_url)
+
+        # Assert that the response is a redirect (status code 302)
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse("node_link:home"))
+
+        # Assert that the response redirects to the 'home' URL with the correct 'username'
+        self.assertRedirects(response, home_url)
 
     def test_create_comment_view_post_invalid_post(self):
         """
@@ -183,9 +254,14 @@ class PostAppViewsTestCase(TestCase):
         """
         fake_uuid = uuid.uuid4()
         comment_data = {"content": "This is a test comment."}
-        response = self.client.post(
-            reverse("postApp:create_comment", args=[fake_uuid]), data=comment_data
+
+        # Generate the URL for 'create_comment' with required 'username' and fake 'post_uuid' arguments
+        create_comment_url = reverse(
+            "postApp:create_comment",
+            kwargs={"username": self.user.username, "post_uuid": fake_uuid},
         )
+
+        response = self.client.post(create_comment_url, data=comment_data)
         self.assertEqual(response.status_code, 404)  # Post not found
 
     def test_create_comment_view_not_authenticated(self):
@@ -193,6 +269,7 @@ class PostAppViewsTestCase(TestCase):
         Test that an unauthenticated user cannot create a comment.
         """
         self.client.logout()
+        # Create a test post
         post = Post.objects.create(
             title="Test Post",
             description="Test Description",
@@ -205,15 +282,19 @@ class PostAppViewsTestCase(TestCase):
             updated_by=self.author_profile,
         )
         comment_data = {"content": "This is a test comment."}
-        response = self.client.post(
-            reverse("postApp:create_comment", args=[post.uuid]), data=comment_data
+
+        # Generate the URL for 'create_comment' with required 'username' and 'post_uuid' arguments
+        create_comment_url = reverse(
+            "postApp:create_comment",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
         )
+
+        response = self.client.post(create_comment_url, data=comment_data)
         self.assertEqual(response.status_code, 302)
+
         # Should redirect to login page
         login_url = reverse("authorApp:login")  # Adjust based on your login URL
-        expected_url = (
-            f"{login_url}?next={reverse('postApp:create_comment', args=[post.uuid])}"
-        )
+        expected_url = f"{login_url}?next={create_comment_url}"
         self.assertRedirects(response, expected_url)
 
     def test_like_post_view(self):
@@ -232,9 +313,20 @@ class PostAppViewsTestCase(TestCase):
             created_by=self.author_profile,
             updated_by=self.author_profile,
         )
-        response = self.client.post(reverse("postApp:like_post", args=[post.uuid]))
+        # Generate the URL for 'like_post' with the required 'username' and 'post_uuid' arguments
+        like_post_url = reverse(
+            "postApp:like_post",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+        # Make a POST request to 'like_post'
+        response = self.client.post(like_post_url)
+        # Generate the URL for 'post_detail' with the required 'username' and 'post_uuid' arguments
+        post_detail_url = reverse(
+            "postApp:post_detail",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
         # Should redirect to the post detail page
-        self.assertRedirects(response, reverse("postApp:post_detail", args=[post.uuid]))
+        self.assertRedirects(response, post_detail_url)
         # Verify that the like was created
         like_exists = Like.objects.filter(
             post=post, author=self.author_profile
@@ -257,9 +349,17 @@ class PostAppViewsTestCase(TestCase):
             created_by=self.author_profile,
             updated_by=self.author_profile,
         )
-        response = self.client.post(reverse("postApp:delete_post", args=[post.uuid]))
+        # Generate the URL for 'delete_post' with the required 'username' and 'post_uuid' arguments
+        delete_post_url = reverse(
+            "postApp:delete_post",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+        # Make a POST request to 'delete_post'
+        response = self.client.post(delete_post_url)
+        # Generate the URL for 'node_link:home' with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": self.user.username})
         # Should redirect to home
-        self.assertRedirects(response, reverse("node_link:home"))
+        self.assertRedirects(response, home_url)
         # Verify that the post's visibility is set to 'd' (deleted)
         post.refresh_from_db()
         self.assertEqual(post.visibility, "d")
@@ -272,8 +372,8 @@ class PostAppViewsTestCase(TestCase):
         other_user = User.objects.create_user(
             username="otheruser",
             password="testpassword",
-            is_approved=True,
-            display_name="Other User",
+            is_approved=True,  # Ensure your User model supports this field
+            display_name="Other User",  # Ensure your User model supports this field
         )
         other_author_profile = AuthorProfile.objects.create(
             user=other_user, local_node=self.node
@@ -290,9 +390,17 @@ class PostAppViewsTestCase(TestCase):
             created_by=other_author_profile,
             updated_by=other_author_profile,
         )
-        response = self.client.post(reverse("postApp:delete_post", args=[post.uuid]))
+        # Generate the URL for 'delete_post' with the required 'username' and 'post_uuid' arguments
+        delete_post_url = reverse(
+            "postApp:delete_post",
+            kwargs={"username": other_user.username, "post_uuid": post.uuid},
+        )
+        # Make a POST request to 'delete_post'
+        response = self.client.post(delete_post_url)
+        # Generate the URL for 'node_link:home' with the required 'username' argument
+        home_url = reverse("node_link:home", kwargs={"username": other_user.username})
         # Should redirect to home, but post should not be deleted
-        self.assertRedirects(response, reverse("node_link:home"))
+        self.assertRedirects(response, home_url)
         # Verify that the post's visibility is still 'p'
         post.refresh_from_db()
         self.assertEqual(post.visibility, "p")
@@ -372,10 +480,17 @@ class PostAppViewsTestCase(TestCase):
             "submit_type": "plain",  # From updated form
         }
         response = self.client.post(
-            reverse("postApp:submit_edit_post", args=[post.uuid]), data=edit_data
+            reverse("postApp:submit_edit_post", kwargs={"post_uuid": post.uuid}),
+            data=edit_data,
         )
         # Should redirect to post detail page
-        self.assertRedirects(response, reverse("postApp:post_detail", args=[post.uuid]))
+        self.assertRedirects(
+            response,
+            reverse(
+                "postApp:post_detail",
+                kwargs={"username": self.user.username, "post_uuid": post.uuid},
+            ),
+        )
         # Verify that the post was updated
         post.refresh_from_db()
         self.assertEqual(post.title, "Edited Title")
@@ -416,11 +531,23 @@ class PostAppViewsTestCase(TestCase):
             "submit_type": "image",
             "img": image_file,
         }
-        response = self.client.post(
-            reverse("postApp:submit_edit_post", args=[post.uuid]), data=edit_data
+
+        # Generate the URL for 'submit_edit_post' with the required 'username' and 'post_uuid' arguments
+        submit_edit_post_url = reverse(
+            "postApp:submit_edit_post", kwargs={"post_uuid": post.uuid}
         )
+
+        response = self.client.post(submit_edit_post_url, data=edit_data)
+
+        # Generate the URL for 'post_detail' with the required 'username' and 'post_uuid' arguments
+        post_detail_url = reverse(
+            "postApp:post_detail",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+
         # Should redirect to post detail page
-        self.assertRedirects(response, reverse("postApp:post_detail", args=[post.uuid]))
+        self.assertRedirects(response, post_detail_url)
+
         # Verify that the post was updated
         post.refresh_from_db()
         self.assertEqual(post.title, "Edited Title with Image")
@@ -442,7 +569,14 @@ class PostAppViewsTestCase(TestCase):
             created_by=self.author_profile,
             updated_by=self.author_profile,
         )
-        response = self.client.get(reverse("postApp:one_post", args=[post.uuid]))
+        # Generate the URL for 'one_post' with the required 'username' and 'post_uuid' arguments
+        post_card_url = reverse(
+            "postApp:one_post",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+        # Make a GET request to 'one_post'
+        response = self.client.get(post_card_url)
+        # Assertions
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "post_card.html")
         self.assertContains(response, post.title)
@@ -472,7 +606,12 @@ class PostAppViewsTestCase(TestCase):
             created_by=other_author_profile,
             updated_by=other_author_profile,
         )
-        response = self.client.get(reverse("postApp:one_post", args=[post.uuid]))
+        # Generate the URL for 'one_post' with the required 'username' and 'post_uuid' arguments
+        post_card_url = reverse(
+            "postApp:one_post",
+            kwargs={"username": other_user.username, "post_uuid": post.uuid},
+        )
+        response = self.client.get(post_card_url)
         self.assertEqual(response.status_code, 403)  # Forbidden
 
     def test_post_detail_view(self):
@@ -500,7 +639,17 @@ class PostAppViewsTestCase(TestCase):
             created_by=self.author_profile,
             updated_by=self.author_profile,
         )
-        response = self.client.get(reverse("postApp:post_detail", args=[post.uuid]))
+
+        # Generate the URL for 'post_detail' with the required 'username' and 'post_uuid' arguments
+        post_detail_url = reverse(
+            "postApp:post_detail",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
+        )
+
+        # Make a GET request to 'post_detail'
+        response = self.client.get(post_detail_url)
+
+        # Assertions
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "post_details.html")
         self.assertContains(response, post.title)
@@ -686,10 +835,14 @@ class PostAppTests(APITestCase):
 
     def test_like_post(self):
         self.client.force_authenticate(user=self.user)
-        url = reverse("postApp:like_post", args=[self.post.uuid])
-        print(f"pyhn {url}")
+        # Generate the URL for 'like_post' with required 'username' and 'post_uuid' arguments
+        url = reverse(
+            "postApp:like_post",
+            kwargs={"username": self.user.username, "post_uuid": self.post.uuid},
+        )
+        print(f"Like Post URL: {url}")
         response = self.client.post(url)
-        print(f"pyhn resposne: {response}")
+        print(f"Response Status Code: {response.status_code}")
         self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         self.assertTrue(
             Like.objects.filter(post=self.post, author=self.author).exists()
@@ -697,7 +850,11 @@ class PostAppTests(APITestCase):
 
     def test_comment_on_post(self):
         self.client.force_authenticate(user=self.user)
-        url = reverse("postApp:create_comment", args=[self.post.uuid])
+        # Generate the URL for 'create_comment' with required 'username' and 'post_uuid' arguments
+        url = reverse(
+            "postApp:create_comment",
+            kwargs={"username": self.user.username, "post_uuid": self.post.uuid},
+        )
         data = {
             "content": "This is a comment",
             "author": self.author.id,
