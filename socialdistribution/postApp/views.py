@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 
 
 # Third-party imports
@@ -612,6 +613,7 @@ class PostViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user.author_profile,
