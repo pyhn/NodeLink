@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib import messages
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from rest_framework.response import Response
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from django.db import IntegrityError
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
@@ -19,7 +19,7 @@ from .models import (
 )
 from node_link.models import Node
 from .forms import SignUpForm, LoginForm
-from node_link.utils.common import has_access
+from node_link.utils.common import has_access, is_approved
 from postApp.models import Post
 
 # Third Party Imports
@@ -28,7 +28,7 @@ from datetime import datetime
 # Create your views here.
 # sign up
 def signup_view(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home")
     if request.method == "POST":
         form = SignUpForm(request.POST)
@@ -68,7 +68,7 @@ def signup_view(request):
 
 
 def login_view(request):
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home")
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
@@ -89,7 +89,7 @@ def logout_view(request):
     return redirect("authorApp:login")
 
 
-@login_required
+@is_approved
 def profile_display(request, author_un):
     if request.method == "GET":
         current_user = request.user.author_profile
@@ -155,7 +155,7 @@ def profile_display(request, author_un):
     return redirect("node_link:home")
 
 
-@login_required
+@is_approved
 def friends_page(request):
     """
     Renders a page listing all authors with a 'Follow' button next to each.
@@ -218,7 +218,7 @@ def friends_page(request):
     return render(request, "friends_page.html", context)
 
 
-@login_required
+@is_approved
 def accept_follow_request(request, request_id):
     """
     Accepts a pending follow request.
@@ -278,7 +278,7 @@ def accept_follow_request(request, request_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@login_required
+@is_approved
 def deny_follow_request(request, request_id):
     """
     Denies a pending follow request.
@@ -299,7 +299,7 @@ def deny_follow_request(request, request_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@login_required
+@is_approved
 def unfriend(request, friend_id):
     """
     Removes an existing friendship between the current user and another user.
@@ -337,7 +337,7 @@ def unfriend(request, friend_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@login_required
+@is_approved
 def follow_author(request, author_id):
     """
     Handles sending and resending follow requests, as well as unfollowing authors.

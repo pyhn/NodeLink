@@ -1,24 +1,25 @@
-# from django.shortcuts import render, HttpResponse
-
+# Django imports
 from rest_framework import viewsets
 from django.shortcuts import render
 from django.http import HttpResponseNotAllowed
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Q
-from node_link.models import Notification
-from authorApp.models import Friends, Follower
-from postApp.models import Post
-from .models import Node, Notification
 from rest_framework.permissions import IsAuthenticated
 from .serializers import NodeSerializer, NotificationSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
+# Project imports
+from node_link.models import Node, Notification
+from authorApp.models import Friends, Follower
+from postApp.models import Post
+from node_link.utils.common import is_approved
+
 # post edit/create methods
 
 
-@login_required
+@is_approved
 def home(request):
 
     if request.method == "GET":
@@ -63,7 +64,7 @@ def home(request):
     return HttpResponseNotAllowed("Invalid Method;go home")
 
 
-@login_required
+@is_approved
 def notifications_view(request):
     notifications = Notification.objects.filter(
         user=request.user.author_profile
