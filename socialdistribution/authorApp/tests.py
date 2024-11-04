@@ -6,9 +6,13 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-from .models import AuthorProfile, Friends, Follower
+from rest_framework.test import APITestCase
+from rest_framework import status
+
+from .models import AuthorProfile, User, Friends, Follower
 from node_link.models import Node
 from postApp.models import Post
+
 
 # Set up the User model
 User = get_user_model()
@@ -483,3 +487,78 @@ class AuthorAppViewsTestCase(TestCase):
         response = self.client.get(reverse("authorApp:friends_page"))
         # Should redirect to login
         self.assertRedirects(response, reverse("authorApp:login"))
+
+
+class AuthorAppTests(APITestCase):
+    def setUp(self):
+        # Create test users and profiles
+        self.user1 = User.objects.create_user(
+            username="author1", password="password1", display_name="Author One"
+        )
+        self.user2 = User.objects.create_user(
+            username="author2", password="password2", display_name="Author Two"
+        )
+        self.node = Node.objects.create(
+            url="http://localhost:8000", created_by=self.user1
+        )
+
+        # Create author profiles
+        self.author1 = AuthorProfile.objects.create(
+            user=self.user1, local_node=self.node
+        )
+        self.author2 = AuthorProfile.objects.create(
+            user=self.user2, local_node=self.node
+        )
+
+        # Create friendships and followers with `created_by`
+        Friends.objects.create(
+            user1=self.author1, user2=self.author2, created_by=self.author1
+        )
+        Follower.objects.create(
+            actor=self.author1, object=self.author2, status="a", created_by=self.author1
+        )
+
+        # Authenticate as user1
+        self.client.login(username="author1", password="password1")
+
+    def test_list_authors(self):
+        """Test listing all authors"""
+        url = reverse("authorApp:author-list")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreater(len(response.data), 0)  # Ensure some authors are returned
+
+    def test_retrieve_author(self):
+        """Test retrieving a single author by username"""
+        url = reverse("authorApp:author-detail", args=[self.user1.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user"]["username"], self.user1.username)
+
+    def test_author_followers(self):
+        """Test retrieving followers of an author"""
+        url = reverse("authorApp:author-followers", args=[self.user2.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Only one follower created in setup
+        self.assertEqual(
+            response.data[0]["actor"]["user"]["username"], self.user1.username
+        )
+
+    def test_author_friends(self):
+        """Test retrieving friends of an author"""
+        url = reverse("authorApp:author-friends", args=[self.user1.username])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)  # Only one friend created in setup
+        friend_data = response.data[0]
+        self.assertTrue(
+            (
+                friend_data["user1"]["user"]["username"] == self.user1.username
+                and friend_data["user2"]["user"]["username"] == self.user2.username
+            )
+            or (
+                friend_data["user1"]["user"]["username"] == self.user2.username
+                and friend_data["user2"]["user"]["username"] == self.user1.username
+            )
+        )

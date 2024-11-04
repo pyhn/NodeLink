@@ -451,8 +451,6 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["get"])
     def friends(self, request, pk=None):
         author = get_object_or_404(AuthorProfile, user__username=pk)
-        friends = Friends.objects.filter(
-            (Q(user1=author) | Q(user2=author)) & Q(status=True)
-        )
+        friends = Friends.objects.filter((Q(user1=author) | Q(user2=author)))
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
