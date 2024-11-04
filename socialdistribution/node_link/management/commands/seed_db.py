@@ -54,6 +54,7 @@ class Command(BaseCommand):
                 password=make_password("password123"),
                 date_ob=fake.date(),  # Optional: set a random date of birth
                 display_name=fake.name(),
+                is_approved=True,
             )
             author_profile = AuthorProfile.objects.create(
                 user=user,
@@ -68,7 +69,8 @@ class Command(BaseCommand):
         # Create fake posts
         logger.info("Creating fake posts...")
         posts = []
-        for _ in range(50):
+
+        for _ in range(25):
             aut = choice(authors)
             post = Post.objects.create(
                 title=fake.sentence(),
@@ -78,7 +80,21 @@ class Command(BaseCommand):
                 node=node,
                 author=aut,
                 created_by=aut,
-                contentType=choice(["a", "png", "jpeg", "p", "m"]),
+                contentType=choice(["p"]),
+            )
+            posts.append(post)
+
+        for _ in range(25):
+            aut = choice(authors)
+            post = Post.objects.create(
+                title=fake.sentence(),
+                description=fake.sentence(),
+                content="# " + fake.paragraph(),
+                visibility=choice(["p", "u", "fo", "d"]),
+                node=node,
+                author=aut,
+                created_by=aut,
+                contentType=choice(["m"]),
             )
             posts.append(post)
         logger.info(f"{len(posts)} fake posts created.")

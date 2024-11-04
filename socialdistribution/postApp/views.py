@@ -215,7 +215,9 @@ def submit_edit_post(request, post_uuid):
     post.updated_at = datetime.now()
     post.save()
 
-    return redirect("postApp:post_detail", post_uuid=post_uuid)
+    return redirect(
+        "postApp:post_detail", username=request.user.username, post_uuid=post_uuid
+    )
 
 
 # view post
