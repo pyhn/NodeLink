@@ -108,10 +108,12 @@
     <a href="{%url 'postApp:post_detail' request.user.username post.uuid%}" target="_parent">
         {% if post_content %}
         <div class="post content">
-            {% if post.contentType == 'm' %} {{ post_content|safe|linebreaks }} {% elif post.contentType == 'png' or
-            post.contentType == 'jpeg' or post.contentType == 'gif' or post.contentType == 'a' %}
-            <img src="{{ post_content }}" alt="Post Image" class="post-image" />
-            {% else %} {{ post_content|linebreaks }} {% endif %}
+            {% if post.contentType == 'm' %}
+                {{ post_content|safe|linebreaks }}
+            {% elif post.contentType == 'png' or post.contentType == 'jpeg' or post.contentType == 'gif' or post.contentType == 'a' %}
+                <img src="{{ post_content }}" alt="Post Image" class="post-image" />
+            {% else %}
+                {{ post_content|linebreaks }} {% endif %}
         </div>
         {% endif %}
 
