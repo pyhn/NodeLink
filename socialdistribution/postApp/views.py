@@ -35,12 +35,12 @@ from PIL import Image
 
 
 @is_approved
-def create_post(request):
+def create_post(request, username):
     return render(request, "create_post.html")
 
 
 @is_approved
-def submit_post(request):
+def submit_post(request, username):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
         description = request.POST.get("description", "")

@@ -11,7 +11,7 @@ router = DefaultRouter()
 urlpatterns = [
     # Regular view paths
     path("<str:username>/create_post/", views.create_post, name="create_post"),
-    path("submit_post/", views.submit_post, name="submit_post"),
+    path("<str:username>/submit_post/", views.submit_post, name="submit_post"),
     path(
         "<str:username>/posts_list/<uuid:post_uuid>/",
         views.post_detail,
