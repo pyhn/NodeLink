@@ -141,7 +141,7 @@ class HomeViewTestCase(TestCase):
         # Login as user1
         self.client.login(username="user1", password="password1")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         self.assertEqual(response.status_code, 200)
         # Check that the context contains the correct post UUIDs
@@ -153,16 +153,17 @@ class HomeViewTestCase(TestCase):
         self.assertIn(self.post_user1.uuid, post_ids)
 
     def test_home_view_no_authentication(self):
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
+        print(f"pyhn {response}")
         # Replace 'authorApp:login' with the actual URL name for your login view
-        login_url = reverse("authorApp:login") + "?next=" + "/"
+        login_url = reverse("authorApp:login") + "?next=" + "/node/user1"
         self.assertRedirects(response, login_url)
 
     def test_home_view_friends_only_posts_visible_to_friends(self):
         # Login as user1 (friend of user2)
         self.client.login(username="user1", password="password1")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertIn(self.post_friends_only.uuid, post_ids)
@@ -171,8 +172,8 @@ class HomeViewTestCase(TestCase):
         # Login as user3 (not a friend of user2)
         self.client.login(username="user3", password="password3")
 
-        response = self.client.get("/")
-
+        response = self.client.get("/node1/user1")
+        print(f"pyhn {response}")
         post_ids = response.context["all_ids"]
         self.assertNotIn(self.post_friends_only.uuid, post_ids)
 
@@ -180,7 +181,7 @@ class HomeViewTestCase(TestCase):
         # Login as user1 (following user3)
         self.client.login(username="user1", password="password1")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertIn(self.post_unlisted.uuid, post_ids)
@@ -189,7 +190,7 @@ class HomeViewTestCase(TestCase):
         # Login as user2 (not following user3)
         self.client.login(username="user2", password="password2")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertNotIn(self.post_unlisted.uuid, post_ids)
@@ -198,7 +199,7 @@ class HomeViewTestCase(TestCase):
         # Login as user1
         self.client.login(username="user1", password="password1")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertNotIn(self.post_deleted.uuid, post_ids)
@@ -231,7 +232,7 @@ class HomeViewTestCase(TestCase):
 
         self.client.login(username="user4", password="password4")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertIn(public_post_user4.uuid, post_ids)
@@ -244,7 +245,7 @@ class HomeViewTestCase(TestCase):
         # Login as user1
         self.client.login(username="user1", password="password1")
 
-        response = self.client.get("/")
+        response = self.client.get("/node1/user1")
 
         post_ids = response.context["all_ids"]
         self.assertIn(self.post_user1.uuid, post_ids)

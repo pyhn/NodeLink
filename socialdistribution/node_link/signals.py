@@ -43,7 +43,7 @@ def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
             message=message,
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            # author_picture_url=author.user.profile_image,
+            author_picture_url=author.user.profile_image,
         )
         print("notification created")
 
@@ -80,7 +80,7 @@ def notify_author_on_new_like(sender, instance, created, **kwargs):
             print("Like created, notifying author via notification")
             message = f"{author.user.username} liked your post."
             link_url = reverse(
-                "postApp:post_detail", args=[post.uuid, author.user.username]
+                "postApp:post_detail", args=[author.user.username, post.uuid]
             )
             Notification.objects.create(
                 user=post.author,  # Use post.author (AuthorProfile)
