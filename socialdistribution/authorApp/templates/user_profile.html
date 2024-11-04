@@ -24,14 +24,75 @@
                 <h2>{{ num_followers }} followers</h2>
                 <h2>{{ num_following }} following</h2>
             </span>
-            
+
             {% if request.user == author.user %}
             <!-- Edit Profile Button -->
             <button class="btn btn-primary" data-toggle="modal" data-target="#editProfileModal">Edit Profile</button>
             {% endif %}
-        </div>
 
         <div id="user_posts">
+            {% if user.author_profile != author %}
+            {% if button_type == "unfriend" %}
+            <span id="user_fri/fol">
+                <form method="post" action="{% url 'authorApp:unfriend' author.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Unfriend</button>
+                </form>
+            </span>
+            {% elif button_type == "unfollow/accept_or_deny" %}
+            <span id="user_fri/fol">
+                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Unfollow</button>
+                </form>
+                <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Accept</button>
+                </form>
+                <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Deny</button>
+                </form>
+            </span>
+            {% elif button_type == "unfollow" %}
+            <span id="user_fri/fol">
+                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Unfollow</button>
+                </form>
+            </span>
+            {% elif button_type == "accept_or_deny" %}
+            <span id="user_fri/fol">
+                <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Accept</button>
+                </form>
+                <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Deny</button>
+                </form>
+            </span>
+            {% elif button_type == "pending" %}
+            <span id="user_fri/fol">
+                <button disabled>Pending</button>
+            </span>
+            {% else %}
+            <span id="user_fri/fol">
+                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                    {% csrf_token %}
+                    <button type="submit">Follow</button>
+                </form>
+            </span>
+            {% endif %}
+            {%endif%}
+
+
+        </div>
+
+    </div>
+
+        <div id ="user_posts">
+
             <main>
                 {% for p in all_ids %}
                 <div hx-get="{% url 'postApp:one_post' p.uuid %}" hx-trigger="load" hx-target="#number-{{ p.uuid }}"

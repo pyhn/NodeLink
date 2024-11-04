@@ -8,7 +8,7 @@ class Node(models.Model):
     url = models.TextField(null=False)
     created_at = models.DateTimeField(default=datetime.now)
     created_by = models.ForeignKey(
-        "authorApp.User", on_delete=models.PROTECT, related_name="created_nodes"
+        "authorApp.User", on_delete=models.CASCADE, related_name="created_nodes"
     )
     updated_at = models.DateTimeField(default=datetime.now)
     deleted_at = models.DateTimeField(default=datetime.now)
@@ -16,7 +16,7 @@ class Node(models.Model):
         "authorApp.User",
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="deleted_nodes",
     )
 

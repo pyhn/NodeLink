@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("authorApp", "0002_initial"),
+        ("authorApp", "0004_user_is_approved_alter_authorprofile_local_node_and_more"),
     ]
 
     operations = [
