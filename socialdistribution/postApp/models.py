@@ -28,12 +28,12 @@ class Post(MixinApp):
     # img = models.ImageField(upload_to="images/", null=True) #!!!POST NOTE: save this in content field at dataurl
     visibility = models.CharField(max_length=2, choices=visibility_choices, default="p")
     node = models.ForeignKey(
-        "node_link.Node", on_delete=models.PROTECT, related_name="posts"
+        "node_link.Node", on_delete=models.CASCADE, related_name="posts"
     )
     author = models.ForeignKey(
-        "authorApp.AuthorProfile", on_delete=models.PROTECT, related_name="posts"
+        "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="posts"
     )
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=True)
     contentType = models.CharField(
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
@@ -50,13 +50,13 @@ class Comment(MixinApp):
         "postApp.Post", on_delete=models.CASCADE, related_name="comments"
     )
     author = models.ForeignKey(
-        "authorApp.AuthorProfile", on_delete=models.PROTECT, related_name="comments"
+        "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="comments"
     )
     # contentType = models.CharField(max_length=225, default="text/markdown")#!!! POST NOTE !!!API NOTE is this necessary
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     def __str__(self):
-        return f"Comment by {self.author.user.displayName} on {self.post.title}"
+        return f"Comment by {self.author.user.display_name} on {self.post.title}"
 
 
 class CommentLike(MixinApp):
@@ -75,7 +75,7 @@ class CommentLike(MixinApp):
         ]
 
     def __str__(self):
-        return f"{self.author.user.displayName} liked '{self.comment}'"
+        return f"{self.author.user.display_name} liked '{self.comment}'"
 
 
 class Like(MixinApp):
@@ -92,4 +92,4 @@ class Like(MixinApp):
         ]
 
     def __str__(self):
-        return f"{self.author.username} liked '{self.post.title}'"
+        return f"{self.author.user.username} liked '{self.post.title}'"

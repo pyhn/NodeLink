@@ -1,72 +1,198 @@
 {% load static %}
 
-
 <!-- Replace word with icons later -->
+<style>
+    /* styles.css */
 
-<div class="post info">
+    /* Post Content Styling */
+    .post.content {
+        margin-top: 12px;
+        /* Space above content */
+        overflow-wrap: break-word;
+        /* Break long words */
+        word-wrap: break-word;
+        /* Legacy support */
+        word-break: break-word;
+        /* Break words at arbitrary points */
+        white-space: pre-wrap;
+        /* Preserve whitespace and wrap as needed */
+        max-width: 100%;
+        /* Ensure content doesn't exceed container width */
+        box-sizing: border-box;
+        /* Include padding and border in width calculations */
+        padding: 8px 0;
+        /* Vertical padding for readability */
+    }
+
+    /* Enhanced Handling for Long Words */
+    .post.content {
+        /* Ensure long words break and wrap within the container */
+        word-break: break-all;
+        /* Break words at any character to prevent overflow */
+        hyphens: auto;
+        /* Add hyphens where appropriate */
+    }
+
+    /* Responsive Image within Post Content */
+    .post.content img.post-image {
+        max-width: 100%;
+        /* Scale down to fit container */
+        height: auto;
+        /* Maintain aspect ratio */
+        display: block;
+        /* Remove inline spacing */
+        margin: 12px 0;
+        /* Vertical spacing around image */
+        border-radius: 4px;
+        /* Optional: Rounded corners for images */
+    }
+
+    /* Post Image Styling */
+    .post.img img.post-image {
+        max-width: 100%;
+        /* Ensure image doesn't exceed container width */
+        height: auto;
+        /* Maintain aspect ratio */
+        display: block;
+        /* Remove inline spacing */
+        margin: 12px 0;
+        /* Vertical spacing around image */
+        border-radius: 4px;
+        /* Optional: Rounded corners for images */
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 600px) {
+
+
+        .post.content {
+            padding: 6px 0;
+            /* Reduce padding */
+        }
+
+        .post.content img.post-image {
+            margin: 8px 0;
+            /* Reduce image margin */
+        }
+
+        .post.img img.post-image {
+            margin: 8px 0;
+            /* Reduce image margin */
+        }
+    }
+</style>
+
+<div class="post-card">
     <!-- Post Meta Information -->
-    <!-- Post Title -->
-    <a  href="{% url 'authorApp:profile_display' post.author.user.username%}"><div class='user_img'><img src="{{profileImg}}"></div></a>
-    <div class="user_info">
-        <h1>{{post.title}}</h1>
-        <span class="user_icon"></span><!--!!!add anchor to user account-->
-        <div class="post-meta"><!--!!!add link yo user profile-->
-            By <a  href="{% url 'authorApp:profile_display' post.author.user.username%}">{{ post.author.user.username }}</a> on {{ post.created_at|date:"F j, Y, g:i a" }}
-            | Visibility: {{ post.get_visibility_display }}
+    <div class="post info">
+        <!-- Post Title -->
+        <a href="{% url 'authorApp:profile_display' post.author.user.username %}">
+            <div class='user_img'>
+                <img src="{{ profileImg }}" alt="{{ post.author.user.username }}'s profile image">
+            </div>
+        </a>
+        <div class="user_info">
+            <h1>{{ post.title }}</h1>
+            <span class="user_icon"></span><!--!!!add anchor to user account-->
+            <div class="post-meta"><!--!!!add link to user profile-->
+                By <a href="{% url 'authorApp:profile_display' post.author.user.username %}">{{post.author.user.username }}</a>
+                on {{ post.created_at|date:"F j, Y, g:i a" }}
+                | Visibility: {{ post.get_visibility_display }}
+            </div>
         </div>
     </div>
 
-
-</div>
-<div class="post body">
-    <a href="{%url 'postApp:post_detail' post.uuid%}" target="_parent">
-
+    <!-- Post Body Section -->
+    <div class="post body">
+        <a href="{% url 'postApp:post_detail' post.uuid %}" target="_parent">
             {% if post_content %}
             <div class="post content">
-                {% if post.contentType == 'c' %}
+                {% if post.contentType == 'm' %}
                     {{ post_content|safe|linebreaks }}
+                {% elif post.contentType == 'png' or post.contentType == 'jpeg' or post.contentType == 'gif' or post.contentType == 'a' %}
+                    <img src="{{ post_content }}" alt="Post Image" class="post-image">
                 {% else %}
                     {{ post_content|linebreaks }}
                 {% endif %}
-
             </div>
             {% endif %}
 
+            <!-- Post Image -->
+            {% if post.img %}
+            <div class="post img">
+                <img src="{{ post.img.url }}" alt="Post Image" class="post-image">
+            </div>
+            {% endif %}
+        </a>
+    </div>
 
-        <!-- Post Image -->
-        {% if post.img %}
-        <div class="post img">
-            <img src="{{ post.img.url }}" alt="Post Image">
+    <!-- Post Bottom Bar Section -->
+    <div class="post bottom_bar">
+        <!-- Display the number of likes -->
+        <div class="like-count">
+            {{ post.postliked.count }} {{ post.postliked.count|pluralize:"Like,Likes" }}
         </div>
-        {% endif %}
-    </a>
-</div>
-<div class="post bottom_bar">
-    <!-- Display the number of likes -->
-    <div class="like-count">
-        {{ post.postliked.count }} {{ post.postliked.count|pluralize:"Like,Likes" }}
-    </div>
-    <!-- Like/Unlike Button -->
+        <!-- Like/Unlike Button -->
+        <div class="icon-button">
+            {% if not user_has_liked %}
+            <form action="{% url 'postApp:like_post' post.uuid %}" method="post">
+                {% csrf_token %}
+                <button id='post-like-{{ post.uuid }}' class='icon' type="submit">
+                    <img src="{% static 'icons/plain_heart.svg' %}" alt="Like Button">
+                </button>
+            </form>
+            {% else %}
+            <span class='icon'>
+                <img src="{% static 'icons/filled_heart.svg' %}" alt="Unlike Button">
+            </span>
+            {% endif %}
+        </div>
+
+
+    <!-- Share button -->
+    {% if post.visibility == 'p' %}
     <div class="icon-button">
-
-
-        {% if user_has_liked == False%}
-        <form action="{% url 'postApp:like_post' post.uuid %}" method="post">
-            {% csrf_token %}
-            <button id='post-like-{{post.uuid}}' class='icon' type="submit"><img
-                    src="{% static 'icons/plain_heart.svg' %}" alt="like button"></button>
-        </form>
-        {%else%}
-        <span class='icon'><img src="{% static 'icons/filled_heart.svg' %}"
-            alt="unlike button"></span>
-        {% endif %}
+        {% csrf_token %}
+        <!-- Clicking the button triggers HTMX request to load the share form via GET request to share_post into the
+             shareModel structure (popup)-->
+        <button class="icon" type="button"
+            hx-get="{% url 'postApp:render_share_form' author_serial=post.author.user.username post_uuid=post.uuid %}"
+            hx-target="#shareModalContent" hx-trigger="click" hx-swap="innerHTML">
+            <img src="{% static 'icons/send.svg' %}" alt="send button">
+        </button>
     </div>
+    {% endif %}
 
-
-    <div class="icon-button">
-        <form action="" method="post"><!--!!! url-->
-            {% csrf_token %}
-            <button class="icon" type="submit"><img src="{% static 'icons/send.svg' %}" alt="send button"></button>
-        </form>
+    <!-- Modal Structure -->
+    <div id="shareModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="shareModalContent">
+                <!-- Content loaded via HTMX -->
+            </div>
+        </div>
     </div>
 </div>
+<script src="https://unpkg.com/htmx.org"></script>
+
+<!-- Modal JavaScript -->
+<script>
+    function closeModal() {
+        document.getElementById('shareModal').style.display = 'none';
+    }
+
+    // Show modal when content is loaded via HTMX
+    document.addEventListener('htmx:afterSwap', (e) => {
+        if (e.detail.target.id === 'shareModalContent') {
+            document.getElementById('shareModal').style.display = 'block';
+        }
+    });
+
+    // Close modal when clicking outside of the modal content
+    window.onclick = function (event) {
+        const modal = document.getElementById('shareModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    };
+</script>

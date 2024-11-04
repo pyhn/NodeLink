@@ -60,3 +60,4 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["user1", "user2", "status"]
+

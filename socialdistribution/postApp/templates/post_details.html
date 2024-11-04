@@ -20,8 +20,13 @@
         {% if post.author.user == user%}
         <div class="post info user_actions">
 
+            <!-- Edit Button -->
+            <button class='icon' onclick="openEditOverlay()" id='post-edit'>
+                <img src="{% static 'icons/pencil.svg' %}" alt="edit post button">
+            </button>
+
             <button class='icon' onclick="openOverlay()" id='post-delete'><img src="{% static 'icons/bin.svg' %}"
-                    alt="delete post button"></button>
+                    alt="edit post button"></button>
 
         </div>
         {%endif%}
@@ -72,6 +77,18 @@
 </body>
 {% if post.author.user == user%}
 
+
+ <!-- Edit Confirmation Overlay -->
+ <div id="editOverlay" class="overlay">
+    <div class="overlay-content">
+        <p>Do you want to edit this post?</p>
+        <form action = "{% url 'postApp:edit_post' post.uuid %}" method="get">
+            <button class="confirm-btn" type="submit">Yes, Edit</button>
+        </form>
+        <button class="cancel-btn" onclick="closeEditOverlay()">Cancel</button>
+    </div>
+</div>
+
 <!-- Delete Confirmation Overlay -->
 <div id="deleteOverlay" class="overlay">
     <div class="overlay-content">
@@ -92,6 +109,16 @@
 
     function closeoverlay() {
         document.getElementById('deleteOverlay').classList.remove('show-overlay');;
+    }
+
+    // Function to open the Edit Confirmation Overlay
+    function openEditOverlay() {
+            document.getElementById('editOverlay').classList.add('show-overlay');
+        }
+
+    // Function to close the Edit Confirmation Overlay
+    function closeEditOverlay() {
+        document.getElementById('editOverlay').classList.remove('show-overlay');
     }
 </script>
 {%endif%}

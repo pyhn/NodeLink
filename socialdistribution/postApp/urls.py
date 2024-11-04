@@ -11,6 +11,7 @@ router = DefaultRouter()
 urlpatterns = [
     # Regular view paths
     path("create_post/", views.create_post, name="create_post"),
+    path("submit_post/", views.submit_post, name="submit_post"),
     path("posts_list/<uuid:post_uuid>/", views.post_detail, name="post_detail"),
     path(
         "create_comment/<uuid:post_uuid>/", views.create_comment, name="create_comment"
@@ -18,10 +19,32 @@ urlpatterns = [
     path("like_post/<uuid:post_uuid>/", views.like_post, name="like_post"),
     path("post_card/<uuid:post_uuid>/", views.post_card, name="one_post"),
     path("delete_post/<uuid:post_uuid>/", views.delete_post, name="delete_post"),
+    path("edit_post/<uuid:post_uuid>/", views.edit_post, name="edit_post"),
+    path(
+        "submit_edit_post/<uuid:post_uuid>/",
+        views.submit_edit_post,
+        name="submit_edit_post",
+    ),
+    # paths for sharing render and handle
+    path(
+        "share/<str:author_serial>/<uuid:post_uuid>/form/",
+        views.render_share_form,
+        name="render_share_form",
+    ),
+    path(
+        "share/<str:author_serial>/<uuid:post_uuid>/",
+        views.handle_share_post,
+        name="handle_share_post",
+    ),
     path(
         "api/authors/<str:author_serial>/posts/",
         views.PostViewSet.as_view({"get": "list", "post": "create"}),
         name="author-posts",
+    ),
+    path(
+        "api/posts/<uuid:uuid>/",
+        views.LocalPostViewSet.as_view({"get": "list"}),
+        name="local_author_post",
     ),
     path(
         "api/authors/<str:author_serial>/posts/<uuid:uuid>/",

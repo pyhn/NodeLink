@@ -39,6 +39,8 @@ class PostSerializer(serializers.ModelSerializer):
         return AuthorProfileSerializer(obj.author).data
 
     def create(self, validated_data):
+
+        validated_data.pop("type")
         return Post.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
