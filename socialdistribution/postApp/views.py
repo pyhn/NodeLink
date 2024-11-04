@@ -71,7 +71,7 @@ def submit_post(request):
 
 
 @is_approved
-def create_comment(request, username, post_uuid ):
+def create_comment(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
     if request.method == "POST":
@@ -252,7 +252,7 @@ def post_card(
 
 
 @is_approved
-def post_detail(request, username,  post_uuid: str):
+def post_detail(request, username, post_uuid: str):
     post = get_object_or_404(Post, uuid=post_uuid)
     if has_access(request=request, post_uuid=post_uuid):
         user_has_liked = False

@@ -62,7 +62,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-
 ]
 
 ROOT_URLCONF = "socialdistribution.urls"
@@ -158,18 +157,17 @@ LOGGING = {
         "level": "INFO",
     },
     "loggers": {
-    "authorApp": {
-        "handlers": ["console"],
-        "level": "INFO",
-        "propagate": False,
+        "authorApp": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "node_link": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
-    "node_link": {
-        "handlers": ["console"],
-        "level": "INFO",
-        "propagate": False,
-    },
-},
-
 }
 
 # enforce authentication when accessed via HTTP requests
