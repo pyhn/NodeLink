@@ -18,7 +18,7 @@ def notify_followers_on_new_post(sender, instance, created, **kwargs):
         for follower in followers:
             message = f"{author.user.username} has made a new post."
             link_url = reverse(
-                "postApp:post_detail", args=[instance.uuid, author.user.username]
+                "postApp:post_detail", args=[author.user.username, instance.uuid]
             )
             Notification.objects.create(
                 user=follower.actor,
