@@ -1,14 +1,18 @@
 # Django imports
 import uuid
+from django.urls import reverse
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets, permissions
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated
+from django.http import JsonResponse
 
 
 # Third-party imports
@@ -23,27 +27,47 @@ from authorApp.models import AuthorProfile, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access
 from postApp.models import Comment, Like, Post
+from postApp.utils.image_check import check_image
 
 # Package imports
 import commonmark
+import base64
+from datetime import datetime
+from PIL import Image
 
 
 @login_required
 def create_post(request):
+    return render(request, "create_post.html")
+
+
+@login_required
+def submit_post(request):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
+        description = request.POST.get("description", "")
         content = request.POST.get("content", "")
-        # img = request.FILES.get("img", None)
         visibility = request.POST.get("visibility", "p")
-        is_commonmark = request.POST.get("is_commonmark") == "true"
+        content_type = request.POST.get("contentType", "p")
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-        content_type = ""
-        if is_commonmark:
-            content_type = "c"
+
+        # Handle image upload
+        if content_type in ["png", "jpeg", "a"]:
+            img = request.FILES.get("img", None)
+            if img:
+                try:
+                    content, _ = check_image(img, content_type, True)
+                except (IOError, SyntaxError):
+                    # The file is not a valid image
+                    return redirect("postApp:create_post")  # Early exit
+            else:
+                # If no image is uploaded but content_type expects one
+                raise ValidationError("Image file is required for image posts.")
 
         # Create the post with the necessary fields
         Post.objects.create(
             title=title,
+            description=description,
             content=content,
             visibility=visibility,
             contentType=content_type,
@@ -52,10 +76,9 @@ def create_post(request):
             created_by=author,
             updated_by=author,
         )
-        # Redirect to the post list page SEdBo49hPQ4
+        # Redirect to the post list page
         return redirect("node_link:home")
-
-    return render(request, "create_post.html")
+    return redirect("node_link:home")
 
 
 @login_required
@@ -87,23 +110,12 @@ def like_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
-    existing_like = Like.objects.filter(post=post, author=author)
-    if existing_like.exists():
-        existing_like.delete()
-        # Delete the corresponding notification
-        Notification.objects.filter(
-            user=post.author,
-            notification_type="like",
-            related_object_id=str(post.id),
-            message=f"{author.user.username} liked your post.",
-        ).delete()
-    else:
-        Like.objects.create(
-            post=post,
-            author=author,  # Include the author field
-            created_by=author,
-            updated_by=author,
-        )
+    Like.objects.create(
+        post=post,
+        author=author,  # Include the author field
+        created_by=author,
+        updated_by=author,
+    )
 
     return redirect("postApp:post_detail", post_uuid)
 
@@ -116,6 +128,95 @@ def delete_post(request, post_uuid):
         post.visibility = "d"
         post.save()
     return redirect("node_link:home")
+
+
+@login_required
+def edit_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
+
+    if post.author.user != request.user:
+        return HttpResponseForbidden("You are not allowed to edit this post.")
+
+    # Determine active tab based on contentType
+    if post.contentType == "p":
+        active_tab = "PlainText"
+    elif post.contentType == "m":
+        active_tab = "Markdown"
+    elif post.contentType in ["png", "jpeg", "a"]:
+        active_tab = "Image"
+    else:
+        active_tab = "PlainText"  # Default to PlainText if unknown
+
+    # Define image types for conditional rendering
+    image_types = ["png", "jpeg"]
+
+    # Handle GET request to render the form with pre-filled data
+    if request.method == "GET":
+        context = {
+            "post": post,
+            "active_tab": active_tab,
+            "image_types": image_types,
+        }
+        return render(request, "edit_post.html", context)
+    else:
+        # If request method is not GET, redirect to edit page
+        return redirect("postApp:edit_post", post_uuid=post_uuid)
+
+
+@login_required
+def submit_edit_post(request, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid)
+
+    if post.author.user != request.user:
+        return HttpResponseForbidden("You are not allowed to edit this post.")
+
+    if request.method != "POST":
+        return redirect(
+            "postApp:edit_post", post_uuid=post_uuid
+        )  # Early exit if not POST
+
+    # Extract form data with defaults
+    title = request.POST.get("title", post.title)
+    description = request.POST.get("description", post.description)
+    content = request.POST.get("content", post.content)
+    visibility = request.POST.get("visibility", post.visibility)
+    content_type = request.POST.get("contentType", post.contentType)
+    submit_type = request.POST.get("submit_type", "plain")  # From updated form
+
+    # Handle image upload if content type is image
+    if submit_type == "image":
+        img = request.FILES.get("img", None)
+        if img:
+            # Server-Side Validation: Check file size (e.g., max 2MB)
+            MAX_UPLOAD_SIZE = 2 * 1024 * 1024  # 2 MB
+            if img.size > MAX_UPLOAD_SIZE:
+                messages.error(request, "Image file too large ( > 2MB ).")
+                return redirect("postApp:edit_post", post_uuid=post_uuid)  # Early exit
+
+            try:
+                content, actual_content_type = check_image(img, content_type, False)
+                content_type = actual_content_type
+
+            except (IOError, SyntaxError):
+                # The file is not a valid image
+                return redirect("postApp:edit_post", post_uuid=post_uuid)  # Early exit
+        else:
+            # If no new image is uploaded, keep the existing content
+            content = post.content
+            # Optionally, you might want to reset content_type if the previous post was an image
+            # Or keep it as is to preserve the original type
+
+    # Update the post with new data
+    post.title = title
+    post.description = description
+    post.content = content
+    post.visibility = visibility
+    post.contentType = content_type
+    post.updated_by = request.user.author_profile
+    post.updated_at = datetime.now()
+    post.save()
+
+    return redirect("postApp:post_detail", post_uuid=post_uuid)
 
 
 # view post
@@ -143,7 +244,7 @@ def post_card(
         ).exists()
         user_img = post.author.user.profileImage
 
-        if post.contentType == "c":
+        if post.contentType == "m":
             # Convert Markdown to HTML
             parser = commonmark.Parser()
             renderer = commonmark.HtmlRenderer()
@@ -192,6 +293,55 @@ def post_detail(request, post_uuid: str):
         )
     else:
         return HttpResponseForbidden("You are not supposed to be here. Go Home!")
+
+
+# renders the form for sharing the post to other authors
+@login_required
+def render_share_form(request, author_serial, post_uuid):
+    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+
+    if post.visibility != "p":
+        return HttpResponseForbidden("You can only share public posts.")
+
+    authors = AuthorProfile.objects.exclude(user=request.user)
+    context = {
+        "post": post,
+        "authors": authors,
+    }
+    return render(request, "share_post_form.html", context)
+
+
+@login_required
+def handle_share_post(request, author_serial, post_uuid):
+    # POST Request
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+
+    # ensure that the post is actually public
+    if post.visibility != "p":
+        return HttpResponseForbidden("You can only share public posts.")
+
+    recipient_ids = request.POST.getlist("recipients")
+    recipients = AuthorProfile.objects.filter(id__in=recipient_ids).exclude(
+        user=request.user
+    )
+
+    for recipient in recipients:
+        message = f"{request.user.username} shared a post with you."
+        link_url = reverse("postApp:post_detail", args=[post.uuid])
+        Notification.objects.create(
+            user=recipient,
+            message=message,
+            notification_type="shared_post",
+            related_object_id=str(post.id),
+            author_picture_url=request.user.author_profile.user.profileImage,
+            link_url=link_url,
+        )
+
+        # Response to close the modal
+        return JsonResponse({"success": True})
 
 
 class PostViewSet(viewsets.ModelViewSet):

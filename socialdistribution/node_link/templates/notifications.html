@@ -1,4 +1,7 @@
-{% extends 'base.html' %}
+<!-- notifications.html -->
+<!DOCTYPE html>
+<html lang="en">
+    {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
 {% load static %}
 
 {% block title %}Notifications{% endblock %}
@@ -11,31 +14,15 @@
             <li class="list-group-item {% if not notification.is_read %}list-group-item-info{% endif %}">
                 {% if notification.link_url %}
                     <a href="{{ notification.link_url }}">
-                        <img src="{{ notification.author_picture_url }}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
+                        <img src="{{notification.author_picture_url}}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
                         {{ notification.message }}
                     </a>
-                {% else %}
-                    <img src="{{ notification.author_picture_url }}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
-                    {{ notification.message }}
-                {% endif %}
-                {% if notification.notification_type == "pending_follow_request" %}
-                    <form method="post" action="{% url 'authorApp:accept_follow_request' notification.related_object_id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                    </form>
-                    <form method="post" action="{% url 'authorApp:deny_follow_request' notification.related_object_id %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-sm">Deny</button>
-                    </form>
-                {% endif %}
-                <small class="text-muted">{{ notification.created_at }}</small>
-            </li>
-        {% endfor %}
-    </ul>
-</div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 {% endblock %}
-
-{% block scripts %}
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
-{% endblock %}
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Post</title>
+    <title>Edit Post</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,6 +50,7 @@
         .tab-content.active {
             display: block;
         }
+
         /* Common form styles */
         input[type="text"], textarea, select {
             width: 95%;
@@ -86,41 +87,82 @@
         button.submit-btn:hover {
             background-color: #218838;
         }
+        /* Message styles */
+        .messages {
+            max-width: 700px;
+            margin: 0 auto 20px auto;
+            padding: 10px;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        /* Existing Image Styling */
+        .existing-image img {
+            max-width: 95%;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
     </style>
 </head>
 <body>
-    <h1>Create a New Post</h1>
+    <h1>Edit Post</h1>
+
+    <!-- Display Messages -->
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <div class="tab-container">
-        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_post' %}">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_edit_post' post.uuid %}">
             {% csrf_token %}
 
             <!-- Tab Buttons -->
             <div class="tabs">
-                <button type="button" class="tab-link active" onclick="openTab(event, 'PlainText')">Plain Text</button>
-                <button type="button" class="tab-link" onclick="openTab(event, 'Markdown')">Markdown</button>
-                <button type="button" class="tab-link" onclick="openTab(event, 'Image')">Image</button>
+                <button type="button" class="tab-link {% if active_tab == 'PlainText' %}active{% endif %}" onclick="openTab(event, 'PlainText')">Plain Text</button>
+                <button type="button" class="tab-link {% if active_tab == 'Markdown' %}active{% endif %}" onclick="openTab(event, 'Markdown')">Markdown</button>
+                <button type="button" class="tab-link {% if active_tab == 'Image' %}active{% endif %}" onclick="openTab(event, 'Image')">Image</button>
             </div>
 
             <!-- Hidden input to store contentType -->
-            <input type="hidden" id="contentType" name="contentType" value="p">
+            <input type="hidden" id="contentType" name="contentType" value="{{ post.contentType }}">
+
+            <!-- Hidden input to indicate submit type based on active tab -->
+            <input type="hidden" id="submit_type" name="submit_type" value="{% if active_tab == 'PlainText' %}plain{% elif active_tab == 'Markdown' %}markdown{% elif active_tab == 'Image' %}image{% endif %}">
 
             <!-- Plain Text Tab Content -->
-            <div id="PlainText" class="tab-content active">
+            <div id="PlainText" class="tab-content {% if active_tab == 'PlainText' %}active{% endif %}">
                 <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
+                <input type="text" name="title" placeholder="Enter the post title" value="{{ post.title }}" required>
 
                 <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
+                <textarea name="description" rows="3" placeholder="Enter a description for your post...">{{ post.description }}</textarea>
 
                 <!-- Textarea for plain text content -->
-                <textarea name="content" rows="10" placeholder="Write your plain text post..."></textarea>
+                <textarea name="content" rows="10" placeholder="Write your plain text post...">{{ post.content }}</textarea>
 
                 <!-- Select for post visibility -->
                 <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
+                    <option value="p" {% if post.visibility == "p" %}selected{% endif %}>Public</option>
+                    <option value="u" {% if post.visibility == "u" %}selected{% endif %}>Unlisted</option>
+                    <option value="fo" {% if post.visibility == "fo" %}selected{% endif %}>Friends-Only</option>
                 </select>
 
                 <!-- Submit button -->
@@ -128,21 +170,21 @@
             </div>
 
             <!-- Markdown Tab Content -->
-            <div id="Markdown" class="tab-content">
+            <div id="Markdown" class="tab-content {% if active_tab == 'Markdown' %}active{% endif %}">
                 <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
+                <input type="text" name="title" placeholder="Enter the post title" value="{{ post.title }}" required>
 
                 <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your post..."></textarea>
+                <textarea name="description" rows="3" placeholder="Enter a description for your post...">{{ post.description }}</textarea>
 
                 <!-- Textarea for markdown content -->
-                <textarea name="content" rows="10" placeholder="Write your Markdown post..."></textarea>
+                <textarea name="content" rows="10" placeholder="Write your Markdown post...">{{ post.content }}</textarea>
 
                 <!-- Select for post visibility -->
                 <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
+                    <option value="p" {% if post.visibility == "p" %}selected{% endif %}>Public</option>
+                    <option value="u" {% if post.visibility == "u" %}selected{% endif %}>Unlisted</option>
+                    <option value="fo" {% if post.visibility == "fo" %}selected{% endif %}>Friends-Only</option>
                 </select>
 
                 <!-- Submit button -->
@@ -150,21 +192,28 @@
             </div>
 
             <!-- Image Tab Content -->
-            <div id="Image" class="tab-content">
+            <div id="Image" class="tab-content {% if active_tab == 'Image' %}active{% endif %}">
                 <!-- Input for post title -->
-                <input type="text" name="title" placeholder="Enter the post title" required>
+                <input type="text" name="title" placeholder="Enter the post title" value="{{ post.title }}" required>
 
                 <!-- Input for description -->
-                <textarea name="description" rows="3" placeholder="Enter a description for your image..."></textarea>
+                <textarea name="description" rows="3" placeholder="Enter a description for your image...">{{ post.description }}</textarea>
+
+                <!-- Display existing image if post is image type -->
+                {% if post.contentType in image_types %}
+                    <div class="existing-image">
+                        <img src="{{ post.content }}" alt="Existing Image">
+                    </div>
+                {% endif %}
 
                 <!-- Input for image file -->
-                <input type="file" name="img" accept="image/*" required>
+                <input type="file" name="img" accept="image/*">
 
                 <!-- Select for post visibility -->
                 <select name="visibility">
-                    <option value="p">Public</option>
-                    <option value="u">Unlisted</option>
-                    <option value="fo">Friends-Only</option>
+                    <option value="p" {% if post.visibility == "p" %}selected{% endif %}>Public</option>
+                    <option value="u" {% if post.visibility == "u" %}selected{% endif %}>Unlisted</option>
+                    <option value="fo" {% if post.visibility == "fo" %}selected{% endif %}>Friends-Only</option>
                 </select>
 
                 <!-- Submit button -->
@@ -202,19 +251,23 @@
                 activeInputs[i].disabled = false;
             }
 
-            // Set the hidden contentType based on the selected tab
+            // Set the hidden contentType and submit_type based on the selected tab
             var contentTypeInput = document.getElementById("contentType");
+            var submitTypeInput = document.getElementById("submit_type");
             if (tabName === "PlainText") {
                 contentTypeInput.value = "p";
+                submitTypeInput.value = "plain";
             } else if (tabName === "Markdown") {
                 contentTypeInput.value = "m";
+                submitTypeInput.value = "markdown";
             } else if (tabName === "Image") {
                 // Initially set to 'a' for application/base64
                 contentTypeInput.value = "a";
+                submitTypeInput.value = "image";
             }
         }
 
-        // Initialize by disabling inputs in inactive tabs
+        // Initialize by disabling inputs in inactive tabs and setting up the file input listener
         window.onload = function() {
             var tabContents = document.getElementsByClassName("tab-content");
             for (var i = 0; i < tabContents.length; i++) {
@@ -239,6 +292,7 @@
                             'image/png': 'png',
                             'image/jpeg': 'jpeg',
                             'image/jpg': 'jpeg',
+                            'image/gif': 'gif', // If you want to support GIFs
                             // Add more mappings if needed
                         };
 
@@ -251,10 +305,6 @@
                 });
             }
         };
-
-        // Ensure that only the active tab's submit button is active
-        // Prevent multiple posts with the same title and description
-        // Optionally, you can add more JavaScript for enhanced functionality
     </script>
 </body>
 </html>

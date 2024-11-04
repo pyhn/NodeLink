@@ -1,0 +1,93 @@
+<!-- Displays a form with all the authors except the author that clicked the share button -->
+<h2>Share "{{ post.title }}"</h2>
+<form id="sharePostForm">
+    {% csrf_token %}
+    <p>Select authors to share the post with:</p>
+    {% for author in authors %}
+        <div class="author-entry" onclick="toggleCheckbox('{{ author.id }}')">
+            <input type="checkbox" id="author-{{ author.id }}" name="recipients" value="{{ author.id }}" style="display: none;" onchange="updateShareButton()">
+            <label for="author-{{ author.id }}" class="author-label">
+                <img src="{{ author.user.profileImage }}" alt="{{ author.user.username }}" class="author-img">
+                {{ author.user.username }}
+            </label>
+        </div>
+    {% endfor %}
+    <button type="submit" id="shareButton" disabled>Share Post</button>
+</form>
+
+<script>
+    // if you click "Share Post button", a POST request is sent to share_post view
+    document.getElementById('sharePostForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch("{% url 'postApp:handle_share_post' author_serial=post.author.user.username post_uuid=post.uuid %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: formData,
+        })
+        .then(response => response.text())
+        .then(data => {
+            closeModal();
+        })
+        .catch(error => {
+            console.error('Error sharing post:', error);
+            alert('An error occurred while sharing the post.');
+        });
+    });
+
+    // functions to toggle checkboxes and update share button
+    function toggleCheckbox(authorId) {
+        const checkbox = document.getElementById('author-' + authorId);
+        checkbox.checked = !checkbox.checked;
+        if (checkbox.checked) {
+            document.querySelector(`label[for="author-${authorId}"]`).classList.add('selected');
+        } else {
+            document.querySelector(`label[for="author-${authorId}"]`).classList.remove('selected');
+        }
+        updateShareButton();
+    }
+    // update share button
+    function updateShareButton() {
+        const checkboxes = document.querySelectorAll('input[name="recipients"]:checked');
+        const shareButton = document.getElementById('shareButton');
+        shareButton.disabled = checkboxes.length === 0;
+    }
+</script>
+
+<style>
+    .author-entry {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 4px;
+    }
+
+    .author-entry:hover {
+        background-color: #f0f0f0;
+    }
+
+    .author-label {
+        display: flex;
+        align-items: center;
+    }
+
+    .author-img {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+
+    .selected {
+        background-color: #d1e7dd;
+    }
+
+    button#shareButton:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+</style>
