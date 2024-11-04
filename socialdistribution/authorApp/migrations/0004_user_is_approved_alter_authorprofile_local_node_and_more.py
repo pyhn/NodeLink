@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("authorApp", "0002_initial"),
+        ("authorApp", "0003_remove_friends_unique_friendship_and_more"),
         ("node_link", "0002_alter_node_created_by_alter_node_deleted_by"),
     ]
 

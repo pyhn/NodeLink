@@ -30,7 +30,7 @@ def create_post(request):
     return render(request, "create_post.html")
 
 
-@login_required
+@is_approved
 def submit_post(request):
     if request.method == "POST":
         title = request.POST.get("title", "New Post")
@@ -119,7 +119,7 @@ def delete_post(request, post_uuid):
     return redirect("node_link:home")
 
 
-@login_required
+@is_approved
 def edit_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 
@@ -152,7 +152,7 @@ def edit_post(request, post_uuid):
         return redirect("postApp:edit_post", post_uuid=post_uuid)
 
 
-@login_required
+@is_approved
 def submit_edit_post(request, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
 

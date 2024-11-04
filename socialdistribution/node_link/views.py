@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from django.shortcuts import render
 from django.http import HttpResponseNotAllowed
 from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from .serializers import NodeSerializer, NotificationSerializer
@@ -24,14 +25,15 @@ def home(request):
     if request.method == "GET":
         template_name = "home.html"
         user = request.user.author_profile
+
         friends = list(
-            Friends.objects.filter(
-                Q(user1=user, status=True) | Q(user2=user, status=True)
-            ).values_list("user1", "user2")
+            Friends.objects.filter(Q(user1=user) | Q(user2=user)).values_list(
+                "user1", "user2"
+            )
         )
         friends = list(set(u_id for tup in friends for u_id in tup))
         following = list(
-            Follower.objects.filter(Q(actor=user, status=True)).values_list(
+            Follower.objects.filter(Q(actor=user, status="a")).values_list(
                 "object", flat=True
             )
         )
@@ -48,6 +50,7 @@ def home(request):
                     visibility="u",  # all unlisted
                     author_id__in=following,
                 )
+                | Q(author_id=user.id)
             )
             .distinct()
             .order_by("-updated_at")
