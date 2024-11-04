@@ -7,15 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "username",
-            "first_name",
-            "last_name",
-            "email",
-            "date_ob",
-            "profileImage",
-        ]
-
+        fields = ['username', 'first_name', 'last_name', 'email', 'date_ob', 'profileImage']
 
 # Serializer for AuthorProfile data
 class AuthorProfileSerializer(serializers.ModelSerializer):
@@ -28,7 +20,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuthorProfile
-        fields = ["type", "id", "host", "user", "github", "local_node"]
+        fields = ['type', 'id', 'host', 'user', 'github', 'local_node']
 
     def get_id(self, obj):
         # Construct the API URL using the local node and username
@@ -41,19 +33,16 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 # Serializer for followers
 class FollowerSerializer(serializers.ModelSerializer):
     """Serializer for followers"""
-
     actor = AuthorProfileSerializer(read_only=True)
     object = AuthorProfileSerializer(read_only=True)
 
     class Meta:
         model = Follower
-        fields = ["actor", "object", "status"]
-
+        fields = ['actor', 'object', 'status']
 
 # Serializer for friendships
 class FriendSerializer(serializers.ModelSerializer):
     """Serializer for friendships"""
-
     user1 = AuthorProfileSerializer(read_only=True)
     user2 = AuthorProfileSerializer(read_only=True)
 

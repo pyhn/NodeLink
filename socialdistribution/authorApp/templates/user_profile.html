@@ -1,100 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-{% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+    {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SocialDistribution</title>
-</head>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SocialDistribution</title>
+        <!-- Bootstrap CSS for modal styling -->
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" />
+    </head>
 
-<body>
-    <div class='personal_profile'>
-        <div id="user_info">
-            <span class="user_icon large"><img
-                    src={{author.user.profileImage}}></span><!--!!!add anchor to user account-->
-            <h1> {{author.user.displayName}}</h1>
-            <h4> @{{author.user.username}}</h4>
+    <body>
+        <div class="personal_profile">
+            <div id="user_info">
+                <span class="user_icon large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
+                <h1>{{ author.user.display_name }}</h1>
+                <h4>@{{ author.user.username }}</h4>
+                <h4>Github: {{ author.user.github_user }}</h4>
+                <h5>Description: {{ author.user.description }}</h5>
 
-            <span id="user_stats">
-                <h2>{{num_friends}} friends</h2>
-                <h2>{{num_followers}} followers</h2>
-                <h2>{{num_following}} following</h2>
-            </span>
-            {% if user.author_profile != author %}
-            {% if button_type == "unfriend" %}
-            <span id="user_fri/fol">
-                <form method="post" action="{% url 'authorApp:unfriend' author.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Unfriend</button>
-                </form>
-            </span>
-            {% elif button_type == "unfollow/accept_or_deny" %}
-            <span id="user_fri/fol">
-                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Unfollow</button>
-                </form>
-                <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Accept</button>
-                </form>
-                <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Deny</button>
-                </form>
-            </span>
-            {% elif button_type == "unfollow" %}
-            <span id="user_fri/fol">
-                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Unfollow</button>
-                </form>
-            </span>
-            {% elif button_type == "accept_or_deny" %}
-            <span id="user_fri/fol">
-                <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Accept</button>
-                </form>
-                <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Deny</button>
-                </form>
-            </span>
-            {% elif button_type == "pending" %}
-            <span id="user_fri/fol">
-                <button disabled>Pending</button>
-            </span>
-            {% else %}
-            <span id="user_fri/fol">
-                <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                    {% csrf_token %}
-                    <button type="submit">Follow</button>
-                </form>
-            </span>
-            {% endif %}
-            {%endif%}
+                <span id="user_stats">
+                    <h2>{{ num_friends }} friends</h2>
+                    <h2>{{ num_followers }} followers</h2>
+                    <h2>{{ num_following }} following</h2>
+                </span>
 
+                {% if request.user == author.user %}
+                <!-- Edit Profile Button -->
+                <button class="btn btn-primary" data-toggle="modal" data-target="#editProfileModal">
+                    Edit Profile
+                </button>
+                {% endif %}
 
-        </div>
+                <div id="user_posts">
+                    {% if user.author_profile != author %} {% if button_type == "unfriend" %}
+                    <span id="user_fri/fol">
+                        <form method="post" action="{% url 'authorApp:unfriend' author.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Unfriend</button>
+                        </form>
+                    </span>
+                    {% elif button_type == "unfollow/accept_or_deny" %}
+                    <span id="user_fri/fol">
+                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Unfollow</button>
+                        </form>
+                        <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Accept</button>
+                        </form>
+                        <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Deny</button>
+                        </form>
+                    </span>
+                    {% elif button_type == "unfollow" %}
+                    <span id="user_fri/fol">
+                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Unfollow</button>
+                        </form>
+                    </span>
+                    {% elif button_type == "accept_or_deny" %}
+                    <span id="user_fri/fol">
+                        <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Accept</button>
+                        </form>
+                        <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Deny</button>
+                        </form>
+                    </span>
+                    {% elif button_type == "pending" %}
+                    <span id="user_fri/fol">
+                        <button disabled>Pending</button>
+                    </span>
+                    {% else %}
+                    <span id="user_fri/fol">
+                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                            {% csrf_token %}
+                            <button type="submit">Follow</button>
+                        </form>
+                    </span>
+                    {% endif %} {%endif%}
+                </div>
+            </div>
 
-        <div id ="user_posts">
-
-            <main>
-                {%for p in all_ids%}
-                <div hx-get="{%url 'postApp:one_post' request.user.username p.uuid %}" hx-trigger="load" hx-target="#number-{{p.uuid}}"
-                    hx-swap="innerHTML">
-                    <div class="post-container">
-                        <p id='number-{{ p.uuid }}'></p>
+            <div id="user_posts">
+                <main>
+                    {% for p in all_ids %}
+                    <div
+                        hx-get="{% url 'postApp:one_post' request.user.username p.uuid %}"
+                        hx-trigger="load"
+                        hx-target="#number-{{ p.uuid }}"
+                        hx-swap="innerHTML"
+                    >
+                        <div class="post-container">
+                            <p id="number-{{ p.uuid }}"></p>
+                        </div>
                     </div>
-
-
                     {% endfor %}
-            </main>
+                </main>
+            </div>
         </div>
-    </div>
-</body>
-{% endblock %}
 
+        <!-- Edit Profile Modal -->
+        <div
+            class="modal fade"
+            id="editProfileModal"
+            tabindex="-1"
+            aria-labelledby="editProfileModalLabel"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form method="post" action="{% url 'authorApp:edit_profile' %}">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="display_name">Display Name</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="display_name"
+                                    name="display_name"
+                                    value="{{ author.user.display_name }}"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="github_user">GitHub Username</label>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id="github_user"
+                                    name="github_user"
+                                    value="{{ author.user.github_user }}"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea class="form-control" id="description" name="description">
+{{ author.user.description }}</textarea
+                                >
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS for modal functionality -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+    {% endblock %}
 </html>

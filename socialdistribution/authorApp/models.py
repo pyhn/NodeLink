@@ -17,12 +17,12 @@ class User(AbstractUser):
         default="/static/icons/user_icon.svg",
     )
 
-    displayName = models.CharField(max_length=50, null=False, blank=False)
-
+    display_name = models.CharField(max_length=50, null=False, blank=False)
+    github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
 
     def __str__(self):
-        return str(self.displayName) or str(self.username)
+        return str(self.display_name) or str(self.username)
 
 
 class AuthorProfile(models.Model):

@@ -4,10 +4,15 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
+from .forms import EditProfileForm
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from rest_framework.views import APIView
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from authorApp.models import AuthorProfile
 from django.db import IntegrityError
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 
@@ -410,20 +415,151 @@ def follow_author(request, author_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
+@login_required
+def edit_profile(request):
+    if request.method == "POST":
+        form = EditProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect(
+                "authorApp:profile_display", author_un=request.user.username
+            )
+    else:
+        form = EditProfileForm(instance=request.user)
+    return render(request, "authorApp/edit_profile.html", {"form": form})
+
+
 # ViewSet for AuthorProfile API
 class AuthorProfileViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        operation_description="Retrieve a list of all authors.",
+        responses={
+            200: openapi.Response(
+                description="A list of authors.",
+                schema=AuthorProfileSerializer(many=True),
+                examples={
+                    "application/json": [
+                        {
+                            "type": "author",
+                            "id": "http://localhost:8000/api/authors/johndoe",
+                            "host": "http://localhost:8000",
+                            "user": {
+                                "username": "johndoe",
+                                "first_name": "John",
+                                "last_name": "Doe",
+                                "email": "john@example.com",
+                                "date_ob": "1990-01-01",
+                                "profileImage": "http://example.com/images/johndoe.png",
+                            },
+                            "github": "https://github.com/johndoe",
+                            "local_node": "http://localhost:8000",
+                        },
+                    ]
+                },
+            )
+        },
+        tags=["Authors"],
+    )
     # Retrieve all authors
     def list(self, request):
         authors = AuthorProfile.objects.all()
         serializer = AuthorProfileSerializer(authors, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Retrieve an author's profile by username.",
+        responses={
+            200: openapi.Response(
+                description="An author's profile.",
+                schema=AuthorProfileSerializer(),
+                examples={
+                    "application/json": {
+                        "type": "author",
+                        "id": "http://localhost:8000/api/authors/johndoe",
+                        "host": "http://localhost:8000",
+                        "user": {
+                            "username": "johndoe",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "email": "john@example.com",
+                            "date_ob": "1990-01-01",
+                            "profileImage": "http://example.com/images/johndoe.png",
+                        },
+                        "github": "https://github.com/johndoe",
+                        "local_node": "http://localhost:8000",
+                    }
+                },
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={"application/json": {"detail": "Author not found."}},
+            ),
+        },
+        tags=["Authors"],
+        manual_parameters=[
+            openapi.Parameter(
+                "username",
+                openapi.IN_PATH,
+                description="Username of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+                example="johndoe",
+            ),
+        ],
+    )
     # Retrieve a single author by username
     def retrieve(self, request, pk=None):
         author = get_object_or_404(AuthorProfile, user__username=pk)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Retrieve followers of an author.",
+        responses={
+            200: openapi.Response(
+                description="A list of followers.",
+                schema=FollowerSerializer(many=True),
+                examples={
+                    "application/json": [
+                        {
+                            "actor": {
+                                "type": "author",
+                                "id": "http://localhost:8000/api/authors/janedoe",
+                                "host": "http://localhost:8000",
+                                "user": {
+                                    "username": "janedoe",
+                                    "first_name": "Jane",
+                                    "last_name": "Doe",
+                                    "email": "jane@example.com",
+                                    "date_ob": "1992-05-15",
+                                    "profileImage": "http://example.com/images/janedoe.png",
+                                },
+                                "github": "https://github.com/janedoe",
+                                "local_node": "http://localhost:8000",
+                            },
+                            "object": "author data",
+                            "status": "approved",
+                        },
+                    ]
+                },
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={"application/json": {"detail": "Author not found."}},
+            ),
+        },
+        tags=["Followers"],
+        manual_parameters=[
+            openapi.Parameter(
+                "username",
+                openapi.IN_PATH,
+                description="Username of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+                example="johndoe",
+            ),
+        ],
+    )
     # Custom action to list followers of an author
     @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
@@ -432,12 +568,43 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         serializer = FollowerSerializer(followers, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Retrieve friends of an author.",
+        responses={
+            200: openapi.Response(
+                description="A list of friends.",
+                schema=FriendSerializer(many=True),
+                examples={
+                    "application/json": [
+                        {
+                            "user1": "author data",
+                            "user2": "friend data",
+                            "status": True,
+                        },
+                    ]
+                },
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={"application/json": {"detail": "Author not found."}},
+            ),
+        },
+        tags=["Friends"],
+        manual_parameters=[
+            openapi.Parameter(
+                "username",
+                openapi.IN_PATH,
+                description="Username of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+                example="johndoe",
+            ),
+        ],
+    )
     # Custom action to list friends of an author
     @action(detail=True, methods=["get"])
     def friends(self, request, pk=None):
         author = get_object_or_404(AuthorProfile, user__username=pk)
-        friends = Friends.objects.filter(
-            (Q(user1=author) | Q(user2=author)) & Q(status=True)
-        )
+        friends = Friends.objects.filter((Q(user1=author) | Q(user2=author)))
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
