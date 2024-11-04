@@ -25,6 +25,17 @@ urlpatterns = [
         views.submit_edit_post,
         name="submit_edit_post",
     ),
+    # paths for sharing render and handle
+    path(
+        "share/<str:author_serial>/<uuid:post_uuid>/form/",
+        views.render_share_form,
+        name="render_share_form",
+    ),
+    path(
+        "share/<str:author_serial>/<uuid:post_uuid>/",
+        views.handle_share_post,
+        name="handle_share_post",
+    ),
     path(
         "api/authors/<str:author_serial>/posts/",
         views.PostViewSet.as_view({"get": "list", "post": "create"}),
