@@ -186,7 +186,7 @@ def post_detail(request, post_uuid: str):
 
 
 # renders the form for sharing the post to other authors
-@login_required
+@is_approved
 def render_share_form(request, author_serial, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
 
@@ -201,7 +201,7 @@ def render_share_form(request, author_serial, post_uuid):
     return render(request, "share_post_form.html", context)
 
 
-@login_required
+@is_approved
 def handle_share_post(request, author_serial, post_uuid):
     # POST Request
     if request.method != "POST":
