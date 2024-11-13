@@ -37,8 +37,6 @@ class AuthorProfile(models.Model):
     github_user = models.CharField(max_length=255, null=True, blank=True)
     local_node = models.ForeignKey("node_link.Node", on_delete=models.CASCADE)
 
-    def get_github_username(self):
-        return self.github_user
 
     def __str__(self):
         return f"{self.user.username} (Author)"
