@@ -36,7 +36,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 
     def get_id(self, obj):
         # Construct the API URL using the local node and username
-        return f"{obj.local_node.url}/api/authors/{obj.user.username}"
+        return f"{obj.local_node.url}api/authors/{obj.user.username}"
 
     def get_host(self, obj):
         return obj.local_node.url
