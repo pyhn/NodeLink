@@ -4,7 +4,13 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
+from django.http import (
+    HttpResponseForbidden,
+    HttpResponseNotAllowed,
+    JsonResponse,
+    HttpResponse,
+    Http404,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
@@ -18,6 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -33,6 +40,7 @@ import commonmark
 import base64
 from datetime import datetime
 from PIL import Image
+import re
 
 
 @is_approved
@@ -1167,3 +1175,58 @@ class LikeViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+
+class PostImageView(APIView):
+    def get(self, request, author_serial, post_uuid):
+        # Step 1: Retrieve the post
+        post = get_object_or_404(
+            Post, uuid=post_uuid, author__user__username=author_serial
+        )
+
+        # Step 2: Check if the post is public
+        if post.visibility != "PUBLIC":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Step 3: Parse the contentType
+        content_type_main, _, content_type_params = post.contentType.partition(";")
+        content_type_params = content_type_params.strip()
+
+        # Step 4: Validate that the contentType is an image
+        if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
+            raise Http404("Post content is not an image.")
+
+        # Step 5: Extract base64 data from content
+        content = post.content
+
+        # For 'application/base64', we may not have a data URI, so handle accordingly
+        if content.startswith("data:"):
+            # Extract the base64 data from data URI
+            match = re.match(
+                r"data:(?P<mime_type>.+);base64,(?P<base64_data>.+)", content
+            )
+            if not match:
+                raise Http404("Invalid image data.")
+            base64_data = match.group("base64_data")
+        else:
+            # Content is raw base64 data without data URI
+            base64_data = content
+
+        # Step 6: Decode the base64 data
+        try:
+            image_data = base64.b64decode(base64_data)
+        except (TypeError, ValueError) as exc:
+            raise Http404("Invalid image data.") from exc
+
+        # Step 7: Set the correct content type
+        # If contentType includes 'base64', remove it
+        if content_type_params == "base64":
+            content_type = content_type_main
+        else:
+            content_type = post.contentType
+
+        # Step 8: Return the image data
+        return HttpResponse(image_data, content_type=content_type)
