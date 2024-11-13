@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.urls import reverse
+from rest_framework.pagination import PageNumberPagination
 
 # Project Imports
 from authorApp.models import Friends
@@ -41,3 +42,8 @@ def is_approved(view_func):
         return HttpResponseRedirect(reverse("authorApp:login"))
 
     return _wrapped_view
+
+
+class CustomPaginator(PageNumberPagination):
+    page_query_param = "page"
+    page_size_query_param = "size"

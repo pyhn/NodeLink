@@ -9,7 +9,7 @@ from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSeri
 from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from rest_framework.views import APIView
+from node_link.utils.common import CustomPaginator
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from authorApp.models import AuthorProfile
@@ -74,7 +74,7 @@ def signup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated and request.user.is_approved:
-        return redirect("node_link:home", username=form.get_user().username)
+        return redirect("node_link:home", username=request.user.username)
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -463,7 +463,9 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     # Retrieve all authors
     def list(self, request):
         authors = AuthorProfile.objects.all()
-        serializer = AuthorProfileSerializer(authors, many=True)
+        paginator = CustomPaginator()
+        paginated_authors = paginator.paginate_queryset(authors, request)
+        serializer = AuthorProfileSerializer(paginated_authors, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(
