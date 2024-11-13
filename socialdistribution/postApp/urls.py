@@ -108,4 +108,10 @@ urlpatterns = [
     ),
     # Include router URLs for other ViewSets if needed
     path("api/", include(router.urls)),
+    # Image endpoints
+    path(
+        "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/image/",
+        views.PostImageView.as_view(),
+        name="post-image",
+    ),
 ]

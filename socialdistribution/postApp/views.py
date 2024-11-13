@@ -1185,24 +1185,32 @@ class PostImageView(APIView):
         )
 
         # Step 2: Check if the post is public
-        if post.visibility != "PUBLIC":
+        if post.visibility != "p":
             return Response(
                 {"detail": "Post is not public."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Step 3: Parse the contentType
-        content_type_main, _, content_type_params = post.contentType.partition(";")
-        content_type_params = content_type_params.strip()
+        print(f"Post Content Type: {post.contentType}")
+
+        # Step 3: Determine the content type based on your conditionals
+        content_type_main = None
+        if post.contentType == "jpeg":
+            content_type_main = "image/jpeg"
+        elif post.contentType == "png":
+            content_type_main = "image/png"
+        elif post.contentType == "a":
+            content_type_main = "application/base64"
+        else:
+            content_type_main = post.contentType  # Use as is if it doesn't match
 
         # Step 4: Validate that the contentType is an image
         if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
             raise Http404("Post content is not an image.")
 
         # Step 5: Extract base64 data from content
-        content = post.content
+        content = post.content.strip()
 
-        # For 'application/base64', we may not have a data URI, so handle accordingly
         if content.startswith("data:"):
             # Extract the base64 data from data URI
             match = re.match(
@@ -1211,9 +1219,14 @@ class PostImageView(APIView):
             if not match:
                 raise Http404("Invalid image data.")
             base64_data = match.group("base64_data")
+            mime_type = match.group("mime_type")
         else:
             # Content is raw base64 data without data URI
             base64_data = content
+            mime_type = content_type_main  # Use the main content type
+
+        # Remove any whitespace or newlines that may corrupt base64 decoding
+        base64_data = base64_data.replace("\n", "").replace("\r", "")
 
         # Step 6: Decode the base64 data
         try:
@@ -1222,11 +1235,9 @@ class PostImageView(APIView):
             raise Http404("Invalid image data.") from exc
 
         # Step 7: Set the correct content type
-        # If contentType includes 'base64', remove it
-        if content_type_params == "base64":
-            content_type = content_type_main
-        else:
-            content_type = post.contentType
+        content_type = mime_type  # Use the extracted or determined MIME type
 
-        # Step 8: Return the image data
-        return HttpResponse(image_data, content_type=content_type)
+        # Step 8: Return the image data with correct headers
+        response = HttpResponse(image_data, content_type=content_type)
+        response["Content-Length"] = len(image_data)
+        return response
