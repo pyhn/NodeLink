@@ -12,7 +12,7 @@ def fetch_github_events(request):
     url = f"https://api.github.com/users/{author.user.github_user}/events"
     response = requests.get(url)
     events = response.json()
-
+    events.reverse() # reverse so that most recent is posted first
     new_posts = []
     latest_event_id = None
 
