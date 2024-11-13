@@ -36,6 +36,8 @@ class AuthorProfile(models.Model):
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     local_node = models.ForeignKey("node_link.Node", on_delete=models.CASCADE)
+    last_github_event_id = models.CharField(max_length=50, null=True, blank=True)
+
 
 
     def __str__(self):
