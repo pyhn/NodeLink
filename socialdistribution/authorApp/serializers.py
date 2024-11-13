@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from authorApp.models import AuthorProfile, Follower, Friends, User
+from django.urls import reverse
 
 # Serializer for User data
 class UserSerializer(serializers.ModelSerializer):
@@ -21,14 +22,17 @@ class UserSerializer(serializers.ModelSerializer):
 class AuthorProfileSerializer(serializers.ModelSerializer):
     """Serializer for AuthorProfile, includes associated User data"""
 
-    user = UserSerializer(read_only=True)
     id = serializers.SerializerMethodField()
     host = serializers.SerializerMethodField()
     type = serializers.CharField(default="author")
+    displayName = serializers.SerializerMethodField()
+    github = serializers.SerializerMethodField()
+    profileImage = serializers.SerializerMethodField()
+    page = serializers.SerializerMethodField()
 
     class Meta:
         model = AuthorProfile
-        fields = ["type", "id", "host", "user", "github", "local_node"]
+        fields = ["type", "id", "host", "displayName", "github", "profileImage", "page"]
 
     def get_id(self, obj):
         # Construct the API URL using the local node and username
@@ -36,6 +40,21 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 
     def get_host(self, obj):
         return obj.local_node.url
+
+    def get_displayName(self, obj):
+        return obj.user.display_name
+
+    def get_github(self, obj):
+        return obj.github
+
+    def get_profileImage(self, obj):
+        return str(obj.user.profileImage)
+
+    def get_page(self, obj):
+        return str(
+            obj.local_node.url.rstrip("/")
+            + reverse("authorApp:profile_display", args=[obj.user.username])
+        )
 
 
 # Serializer for followers
