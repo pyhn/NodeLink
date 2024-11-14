@@ -7,7 +7,7 @@ from django.contrib import messages
 from .forms import EditProfileForm
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from rest_framework.response import Response
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
@@ -29,6 +29,7 @@ from postApp.models import Post
 
 # Third Party Imports
 from datetime import datetime
+from urllib.parse import unquote
 
 # Create your views here.
 # sign up
@@ -613,3 +614,62 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         friends = Friends.objects.filter((Q(user1=author) | Q(user2=author)))
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["get", "put", "delete"],
+        url_path="followers/(?P<follower_fqid>.+)",
+    )
+    def manage_follower(self, request, pk=None, follower_fqid=None):
+        # Decode the foreign author FQID
+        follower_fqid = unquote(follower_fqid)
+        fqid_parts = follower_fqid.split("/")
+        foreign_username = fqid_parts[len(fqid_parts) - 1]
+        # Fetch the local author
+        local_author = get_object_or_404(AuthorProfile, user__username=pk)
+
+        # Check if the follower is already in the follower list
+        try:
+            foreign_author = get_object_or_404(
+                AuthorProfile, user__username=foreign_username
+            )
+            follower_relationship = Follower.objects.get(
+                actor=foreign_author, object=local_author
+            )
+        except (AuthorProfile.DoesNotExist, Follower.DoesNotExist):
+            follower_relationship = None
+
+        if request.method == "GET":
+            # Check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                serializer = FollowerSerializer(follower_relationship)
+                return Response(serializer.data)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        elif request.method == "PUT":
+            # Add FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if not follower_relationship:
+                Follower.objects.create(
+                    actor=foreign_author,
+                    object=local_author,
+                    status="a",
+                    created_by=foreign_author,
+                )
+                return Response(
+                    {"detail": "Follower added."}, status=status.HTTP_201_CREATED
+                )
+            return Response(
+                {"detail": "Follower already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        elif request.method == "DELETE":
+            # Remove FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                follower_relationship.delete()
+                return Response(
+                    {"detail": "Follower removed."}, status=status.HTTP_204_NO_CONTENT
+                )
+            return Response(
+                {"detail": "Follower does not exist."}, status=status.HTTP_404_NOT_FOUND
+            )
