@@ -74,7 +74,7 @@ def signup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated and request.user.is_approved:
-        return redirect("node_link:home", username=form.get_user().username)
+        return redirect("node_link:home", username=request.user.username)
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
@@ -563,10 +563,15 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     # Custom action to list followers of an author
     @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
+        # Get the author by username or pk
         author = get_object_or_404(AuthorProfile, user__username=pk)
+        # Filter followers where this author is the 'object'
         followers = Follower.objects.filter(object=author)
+        # Serialize the data
         serializer = FollowerSerializer(followers, many=True)
-        return Response(serializer.data)
+        # Structure the response to match the required format
+        response_data = {"type": "followers", "followers": serializer.data}
+        return Response(response_data)
 
     @swagger_auto_schema(
         operation_description="Retrieve friends of an author.",
