@@ -406,6 +406,8 @@ class PostViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "display_name": "John Doe",
+                                "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
 
                             },
@@ -446,6 +448,8 @@ class PostViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
 
                         },
@@ -497,6 +501,8 @@ class PostViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
 
                         },
@@ -700,6 +706,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "display_name": "John Doe",
+                                "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
 
                             },
@@ -738,6 +746,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
 
                         },
@@ -788,6 +798,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
                         },
                     }
@@ -970,6 +982,8 @@ class LikeViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "display_name": "John Doe",
+                                "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
                             },
                         },
@@ -1007,6 +1021,8 @@ class LikeViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
                         },
                     }
@@ -1056,6 +1072,8 @@ class LikeViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "display_name": "John Doe",
+                            "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
                         },
                     }
