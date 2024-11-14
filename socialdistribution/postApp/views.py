@@ -34,6 +34,8 @@ from node_link.models import Notification
 from node_link.utils.common import has_access, is_approved
 from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
+from authorApp.serializers import AuthorProfileSerializer
+from postApp.serializers import CommentSerializer
 
 # Package imports
 import commonmark
@@ -41,6 +43,7 @@ import base64
 from datetime import datetime
 from PIL import Image
 import re
+from urllib.parse import unquote
 
 
 @is_approved
@@ -1280,3 +1283,72 @@ class PostImageView(APIView):
             content_type = None  # Unsupported image type
 
         return content_type
+
+
+class CommentedView(APIView):
+    def get(self, request, author_serial=None, comment_serial=None):
+        """
+        GET: Fetch comments by an author or a specific comment
+        """
+        if author_serial and comment_serial:
+            # Retrieve a specific comment
+            comment = get_object_or_404(
+                Comment, uuid=comment_serial, author__user__username=author_serial
+            )
+            serializer = CommentSerializer(comment, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif author_serial:
+            # List all comments by the author
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            comments = Comment.objects.filter(author=author)
+            if request.get_host() != author.local_node.url:
+                comments = comments.filter(post__visibility__in=["p", "u"])
+
+            # Use pagination or other list settings as needed
+            serializer = CommentSerializer(
+                comments, many=True, context={"request": request}
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def post(self, request, author_serial=None):
+        """
+        POST: Add a new comment to a specified post
+        """
+        if author_serial:
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            if request.data.get("type") != "comment":
+                return Response(
+                    {"detail": "Invalid comment type."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            comment_data = request.data.copy()
+            comment_data["author"] = author.id
+            serializer = CommentSerializer(
+                data=comment_data, context={"request": request}
+            )
+
+            if serializer.is_valid():
+                serializer.save(author=author)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class SingleCommentView(APIView):
+    def get(self, request, comment_fqid):
+        """
+        GET: Retrieve a single comment using its FQID.
+        """
+        comment_fqid = unquote(comment_fqid)
+        comment = get_object_or_404(Comment, id=comment_fqid)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
