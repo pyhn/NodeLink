@@ -87,6 +87,7 @@ class NodeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve a list of all nodes.",
         responses={
             200: openapi.Response(
@@ -140,6 +141,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Create a new node.",
         request_body=NodeSerializer,
         responses={
@@ -204,6 +206,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve a specific node by ID.",
         manual_parameters=[
             openapi.Parameter(
@@ -264,6 +267,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Update a node entirely.",
         manual_parameters=[
             openapi.Parameter(
@@ -331,6 +335,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Partially update a node.",
         manual_parameters=[
             openapi.Parameter(
@@ -394,6 +399,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().partial_update(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Delete a node.",
         manual_parameters=[
             openapi.Parameter(
@@ -434,6 +440,7 @@ class NodeViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve a list of active nodes.",
         responses={
             200: openapi.Response(
@@ -471,6 +478,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve a list of notifications.",
         responses={
             200: openapi.Response(
@@ -499,6 +507,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Create a new notification.",
         request_body=NotificationSerializer,
         responses={
@@ -527,6 +536,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve a specific notification by ID.",
         responses={
             200: openapi.Response(
@@ -564,6 +574,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Update a notification entirely.",
         request_body=NotificationSerializer,
         responses={
@@ -603,6 +614,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Partially update a notification.",
         request_body=NotificationSerializer,
         responses={
@@ -636,6 +648,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().partial_update(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Delete a notification.",
         responses={
             204: "No Content - Notification deleted successfully.",
@@ -658,6 +671,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="List only unread notifications for the authenticated user.",
         responses={
             200: openapi.Response(

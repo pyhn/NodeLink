@@ -572,6 +572,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve friends of an author.",
         responses={
             200: openapi.Response(
