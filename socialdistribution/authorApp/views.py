@@ -2,6 +2,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import IsAuthenticated
+
 from django.db.models import Q
 from django.contrib import messages
 from .forms import EditProfileForm
@@ -430,7 +432,12 @@ def edit_profile(request):
 
 
 # ViewSet for AuthorProfile API
-class AuthorProfileViewSet(viewsets.ViewSet):
+class AuthorProfileViewSet(viewsets.ModelViewSet):
+
+    queryset = AuthorProfile.objects.all()
+    serializer_class = AuthorProfileSerializer
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
         operation_description="Retrieve a list of all authors.",
         responses={
@@ -462,10 +469,13 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     )
     # Retrieve all authors
     def list(self, request):
-        authors = AuthorProfile.objects.all()
-        paginator = CustomPaginator()
-        paginated_authors = paginator.paginate_queryset(authors, request)
-        serializer = AuthorProfileSerializer(paginated_authors, many=True)
+        authors = AuthorProfile.objects.all().order_by("id")
+        if request.query_params:
+            paginator = CustomPaginator()
+            paginated_authors = paginator.paginate_queryset(authors, request)
+            serializer = AuthorProfileSerializer(paginated_authors, many=True)
+        else:
+            serializer = AuthorProfileSerializer(authors, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(
@@ -514,6 +524,63 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         author = get_object_or_404(AuthorProfile, user__username=pk)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Update a Author entirely.",
+        request_body=AuthorProfileSerializer,
+        responses={
+            200: openapi.Response(
+                description="Author updated successfully.",
+                schema=AuthorProfileSerializer(),
+                examples={
+                    "application/json": {
+                        "type": "author",
+                        "id": "http://localhost:8000/api/authors/johndoe",
+                        "host": "http://localhost:8000",
+                        "user": {
+                            "username": "johndoe",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "email": "john@example.com",
+                            "date_ob": "1990-01-01",
+                            "profileImage": "http://example.com/images/johndoe.png",
+                        },
+                        "github": "https://github.com/johndoe",
+                        "local_node": "http://localhost:8000",
+                    }
+                },
+            ),
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                "username",
+                openapi.IN_PATH,
+                description="Username of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+                example="johndoe",
+            ),
+        ],
+        tags=["Authors"],
+    )
+    def update(self, request, *args, **kwargs):
+
+        username = kwargs.get("pk")
+
+        # Retrieve the author by username instead of id
+        author = get_object_or_404(AuthorProfile, user__username=username)
+
+        # Use the serializer to validate and update the data
+        serializer = self.get_serializer(author, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            data=serializer.data,
+        )
 
     @swagger_auto_schema(
         operation_description="Retrieve followers of an author.",

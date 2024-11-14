@@ -22,39 +22,56 @@ class UserSerializer(serializers.ModelSerializer):
 class AuthorProfileSerializer(serializers.ModelSerializer):
     """Serializer for AuthorProfile, includes associated User data"""
 
-    id = serializers.SerializerMethodField()
-    host = serializers.SerializerMethodField()
-    type = serializers.CharField(default="author")
-    displayName = serializers.SerializerMethodField()
-    github = serializers.SerializerMethodField()
-    profileImage = serializers.SerializerMethodField()
-    page = serializers.SerializerMethodField()
+    id = serializers.CharField(required=False)
+    host = serializers.CharField(required=False)
+    type = serializers.CharField(default="author", required=False)
+    displayName = serializers.CharField(required=False)
+    github = serializers.CharField(required=False, allow_blank=True)
+    profileImage = serializers.CharField(required=False)
+    page = serializers.CharField(required=False)
 
     class Meta:
         model = AuthorProfile
         fields = ["type", "id", "host", "displayName", "github", "profileImage", "page"]
 
-    def get_id(self, obj):
-        # Construct the API URL using the local node and username
-        return f"{obj.local_node.url}api/authors/{obj.user.username}"
+    def to_representation(self, instance):
+        """Custom representation for dynamically computed fields."""
+        representation = {}
+        representation[
+            "id"
+        ] = f"{instance.local_node.url}api/authors/{instance.user.username}"
+        representation["host"] = instance.local_node.url
+        representation["type"] = "author"
 
-    def get_host(self, obj):
-        return obj.local_node.url
+        representation["displayName"] = instance.user.display_name
+        representation["github"] = instance.github
 
-    def get_displayName(self, obj):
-        return obj.user.display_name
-
-    def get_github(self, obj):
-        return obj.github
-
-    def get_profileImage(self, obj):
-        return str(obj.user.profileImage)
-
-    def get_page(self, obj):
-        return str(
-            obj.local_node.url.rstrip("/")
-            + reverse("authorApp:profile_display", args=[obj.user.username])
+        representation["profileImage"] = str(instance.user.profileImage)
+        representation["page"] = str(
+            instance.local_node.url.rstrip("/")
+            + reverse("authorApp:profile_display", args=[instance.user.username])
         )
+        return representation
+
+    def update(self, instance, validated_data):
+        """Handle update for all fields, including related User fields."""
+
+        # Update fields directly on AuthorProfile
+
+        instance.user.github = validated_data.get("github", instance.github)
+
+        # Update fields on the related User model
+        instance.user.display_name = validated_data.get(
+            "displayName", instance.user.display_name
+        )
+        instance.user.profileImage = validated_data.get(
+            "profileImage", instance.user.profileImage
+        )
+        instance.user.save()
+
+        # Save changes on the AuthorProfile instance itself
+        instance.save()
+        return instance
 
 
 # Serializer for followers

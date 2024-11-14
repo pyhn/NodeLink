@@ -530,15 +530,44 @@ class AuthorAppTests(APITestCase):
         """Test listing all authors"""
         url = reverse("authorApp:author-list")
         response = self.client.get(url)
+        len_all = len(AuthorProfile.objects.all())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreater(len(response.data), 0)  # Ensure some authors are returned
+        self.assertEqual(
+            len(response.data), len_all
+        )  # Ensure some authors are returned
+
+    def test_list_authors_pagination(self):
+        """Test listing all authors with pagination"""
+        page = 1
+        size = 1
+        url = reverse("authorApp:author-list")
+        url = f"{url}?page={page}&size={size}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), size)  # Ensure 1 author is returned
+
+    def test_update_author(self):
+        """Test updating a single author by username"""
+        # Set up the URL for the author's detail endpoint
+        url = reverse("authorApp:author-detail", args=[self.user1.username])
+
+        # Define the data for updating the author
+        updated_data = {
+            "username": self.user1.username,  # Keep the same
+            "displayName": "UpdatedFirstName",
+        }
+
+        # Send the PUT request with the updated data
+        response = self.client.put(path=url, data=updated_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["displayName"], self.user1.display_name)
 
     def test_retrieve_author(self):
         """Test retrieving a single author by username"""
         url = reverse("authorApp:author-detail", args=[self.user1.username])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["user"]["username"], self.user1.username)
+        self.assertEqual(response.data["displayName"], self.user1.display_name)
 
     def test_author_followers(self):
         """Test retrieving followers of an author"""
@@ -547,7 +576,7 @@ class AuthorAppTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)  # Only one follower created in setup
         self.assertEqual(
-            response.data[0]["actor"]["user"]["username"], self.user1.username
+            response.data[0]["actor"]["displayName"], self.user1.display_name
         )
 
     def test_author_friends(self):
@@ -559,11 +588,11 @@ class AuthorAppTests(APITestCase):
         friend_data = response.data[0]
         self.assertTrue(
             (
-                friend_data["user1"]["user"]["username"] == self.user1.username
-                and friend_data["user2"]["user"]["username"] == self.user2.username
+                friend_data["user1"]["displayName"] == self.user1.display_name
+                and friend_data["user2"]["displayName"] == self.user2.display_name
             )
             or (
-                friend_data["user1"]["user"]["username"] == self.user2.username
-                and friend_data["user2"]["user"]["username"] == self.user1.username
+                friend_data["user1"]["displayName"] == self.user2.display_name
+                and friend_data["user2"]["displayName"] == self.user1.display_name
             )
         )
