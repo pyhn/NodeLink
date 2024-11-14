@@ -57,7 +57,7 @@ def submit_post(request, username):
         visibility = request.POST.get("visibility", "p")
         content_type = request.POST.get("contentType", "p")
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-
+        print(f"contentt type: {content_type}")
         # Handle image upload
         if content_type in ["png", "jpeg", "a"]:
             img = request.FILES.get("img", None)
@@ -1191,18 +1191,14 @@ class PostImageView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        print(f"Post Content Type: {post.contentType}")
-
         # Step 3: Determine the content type based on your conditionals
         content_type_main = None
         if post.contentType == "jpeg":
             content_type_main = "image/jpeg"
         elif post.contentType == "png":
             content_type_main = "image/png"
-        elif post.contentType == "a":
-            content_type_main = "application/base64"
         else:
-            content_type_main = post.contentType  # Use as is if it doesn't match
+            content_type_main = "application/base64"
 
         # Step 4: Validate that the contentType is an image
         if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
@@ -1228,11 +1224,19 @@ class PostImageView(APIView):
         # Remove any whitespace or newlines that may corrupt base64 decoding
         base64_data = base64_data.replace("\n", "").replace("\r", "")
 
-        # Step 6: Decode the base64 data
         try:
             image_data = base64.b64decode(base64_data)
         except (TypeError, ValueError) as exc:
             raise Http404("Invalid image data.") from exc
+
+        # Step 6: Detect the image type from binary data if necessary
+        if post.contentType == "a" or mime_type in ("application/base64", None):
+            # Detect image type from binary data
+            image_type = self.detect_image_type(image_data)
+            if not image_type:
+                raise Http404("Unsupported or invalid image format.")
+            mime_type = image_type
+            print(f"Detected Image Type: {mime_type}")
 
         # Step 7: Set the correct content type
         content_type = mime_type  # Use the extracted or determined MIME type
@@ -1241,3 +1245,38 @@ class PostImageView(APIView):
         response = HttpResponse(image_data, content_type=content_type)
         response["Content-Length"] = len(image_data)
         return response
+
+    def detect_image_type(self, image_data):
+        # Read the first few bytes to detect the image type
+        header = image_data[:12]  # Read more bytes to accommodate longer signatures
+
+        content_type = ""
+        # JPEG
+        if header.startswith(b"\xFF\xD8\xFF"):
+            content_type = "image/jpeg"
+
+        # PNG (including APNG)
+        elif header.startswith(b"\x89PNG\r\n\x1A\n"):
+            # For APNG detection, more in-depth analysis is needed
+            content_type = "image/png"
+
+        # GIF
+        elif header[:6] in (b"GIF87a", b"GIF89a"):
+            content_type = "image/gif"
+
+        # WebP
+        elif header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+            content_type = "image/webp"
+
+        # AVIF
+        elif header[4:12] == b"ftypavif":
+            content_type = "image/avif"
+
+        # SVG
+        elif header.strip().startswith(b"<?xml") or b"<svg" in header.lower():
+            content_type = "image/svg+xml"
+
+        else:
+            content_type = None  # Unsupported image type
+
+        return content_type
