@@ -406,7 +406,10 @@ class PostViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "github": "https://github.com/johndoe",
+
                             },
+
                         },
                     ]
                 },
@@ -443,6 +446,8 @@ class PostViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
+
                         },
                     }
                 },
@@ -492,6 +497,8 @@ class PostViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
+
                         },
                     }
                 },
@@ -693,6 +700,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "github": "https://github.com/johndoe",
+
                             },
                         },
                     ]
@@ -729,6 +738,8 @@ class CommentViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
+
                         },
                     }
                 },
@@ -777,6 +788,7 @@ class CommentViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
                         },
                     }
                 },
@@ -958,6 +970,7 @@ class LikeViewSet(viewsets.ModelViewSet):
                             "author": {
                                 "id": "author1-id",
                                 "username": "johndoe",
+                                "github": "https://github.com/johndoe",
                             },
                         },
                     ]
@@ -994,6 +1007,7 @@ class LikeViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
                         },
                     }
                 },
@@ -1042,6 +1056,7 @@ class LikeViewSet(viewsets.ModelViewSet):
                         "author": {
                             "id": "author1-id",
                             "username": "johndoe",
+                            "github": "https://github.com/johndoe",
                         },
                     }
                 },
