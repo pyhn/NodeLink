@@ -1403,3 +1403,117 @@ class SinglePostView(APIView):
 
         serializer = PostSerializer(post)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostImageViewFQID(APIView):
+    def get(self, request, post_fqid):
+        # Step 1: Retrieve the post
+        print(f"pyhn here {post_fqid}")
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        # Step 2: Check if the post is public
+        if post.visibility != "p":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Step 3: Determine the content type based on your conditionals
+        content_type_main = None
+        if post.contentType == "jpeg":
+            content_type_main = "image/jpeg"
+        elif post.contentType == "png":
+            content_type_main = "image/png"
+        else:
+            content_type_main = "application/base64"
+
+        # Step 4: Validate that the contentType is an image
+        if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
+            raise Http404("Post content is not an image.")
+
+        # Step 5: Extract base64 data from content
+        content = post.content.strip()
+
+        if content.startswith("data:"):
+            # Extract the base64 data from data URI
+            match = re.match(
+                r"data:(?P<mime_type>.+);base64,(?P<base64_data>.+)", content
+            )
+            if not match:
+                raise Http404("Invalid image data.")
+            base64_data = match.group("base64_data")
+            mime_type = match.group("mime_type")
+        else:
+            # Content is raw base64 data without data URI
+            base64_data = content
+            mime_type = content_type_main  # Use the main content type
+
+        # Remove any whitespace or newlines that may corrupt base64 decoding
+        base64_data = base64_data.replace("\n", "").replace("\r", "")
+
+        try:
+            image_data = base64.b64decode(base64_data)
+        except (TypeError, ValueError) as exc:
+            raise Http404("Invalid image data.") from exc
+
+        # Step 6: Detect the image type from binary data if necessary
+        if post.contentType == "a" or mime_type in ("application/base64", None):
+            # Detect image type from binary data
+            image_type = self.detect_image_type(image_data)
+            if not image_type:
+                raise Http404("Unsupported or invalid image format.")
+            mime_type = image_type
+            print(f"Detected Image Type: {mime_type}")
+
+        # Step 7: Set the correct content type
+        content_type = mime_type  # Use the extracted or determined MIME type
+
+        # Step 8: Return the image data with correct headers
+        response = HttpResponse(image_data, content_type=content_type)
+        response["Content-Length"] = len(image_data)
+        return response
+
+    def detect_image_type(self, image_data):
+        # Read the first few bytes to detect the image type
+        header = image_data[:12]  # Read more bytes to accommodate longer signatures
+
+        content_type = ""
+        # JPEG
+        if header.startswith(b"\xFF\xD8\xFF"):
+            content_type = "image/jpeg"
+
+        # PNG (including APNG)
+        elif header.startswith(b"\x89PNG\r\n\x1A\n"):
+            # For APNG detection, more in-depth analysis is needed
+            content_type = "image/png"
+
+        # GIF
+        elif header[:6] in (b"GIF87a", b"GIF89a"):
+            content_type = "image/gif"
+
+        # WebP
+        elif header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+            content_type = "image/webp"
+
+        # AVIF
+        elif header[4:12] == b"ftypavif":
+            content_type = "image/avif"
+
+        # SVG
+        elif header.strip().startswith(b"<?xml") or b"<svg" in header.lower():
+            content_type = "image/svg+xml"
+
+        else:
+            content_type = None  # Unsupported image type
+
+        return content_type
+
+
+class TestPostImageView(APIView):
+    def get(self, request, post_fqid, *args, **kwargs):
+        print(f"Captured post_fqid: {post_fqid}")  # Print out post_fqid to verify
+        return Response({"post_fqid": post_fqid})

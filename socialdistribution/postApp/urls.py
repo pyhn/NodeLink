@@ -133,6 +133,12 @@ urlpatterns = [
         name="comment-detail",
     ),
     re_path(
+        r"^api/posts/(?P<post_fqid>.+)/image/$",
+        views.PostImageViewFQID.as_view(),
+        name="post-detail-image",
+    ),
+    # retrieve specific post using its FQID
+    re_path(
         r"^api/posts/(?P<post_fqid>.+)/$",
         views.SinglePostView.as_view(),
         name="post-detail",
