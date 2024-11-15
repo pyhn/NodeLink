@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -133,9 +133,10 @@ urlpatterns = [
         name="author-comment-detail",
     ),
     # Retrieve a specific comment using its FQID (local)
-    path(
-        "api/commented/<str:comment_fqid>/",
+    re_path(
+        r"^api/commented/(?P<comment_fqid>.+)/$",
         views.SingleCommentView.as_view(),
         name="comment-detail",
     ),
 ]
+#

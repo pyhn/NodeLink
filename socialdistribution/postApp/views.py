@@ -1349,6 +1349,9 @@ class SingleCommentView(APIView):
         GET: Retrieve a single comment using its FQID.
         """
         comment_fqid = unquote(comment_fqid)
-        comment = get_object_or_404(Comment, id=comment_fqid)
+        fqid_parts = comment_fqid.split("/")
+        comment_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        comment = get_object_or_404(Comment, uuid=comment_uuid)
         serializer = CommentSerializer(comment)
         return Response(serializer.data, status=status.HTTP_200_OK)
