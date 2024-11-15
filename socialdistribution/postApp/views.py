@@ -841,12 +841,10 @@ class CommentedFQIDView(APIView):
         """
         GET: Fetch comments by an author or a specific comment
         """
-        print("is here?")
         author_fqid = unquote(author_fqid)
         fqid_parts = author_fqid.split("/")
         author_serial = fqid_parts[len(fqid_parts) - 1]
 
-        print(f"pyhn here lol: {author_fqid}")
         if author_serial:
             # List all comments by the author
             author = get_object_or_404(AuthorProfile, user__username=author_serial)
