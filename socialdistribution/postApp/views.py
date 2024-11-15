@@ -805,6 +805,7 @@ class CommentedView(APIView):
         """
         POST: Add a new comment to a specified post
         """
+        print("is here lol")
         if not author_serial:
             return Response(
                 {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
@@ -833,6 +834,35 @@ class CommentedView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CommentedFQIDView(APIView):
+    def get(self, request, author_fqid):
+        """
+        GET: Fetch comments by an author or a specific comment
+        """
+        print("is here?")
+        author_fqid = unquote(author_fqid)
+        fqid_parts = author_fqid.split("/")
+        author_serial = fqid_parts[len(fqid_parts) - 1]
+
+        print(f"pyhn here lol: {author_fqid}")
+        if author_serial:
+            # List all comments by the author
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            comments = Comment.objects.filter(author=author)
+            if request.get_host() != author.local_node.url:
+                comments = comments.filter(post__visibility__in=["p", "u"])
+
+            # Use pagination or other list settings as needed
+            serializer = CommentSerializer(
+                comments, many=True, context={"request": request}
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class SingleCommentedView(APIView):
