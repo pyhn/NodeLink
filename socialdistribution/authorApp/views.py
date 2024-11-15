@@ -79,18 +79,21 @@ def signup_view(request):
 
 
 def login_view(request):
-    if request.user.is_authenticated and request.user.is_approved:
-        return redirect("node_link:home", username=request.user.username)
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
-            auth_login(request, form.get_user())
-            messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("node_link:home", username=form.get_user().username)
+            user = form.get_user()
+            if user.is_approved:
+                auth_login(request, user)
+                messages.success(request, f"Welcome back, {user.username}!")
+                return redirect("node_link:home", username=user.username)
+            else:
+                messages.error(request, "Your account is not approved.")
         else:
             messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
+
     return render(request, "login.html", {"form": form})
 
 

@@ -18,6 +18,7 @@ from authorApp.models import Friends, Follower
 from postApp.models import Post
 from node_link.utils.common import is_approved
 
+from postApp.utils.fetch_github_activity import fetch_github_events
 # post edit/create methods
 
 
@@ -27,6 +28,9 @@ def home(request, username):
     if request.method == "GET":
         template_name = "home.html"
         user = request.user.author_profile
+
+        github_activity = fetch_github_events(request)
+
 
         friends = list(
             Friends.objects.filter(Q(user1=user) | Q(user2=user)).values_list(
@@ -59,7 +63,7 @@ def home(request, username):
             .values_list("uuid", flat=True)
         )
 
-        context = {"all_ids": all_posts}
+        context = {"all_ids": all_posts, "github_activity": github_activity}
 
         # Return the rendered template
         return render(request, template_name, context)
