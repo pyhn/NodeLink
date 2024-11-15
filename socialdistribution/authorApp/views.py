@@ -478,7 +478,7 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
         tags=["Authors"],
     )
     # Retrieve all authors
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
         authors = AuthorProfile.objects.all().order_by("id")
         if request.query_params:
             paginator = CustomPaginator()
@@ -531,7 +531,8 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
         ],
     )
     # Retrieve a single author by username
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         author = get_object_or_404(AuthorProfile, user__username=pk)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data)
