@@ -530,6 +530,7 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
             ),
         ],
     )
+
     # Retrieve a single author by username
     def retrieve(self, request, *args, **kwargs):
         pk = kwargs.get("pk")
