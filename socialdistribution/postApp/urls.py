@@ -97,6 +97,11 @@ urlpatterns = [
         views.CommentedView.as_view(),
         name="author-comment-detail",
     ),
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/likes/$",
+        views.PostLikesFQIDAPIView.as_view(),
+        name="post-likes-fqid",
+    ),
     # Retrieve a specific comment using its FQID (local)
     re_path(
         r"^api/commented/(?P<comment_fqid>.+)/$",

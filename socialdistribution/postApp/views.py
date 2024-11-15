@@ -1090,3 +1090,39 @@ class PostLikesAPIView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class PostLikesFQIDAPIView(APIView):
+    def get(self, request, post_fqid):
+        """
+        GET: Retrieve all likes for a specific post based on fqid
+        """
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        likes = Like.objects.filter(post=post).order_by("-created_at")
+
+        author_serial = post.author.user.username
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the results
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
