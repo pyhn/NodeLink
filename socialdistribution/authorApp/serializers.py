@@ -94,12 +94,15 @@ class FollowerSerializer(serializers.ModelSerializer):
         fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
 
     def get_id(self, obj):
+        print(f"get id obj: {obj.actor.local_node.url}")
         return f"{obj.actor.local_node.url}/api/authors/{obj.actor.user.username}"
 
     def get_host(self, obj):
+        print(f"get host obj: {obj.actor.local_node.url}")
         return obj.actor.local_node.url
 
     def get_page(self, obj):
+        print(f"get page obj: {obj.actor.local_node.url}")
         return f"{obj.actor.local_node.url}/authors/{obj.actor.user.username}"
 
 
@@ -113,10 +116,3 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["user1", "user2"]
-
-
-class FollowRequestSerializer(serializers.ModelSerializer):
-    type = serializers.CharField(default="follow")
-    summary = serializers.CharField()
-    actor = AuthorProfileSerializer(read_only=True)
-    object = AuthorProfileSerializer(read_only=True)
