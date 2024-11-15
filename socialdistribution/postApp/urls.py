@@ -98,6 +98,16 @@ urlpatterns = [
         name="author-comment-detail",
     ),
     re_path(
+        r"^api/authors/(?P<author_fqid>.+)/liked/$",
+        views.ThingsLikedByAuthorFQIDView.as_view(),
+        name="things-liked-by-author-fqid",
+    ),
+    re_path(
+        r"^api/liked/(?P<like_fqid>.+)/$",
+        views.SingleLikeFQIDView.as_view(),
+        name="single-like-fqid",
+    ),
+    re_path(
         r"^api/authors/(?P<author_serial>[^/]+)/posts/(?P<post_serial>[^/]+)/comments/(?P<comment_fqid>.+)/likes/$",
         views.CommentLikesView.as_view(),
         name="comment-likes",
