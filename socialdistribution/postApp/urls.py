@@ -120,12 +120,6 @@ urlpatterns = [
         views.CommentedView.as_view(),
         name="author-commented",
     ),
-    # List all comments by a specific author on accessible posts (local)
-    path(
-        "api/authors/<str:author_fqid>/commented/",
-        views.CommentedView.as_view(),
-        name="author-commented-list",
-    ),
     # Retrieve a specific comment made by an author (local/remote)
     path(
         "api/authors/<str:author_serial>/commented/<uuid:comment_serial>/",
