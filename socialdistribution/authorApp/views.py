@@ -458,6 +458,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                                 "last_name": "Doe",
                                 "email": "john@example.com",
                                 "date_ob": "1990-01-01",
+                                "display_name": "John Doe",
                                 "profileImage": "http://example.com/images/johndoe.png",
                             },
                             "github": "https://github.com/johndoe",
@@ -492,6 +493,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                             "last_name": "Doe",
                             "email": "john@example.com",
                             "date_ob": "1990-01-01",
+                            "display_name": "John Doe",
                             "profileImage": "http://example.com/images/johndoe.png",
                         },
                         "github": "https://github.com/johndoe",
@@ -541,6 +543,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                                     "last_name": "Doe",
                                     "email": "jane@example.com",
                                     "date_ob": "1992-05-15",
+                                    "display_name": "John Doe",
                                     "profileImage": "http://example.com/images/janedoe.png",
                                 },
                                 "github": "https://github.com/janedoe",
@@ -583,6 +586,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         return Response(response_data)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve friends of an author.",
         responses={
             200: openapi.Response(
