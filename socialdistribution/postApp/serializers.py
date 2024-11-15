@@ -80,20 +80,25 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
 
     def get_author(self, obj):
-        # Use AuthorProfileSerializer to provide full author details
-        author_data = AuthorProfileSerializer(obj.author).data
-        request = self.context.get("request")
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
+        if isinstance(obj, dict):
+            # If obj is a dict, assume it's already serialized
+            return obj.get("author", {})
+        else:
+            # If obj is a model instance, serialize the author properly
+            author_data = AuthorProfileSerializer(obj.author).data
+            request = self.context.get("request")
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
+            )
 
-        # Add additional fields as required in the example JSON
-        author_data.update(
-            {
-                "type": "author",
-                "page": urljoin(base_url, f"authors/{obj.author.user.username}"),
-                "host": base_url,
-            }
-        )
-        return author_data
+            author_data.update(
+                {
+                    "type": "author",
+                    "page": urljoin(base_url, f"authors/{obj.author.user.username}"),
+                    "host": base_url,
+                }
+            )
+            return author_data
 
     def get_contentType(self, obj):
         # Return a default content type
@@ -104,11 +109,19 @@ class CommentSerializer(serializers.ModelSerializer):
         return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
     def get_id(self, obj):
-        # Construct the full URL for the comment's ID
-        request = self.context.get("request")
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        author_serial = obj.author.user.username
-        return urljoin(base_url, f"api/authors/{author_serial}/commented/{obj.uuid}")
+        if isinstance(obj, dict):
+            # Handle dict scenario
+            return obj.get("id", "")
+        else:
+            # Handle model instance scenario
+            request = self.context.get("request")
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
+            )
+            author_serial = obj.author.user.username
+            return urljoin(
+                base_url, f"api/authors/{author_serial}/commented/{obj.uuid}"
+            )
 
     def get_post(self, obj):
         # Construct the full URL for the post the comment is on
@@ -197,6 +210,21 @@ class CommentSerializer(serializers.ModelSerializer):
         instance.content = validated_data.get("content", instance.content)
         instance.save()
         return instance
+
+
+class CommentsSerializer(serializers.Serializer):
+    type = serializers.CharField(default="comments")
+    page = serializers.CharField()  # URL of the comments page
+    id = serializers.CharField()  # ID of the comments API
+    page_number = serializers.IntegerField()
+    size = serializers.IntegerField()
+    count = serializers.IntegerField()
+    src = serializers.SerializerMethodField()
+
+    def get_src(self, obj):
+        # Serialize the queryset of comments
+        comments = obj.get("src", [])
+        return CommentSerializer(comments, many=True, context=self.context).data
 
 
 class LikeSerializer(serializers.ModelSerializer):

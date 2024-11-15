@@ -14,7 +14,12 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
-from .serializers import PostSerializer, CommentSerializer, LikeSerializer
+from .serializers import (
+    PostSerializer,
+    CommentSerializer,
+    LikeSerializer,
+    CommentsSerializer,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
@@ -44,7 +49,7 @@ import base64
 from datetime import datetime
 from PIL import Image
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urljoin
 
 
 @is_approved
@@ -975,28 +980,54 @@ class PostImageViewFQID(APIView):
 
 class PostCommentsView(APIView):
     """
-    API View to handle fetching comments of a specific post
+    API View to handle fetching comments for a specific post
     """
 
-    def get(self, request, author_serial, post_serial):
+    def get(self, request, author_serial=None, post_serial=None):
         """
-        GET: Retrieve all comments for a specific post
+        GET: Retrieve comments for a specific post
         """
-        # Retrieve the author to ensure it exists
+        # Get the author and post
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
-
-        # Retrieve the post associated with the author
         post = get_object_or_404(Post, uuid=post_serial, author=author)
 
-        # Filter the comments related to this post
+        # Filter comments associated with the post, ordered by newest to oldest
         comments = Comment.objects.filter(post=post).order_by("-created_at")
 
-        # Serialize the comments
-        serializer = CommentSerializer(
-            comments, many=True, context={"request": request}
+        # Pagination logic (~5 comments per page)
+        page_size = 5
+        page_number = int(request.query_params.get("page", 1))
+        start_index = (page_number - 1) * page_size
+        end_index = start_index + page_size
+
+        paginated_comments = comments[start_index:end_index]
+
+        # Total comment count
+        total_count = comments.count()
+
+        # Construct response metadata
+        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
+        post_page = urljoin(
+            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
+        )
+        api_page = urljoin(
+            base_url,
+            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
         )
 
-        # Return the serialized comments
+        # Prepare response data
+        response_data = {
+            "type": "comments",
+            "page": post_page,
+            "id": api_page,
+            "page_number": page_number,
+            "size": page_size,
+            "count": total_count,
+            "src": paginated_comments,  # Pass the queryset directly
+        }
+
+        # Serialize and return the response
+        serializer = CommentsSerializer(response_data, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -1006,27 +1037,51 @@ class PostCommentsViewFQID(APIView):
     """
 
     def get(self, request, post_fqid):
-        """
-        GET: Retrieve all comments for a specific post
-        """
+        # Decode and extract the UUID from the FQID
         post_fqid = unquote(post_fqid)
         fqid_parts = post_fqid.split("/")
-        post_uuid = fqid_parts[len(fqid_parts) - 1]
+        post_uuid = fqid_parts[-1]
 
+        # Retrieve the post using the UUID
         post = get_object_or_404(Post, uuid=post_uuid)
 
-        # Retrieve the post associated with the author
-        post = get_object_or_404(Post, uuid=post_uuid)
-
-        # Filter the comments related to this post
+        # Filter comments associated with the post, ordered by newest to oldest
         comments = Comment.objects.filter(post=post).order_by("-created_at")
 
-        # Serialize the comments
-        serializer = CommentSerializer(
-            comments, many=True, context={"request": request}
+        # Pagination logic (~5 comments per page)
+        page_size = 5
+        page_number = int(request.query_params.get("page", 1))
+        start_index = (page_number - 1) * page_size
+        end_index = start_index + page_size
+
+        paginated_comments = comments[start_index:end_index]
+
+        # Total comment count
+        total_count = comments.count()
+
+        # Construct response metadata
+        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
+        post_page = urljoin(
+            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
+        )
+        api_page = urljoin(
+            base_url,
+            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
         )
 
-        # Return the serialized comments
+        # Prepare response data
+        response_data = {
+            "type": "comments",
+            "page": post_page,
+            "id": api_page,
+            "page_number": page_number,
+            "size": page_size,
+            "count": total_count,
+            "src": paginated_comments,  # Pass the queryset directly
+        }
+
+        # Serialize and return the response
+        serializer = CommentsSerializer(response_data, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
