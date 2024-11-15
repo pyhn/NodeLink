@@ -5,7 +5,12 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from .forms import EditProfileForm
-from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from .serializers import (
+    AuthorProfileSerializer,
+    FollowerSerializer,
+    FriendSerializer,
+    FollowRequestSerializer,
+)
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -673,3 +678,47 @@ class AuthorProfileViewSet(viewsets.ViewSet):
             return Response(
                 {"detail": "Follower does not exist."}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class FollowRequestView(APIView):
+    def post(self, request, author_serial):
+        """
+        POST: Send a follow request to AUTHOR_SERIAL.
+        """
+        # Decode and validate the requesting actor
+        actor_profile = request.user.author_profile
+        object_author = AuthorProfile.objects.filter(
+            user__username=author_serial
+        ).first()
+
+        # If author with provided serial not found, return 404
+        if not object_author:
+            return Response(
+                {"detail": "Author not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if a follow request already exists between these two authors
+        existing_request = Follower.objects.filter(
+            actor=actor_profile, object=object_author
+        ).first()
+        if existing_request and existing_request.status == "p":
+            return Response(
+                {"detail": "Follow request already sent."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Create a follow request (pending status) for the target author
+        Follower.objects.create(actor=actor_profile, object=object_author, status="p")
+
+        # Prepare the response data according to the follow request structure
+        follow_request_data = {
+            "type": "follow",
+            "summary": f"{actor_profile.user.display_name} wants to follow {object_author.user.display_name}",
+            "actor": actor_profile,
+            "object": object_author,
+        }
+
+        # Serialize the follow request object
+        serializer = FollowRequestSerializer(follow_request_data)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

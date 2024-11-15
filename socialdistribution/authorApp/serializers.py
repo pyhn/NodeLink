@@ -77,3 +77,10 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["user1", "user2"]
+
+
+class FollowRequestSerializer(serializers.Serializer):
+    type = serializers.CharField(default="follow")
+    summary = serializers.CharField()
+    actor = AuthorProfileSerializer(read_only=True)
+    object = AuthorProfileSerializer(read_only=True)
