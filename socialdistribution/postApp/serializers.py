@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from postApp.models import Post, Comment, Like
+from authorApp.models import AuthorProfile
 from authorApp.serializers import AuthorProfileSerializer
 from urllib.parse import urljoin
+from django.shortcuts import get_object_or_404
+import uuid
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -115,6 +118,68 @@ class CommentSerializer(serializers.ModelSerializer):
         return urljoin(
             base_url, f"api/authors/{post_author_serial}/posts/{obj.post.uuid}"
         )
+
+    def to_internal_value(self, data):
+        """
+        Custom logic to parse incoming data and ensure only required fields are processed.
+        """
+        validated_data = {}
+
+        # Extract and validate content
+        if "content" in data:
+            validated_data["content"] = data["content"]
+        else:
+            raise serializers.ValidationError({"content": "Content is required."})
+
+        # Parse and validate post URL
+        post_url = data.get("post", "")
+        if post_url:
+            try:
+                post_uuid = post_url.rstrip("/").split("/")[-1]
+                validated_data["post"] = Post.objects.get(uuid=post_uuid)
+            except Post.DoesNotExist as exc:
+                raise serializers.ValidationError(
+                    {"post": "Invalid post URL or UUID."}
+                ) from exc
+        else:
+            raise serializers.ValidationError({"post": "Post is required."})
+
+        # Parse and validate author URL
+        author_id = data.get("author", {}).get("id", "")
+        if author_id:
+            try:
+                author_username = author_id.rstrip("/").split("/")[-1]
+                validated_data["author"] = AuthorProfile.objects.get(
+                    user__username=author_username
+                )
+            except AuthorProfile.DoesNotExist as exc:
+                raise serializers.ValidationError(
+                    {"author": "Invalid author ID."}
+                ) from exc
+        else:
+            raise serializers.ValidationError({"author": "Author is required."})
+
+        # Automatically set visibility to default ("p")
+        validated_data["visibility"] = "p"
+
+        # Automatically generate a new UUID
+        validated_data["uuid"] = uuid.uuid4()
+
+        # Automatically set created_by to the authenticated user (if available)
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            try:
+                validated_data["created_by"] = AuthorProfile.objects.get(
+                    user=request.user
+                )
+            except AuthorProfile.DoesNotExist as exc:
+                raise serializers.ValidationError(
+                    {
+                        "created_by": "Authenticated user is not linked to an author profile."
+                    }
+                ) from exc
+
+        return validated_data
 
     def get_page(self, obj):
         # Return the URL to view the comment or the post in HTML format

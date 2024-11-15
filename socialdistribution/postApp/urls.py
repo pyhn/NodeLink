@@ -129,8 +129,20 @@ urlpatterns = [
     # Retrieve a specific comment using its FQID (local)
     re_path(
         r"^api/commented/(?P<comment_fqid>.+)/$",
-        views.SingleCommentView.as_view(),
+        views.SingleCommentedView.as_view(),
         name="comment-detail",
+    ),
+    # Comments endpoint for a specific post
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/comments/$",
+        views.PostCommentsViewFQID.as_view(),
+        name="post-comments-fqid",
+    ),
+    # Retrieve a specific comment using its FQID (local)
+    re_path(
+        r"^api/authors/(?P<author_serial>[^/]+)/post/(?P<post_serial>[^/]+)/comment/(?P<remote_comment_fqid>.+)/$",
+        views.RemoteCommentView.as_view(),
+        name="remote-comment-detail",
     ),
     re_path(
         r"^api/posts/(?P<post_fqid>.+)/image/$",
@@ -142,6 +154,11 @@ urlpatterns = [
         r"^api/posts/(?P<post_fqid>.+)/$",
         views.SinglePostView.as_view(),
         name="post-detail",
+    ),
+    path(
+        "api/authors/<str:author_serial>/posts/<str:post_serial>/comments/",
+        views.PostCommentsView.as_view(),
+        name="post-comments",
     ),
 ]
 #

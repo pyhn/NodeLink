@@ -1346,31 +1346,37 @@ class CommentedView(APIView):
         """
         POST: Add a new comment to a specified post
         """
-        if author_serial:
-            author = get_object_or_404(AuthorProfile, user__username=author_serial)
-            if request.data.get("type") != "comment":
+        if not author_serial:
+            return Response(
+                {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate that the author matches the provided `author_serial`
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        if request.data.get("type") != "comment":
+            return Response(
+                {"detail": "Invalid comment type."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = CommentSerializer(data=request.data, context={"request": request})
+
+        if serializer.is_valid():
+            # Validate that the author in the payload matches the URL author_serial
+            if serializer.validated_data["author"] != author:
                 return Response(
-                    {"detail": "Invalid comment type."},
+                    {"detail": "Author in the payload does not match the URL."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            comment_data = request.data.copy()
-            comment_data["author"] = author.id
-            serializer = CommentSerializer(
-                data=comment_data, context={"request": request}
-            )
+            # Save the comment
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            if serializer.is_valid():
-                serializer.save(author=author)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(
-            {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SingleCommentView(APIView):
+class SingleCommentedView(APIView):
     def get(self, request, comment_fqid):
         """
         GET: Retrieve a single comment using its FQID.
@@ -1513,7 +1519,83 @@ class PostImageViewFQID(APIView):
         return content_type
 
 
-class TestPostImageView(APIView):
-    def get(self, request, post_fqid, *args, **kwargs):
-        print(f"Captured post_fqid: {post_fqid}")  # Print out post_fqid to verify
-        return Response({"post_fqid": post_fqid})
+class PostCommentsView(APIView):
+    """
+    API View to handle fetching comments of a specific post
+    """
+
+    def get(self, request, author_serial, post_serial):
+        """
+        GET: Retrieve all comments for a specific post
+        """
+        # Retrieve the author to ensure it exists
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_serial, author=author)
+
+        # Filter the comments related to this post
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+
+        # Serialize the comments
+        serializer = CommentSerializer(
+            comments, many=True, context={"request": request}
+        )
+
+        # Return the serialized comments
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostCommentsViewFQID(APIView):
+    """
+    API View to handle fetching comments of a specific post
+    """
+
+    def get(self, request, post_fqid):
+        """
+        GET: Retrieve all comments for a specific post
+        """
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        # Filter the comments related to this post
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+
+        # Serialize the comments
+        serializer = CommentSerializer(
+            comments, many=True, context={"request": request}
+        )
+
+        # Return the serialized comments
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RemoteCommentView(APIView):
+    """
+    GET: Retrieve a specific comment using its remote FQID
+    """
+
+    def get(self, request, author_serial, post_serial, remote_comment_fqid):
+
+        # Decode the remote_comment_fqid
+        remote_comment_fqid = unquote(remote_comment_fqid)
+        fqid_parts = remote_comment_fqid.split("/")
+        comment_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        # Retrieve the author to ensure they exist
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_serial, author=author)
+
+        comment = get_object_or_404(Comment, uuid=comment_uuid, post=post)
+
+        serializer = CommentSerializer(comment)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
