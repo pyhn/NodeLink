@@ -5,9 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from .forms import EditProfileForm
-from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from .serializers import (
+    AuthorProfileSerializer,
+    FollowerSerializer,
+    FriendSerializer,
+    FollowRequestSerializer,
+)
 from rest_framework.response import Response
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
@@ -29,6 +34,7 @@ from postApp.models import Post
 
 # Third Party Imports
 from datetime import datetime
+from urllib.parse import unquote
 
 # Create your views here.
 # sign up
@@ -566,10 +572,15 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     # Custom action to list followers of an author
     @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
+        # Get the author by username or pk
         author = get_object_or_404(AuthorProfile, user__username=pk)
+        # Filter followers where this author is the 'object'
         followers = Follower.objects.filter(object=author)
+        # Serialize the data
         serializer = FollowerSerializer(followers, many=True)
-        return Response(serializer.data)
+        # Structure the response to match the required format
+        response_data = {"type": "followers", "followers": serializer.data}
+        return Response(response_data)
 
     @swagger_auto_schema(
         operation_description="Retrieve friends of an author.",
@@ -611,3 +622,106 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         friends = Friends.objects.filter((Q(user1=author) | Q(user2=author)))
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["get", "put", "delete"],
+        url_path="followers/(?P<follower_fqid>.+)",
+    )
+    def manage_follower(self, request, pk=None, follower_fqid=None):
+        # Decode the foreign author FQID
+        follower_fqid = unquote(follower_fqid)
+        fqid_parts = follower_fqid.split("/")
+        foreign_username = fqid_parts[len(fqid_parts) - 1]
+        # Fetch the local author
+        local_author = get_object_or_404(AuthorProfile, user__username=pk)
+
+        # Check if the follower is already in the follower list
+        try:
+            foreign_author = get_object_or_404(
+                AuthorProfile, user__username=foreign_username
+            )
+            follower_relationship = Follower.objects.get(
+                actor=foreign_author, object=local_author
+            )
+        except (AuthorProfile.DoesNotExist, Follower.DoesNotExist):
+            follower_relationship = None
+
+        if request.method == "GET":
+            # Check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                serializer = FollowerSerializer(follower_relationship)
+                return Response(serializer.data)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        elif request.method == "PUT":
+            # Add FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if not follower_relationship:
+                Follower.objects.create(
+                    actor=foreign_author,
+                    object=local_author,
+                    status="a",
+                    created_by=foreign_author,
+                )
+                return Response(
+                    {"detail": "Follower added."}, status=status.HTTP_201_CREATED
+                )
+            return Response(
+                {"detail": "Follower already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        elif request.method == "DELETE":
+            # Remove FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                follower_relationship.delete()
+                return Response(
+                    {"detail": "Follower removed."}, status=status.HTTP_204_NO_CONTENT
+                )
+            return Response(
+                {"detail": "Follower does not exist."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class FollowRequestView(APIView):
+    def post(self, request, author_serial):
+        """
+        POST: Send a follow request to AUTHOR_SERIAL.
+        """
+        # Decode and validate the requesting actor
+        actor_profile = request.user.author_profile
+        object_author = AuthorProfile.objects.filter(
+            user__username=author_serial
+        ).first()
+
+        # If author with provided serial not found, return 404
+        if not object_author:
+            return Response(
+                {"detail": "Author not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Check if a follow request already exists between these two authors
+        existing_request = Follower.objects.filter(
+            actor=actor_profile, object=object_author
+        ).first()
+        if existing_request and existing_request.status == "p":
+            return Response(
+                {"detail": "Follow request already sent."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # Create a follow request (pending status) for the target author
+        Follower.objects.create(actor=actor_profile, object=object_author, status="p")
+
+        # Prepare the response data according to the follow request structure
+        follow_request_data = {
+            "type": "follow",
+            "summary": f"{actor_profile.user.display_name} wants to follow {object_author.user.display_name}",
+            "actor": actor_profile,
+            "object": object_author,
+        }
+
+        # Serialize the follow request object
+        serializer = FollowRequestSerializer(follow_request_data)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

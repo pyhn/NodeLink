@@ -38,16 +38,33 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         return obj.local_node.url
 
 
-# Serializer for followers
 class FollowerSerializer(serializers.ModelSerializer):
-    """Serializer for followers"""
+    """Custom Serializer for followers to match the required output format"""
 
-    actor = AuthorProfileSerializer(read_only=True)
-    object = AuthorProfileSerializer(read_only=True)
+    type = serializers.CharField(default="author", read_only=True)
+    id = serializers.SerializerMethodField()
+    host = serializers.SerializerMethodField()
+    displayName = serializers.CharField(
+        source="actor.user.display_name", read_only=True
+    )
+    page = serializers.SerializerMethodField()
+    github = serializers.CharField(source="actor.github", read_only=True)
+    profileImage = serializers.CharField(
+        source="actor.user.profileImage.url", read_only=True
+    )
 
     class Meta:
         model = Follower
-        fields = ["actor", "object", "status"]
+        fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
+
+    def get_id(self, obj):
+        return f"{obj.actor.local_node.url}/api/authors/{obj.actor.user.username}"
+
+    def get_host(self, obj):
+        return obj.actor.local_node.url
+
+    def get_page(self, obj):
+        return f"{obj.actor.local_node.url}/authors/{obj.actor.user.username}"
 
 
 # Serializer for friendships
@@ -60,3 +77,10 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["user1", "user2"]
+
+
+class FollowRequestSerializer(serializers.ModelSerializer):
+    type = serializers.CharField(default="follow")
+    summary = serializers.CharField()
+    actor = AuthorProfileSerializer(read_only=True)
+    object = AuthorProfileSerializer(read_only=True)

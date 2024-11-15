@@ -4,7 +4,13 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden, HttpResponseNotAllowed, JsonResponse
+from django.http import (
+    HttpResponseForbidden,
+    HttpResponseNotAllowed,
+    JsonResponse,
+    HttpResponse,
+    Http404,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
 from .serializers import PostSerializer, CommentSerializer, LikeSerializer
@@ -18,6 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -27,12 +34,16 @@ from node_link.models import Notification
 from node_link.utils.common import has_access, is_approved
 from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
+from authorApp.serializers import AuthorProfileSerializer
+from postApp.serializers import CommentSerializer
 
 # Package imports
 import commonmark
 import base64
 from datetime import datetime
 from PIL import Image
+import re
+from urllib.parse import unquote
 
 
 @is_approved
@@ -49,7 +60,7 @@ def submit_post(request, username):
         visibility = request.POST.get("visibility", "p")
         content_type = request.POST.get("contentType", "p")
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-
+        print(f"contentt type: {content_type}")
         # Handle image upload
         if content_type in ["png", "jpeg", "a"]:
             img = request.FILES.get("img", None)
@@ -1167,3 +1178,180 @@ class LikeViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
+
+
+class PostImageView(APIView):
+    def get(self, request, author_serial, post_uuid):
+        # Step 1: Retrieve the post
+        post = get_object_or_404(
+            Post, uuid=post_uuid, author__user__username=author_serial
+        )
+
+        # Step 2: Check if the post is public
+        if post.visibility != "p":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Step 3: Determine the content type based on your conditionals
+        content_type_main = None
+        if post.contentType == "jpeg":
+            content_type_main = "image/jpeg"
+        elif post.contentType == "png":
+            content_type_main = "image/png"
+        else:
+            content_type_main = "application/base64"
+
+        # Step 4: Validate that the contentType is an image
+        if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
+            raise Http404("Post content is not an image.")
+
+        # Step 5: Extract base64 data from content
+        content = post.content.strip()
+
+        if content.startswith("data:"):
+            # Extract the base64 data from data URI
+            match = re.match(
+                r"data:(?P<mime_type>.+);base64,(?P<base64_data>.+)", content
+            )
+            if not match:
+                raise Http404("Invalid image data.")
+            base64_data = match.group("base64_data")
+            mime_type = match.group("mime_type")
+        else:
+            # Content is raw base64 data without data URI
+            base64_data = content
+            mime_type = content_type_main  # Use the main content type
+
+        # Remove any whitespace or newlines that may corrupt base64 decoding
+        base64_data = base64_data.replace("\n", "").replace("\r", "")
+
+        try:
+            image_data = base64.b64decode(base64_data)
+        except (TypeError, ValueError) as exc:
+            raise Http404("Invalid image data.") from exc
+
+        # Step 6: Detect the image type from binary data if necessary
+        if post.contentType == "a" or mime_type in ("application/base64", None):
+            # Detect image type from binary data
+            image_type = self.detect_image_type(image_data)
+            if not image_type:
+                raise Http404("Unsupported or invalid image format.")
+            mime_type = image_type
+            print(f"Detected Image Type: {mime_type}")
+
+        # Step 7: Set the correct content type
+        content_type = mime_type  # Use the extracted or determined MIME type
+
+        # Step 8: Return the image data with correct headers
+        response = HttpResponse(image_data, content_type=content_type)
+        response["Content-Length"] = len(image_data)
+        return response
+
+    def detect_image_type(self, image_data):
+        # Read the first few bytes to detect the image type
+        header = image_data[:12]  # Read more bytes to accommodate longer signatures
+
+        content_type = ""
+        # JPEG
+        if header.startswith(b"\xFF\xD8\xFF"):
+            content_type = "image/jpeg"
+
+        # PNG (including APNG)
+        elif header.startswith(b"\x89PNG\r\n\x1A\n"):
+            # For APNG detection, more in-depth analysis is needed
+            content_type = "image/png"
+
+        # GIF
+        elif header[:6] in (b"GIF87a", b"GIF89a"):
+            content_type = "image/gif"
+
+        # WebP
+        elif header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+            content_type = "image/webp"
+
+        # AVIF
+        elif header[4:12] == b"ftypavif":
+            content_type = "image/avif"
+
+        # SVG
+        elif header.strip().startswith(b"<?xml") or b"<svg" in header.lower():
+            content_type = "image/svg+xml"
+
+        else:
+            content_type = None  # Unsupported image type
+
+        return content_type
+
+
+class CommentedView(APIView):
+    def get(self, request, author_serial=None, comment_serial=None):
+        """
+        GET: Fetch comments by an author or a specific comment
+        """
+        if author_serial and comment_serial:
+            # Retrieve a specific comment
+            comment = get_object_or_404(
+                Comment, uuid=comment_serial, author__user__username=author_serial
+            )
+            serializer = CommentSerializer(comment, context={"request": request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif author_serial:
+            # List all comments by the author
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            comments = Comment.objects.filter(author=author)
+            if request.get_host() != author.local_node.url:
+                comments = comments.filter(post__visibility__in=["p", "u"])
+
+            # Use pagination or other list settings as needed
+            serializer = CommentSerializer(
+                comments, many=True, context={"request": request}
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(
+            {"detail": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def post(self, request, author_serial=None):
+        """
+        POST: Add a new comment to a specified post
+        """
+        if author_serial:
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            if request.data.get("type") != "comment":
+                return Response(
+                    {"detail": "Invalid comment type."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            comment_data = request.data.copy()
+            comment_data["author"] = author.id
+            serializer = CommentSerializer(
+                data=comment_data, context={"request": request}
+            )
+
+            if serializer.is_valid():
+                serializer.save(author=author)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+class SingleCommentView(APIView):
+    def get(self, request, comment_fqid):
+        """
+        GET: Retrieve a single comment using its FQID.
+        """
+        comment_fqid = unquote(comment_fqid)
+        fqid_parts = comment_fqid.split("/")
+        comment_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        comment = get_object_or_404(Comment, uuid=comment_uuid)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
