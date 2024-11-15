@@ -1126,3 +1126,36 @@ class PostLikesFQIDAPIView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class CommentLikesView(APIView):
+    """
+    Endpoint to retrieve likes for a specific comment. Always returns a likes object with a count of zero.
+    """
+
+    def get(self, request, author_serial, post_serial, comment_fqid):
+        try:
+            # Verify the comment exists
+            comment_fqid = unquote(comment_fqid)
+            fqid_parts = comment_fqid.split("/")
+            comment_uuid = fqid_parts[len(fqid_parts) - 1]
+            post = get_object_or_404(Post, uuid=post_serial)
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            Comment.objects.get(uuid=comment_uuid, post=post, author=author)
+        except Comment.DoesNotExist:
+            return Response(
+                {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Response data with count always zero
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
+            "page_number": 1,
+            "size": 5,
+            "count": 0,
+            "src": [],  # Always empty since there will be no likes
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
