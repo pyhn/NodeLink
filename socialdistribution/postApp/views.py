@@ -1214,3 +1214,56 @@ class CommentLikesView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class SingleLikeView(APIView):
+    """
+    Endpoint to retrieve a single like object by its LIKE_SERIAL.
+    """
+
+    def get(self, request, author_serial, like_serial):
+        # Fetch the author to validate the URL
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Fetch the Like object by its UUID (like_serial)
+        like = get_object_or_404(Like, uuid=like_serial, author=author)
+
+        # Serialize the Like object
+        serializer = LikeSerializer(like, context={"request": request})
+
+        # Return the serialized Like object
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ThingsLikedByAuthorView(APIView):
+    """
+    Endpoint to retrieve a list of things liked by a specific author.
+    """
+
+    def get(self, request, author_serial):
+        # Retrieve the author by serial
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Fetch all likes made by the author
+        likes = Like.objects.filter(author=author).order_by("-created_at")
+
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the likes in the current page
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/liked",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/liked",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)

@@ -141,5 +141,15 @@ urlpatterns = [
         views.PostCommentsView.as_view(),
         name="post-comments",
     ),
+    path(
+        "api/authors/<str:author_serial>/liked/",
+        views.ThingsLikedByAuthorView.as_view(),
+        name="author-liked",
+    ),
+    path(
+        "api/authors/<str:author_serial>/liked/<str:like_serial>/",
+        views.SingleLikeView.as_view(),
+        name="single-like",
+    ),
 ]
 #
