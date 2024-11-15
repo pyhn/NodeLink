@@ -7,6 +7,7 @@ app_name = "authorApp"  # namspace
 # Initialize the router
 router = DefaultRouter()
 router.register(r"authors", views.AuthorProfileViewSet, basename="author")
+router.register(r"authors", views.FollowersFQIDViewSet, basename="follower-fqid")
 
 # Define other URLs
 urlpatterns = [

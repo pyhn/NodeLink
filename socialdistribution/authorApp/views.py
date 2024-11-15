@@ -695,6 +695,8 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
 
+
+class FollowersFQIDViewSet(viewsets.ViewSet):
     @action(
         detail=True,
         methods=["get", "put", "delete"],
