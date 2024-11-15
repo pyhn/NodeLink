@@ -14,6 +14,7 @@ from .serializers import (
 )
 from rest_framework.response import Response
 from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from node_link.utils.common import CustomPaginator
 from drf_yasg.utils import swagger_auto_schema
@@ -755,3 +756,17 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
             return Response(
                 {"detail": "Follower does not exist."}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class SingleAuthorView(APIView):
+    def get(self, request, author_fqid):
+        """
+        GET: Retrieve a single author using its FQID.
+        """
+        author_fqid = unquote(author_fqid)
+        fqid_parts = author_fqid.split("/")
+        author_username = fqid_parts[len(fqid_parts) - 1]
+
+        author = get_object_or_404(AuthorProfile, user__username=author_username)
+        serializer = AuthorProfileSerializer(author)
+        return Response(serializer.data, status=status.HTTP_200_OK)

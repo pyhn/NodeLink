@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -30,4 +30,10 @@ urlpatterns = [
     ),
     path("unfriend/<int:friend_id>/", views.unfriend, name="unfriend"),
     path("api/", include(router.urls)),
+    # Retrieve a specific comment using its FQID (local)
+    re_path(
+        r"^api/authors/(?P<author_fqid>.+)/$",
+        views.SingleAuthorView.as_view(),
+        name="author-detail",
+    ),
 ]
