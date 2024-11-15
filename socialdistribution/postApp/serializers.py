@@ -202,7 +202,8 @@ class CommentSerializer(serializers.ModelSerializer):
 class LikeSerializer(serializers.ModelSerializer):
     type = serializers.CharField(default="like")
     published = serializers.SerializerMethodField()
-    post = serializers.PrimaryKeyRelatedField(queryset=Post.objects.all())
+    object = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Like
@@ -211,16 +212,14 @@ class LikeSerializer(serializers.ModelSerializer):
             "author",
             "published",
             "id",
-            "post",
+            "object",
         ]
 
     def get_published(self, obj):
         return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
-    def create(self, validated_data):
-        return Like.objects.create(**validated_data)
+    def get_object(self, obj):
+        return f"http://{obj.post.author.local_node.url}/authors/{obj.post.author.id}/posts/{obj.post.id}"
 
-    def update(self, instance, validated_data):
-        instance.post = validated_data.get("post", instance.post)
-        instance.save()
-        return instance
+    def get_author(self, obj):
+        return AuthorProfileSerializer(obj.author).data

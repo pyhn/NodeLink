@@ -2,6 +2,7 @@
 from django.urls import reverse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
 from django.http import (
@@ -1052,3 +1053,40 @@ class RemoteCommentView(APIView):
         serializer = CommentSerializer(comment)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostLikesAPIView(APIView):
+    """
+    Endpoint to retrieve likes on a specific post of a specific author.
+    """
+
+    def get(self, request, author_serial, post_uuid):
+
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_uuid, author=author)
+
+        # Get all likes on the post
+        likes = Like.objects.filter(post=post).order_by("-created_at")
+
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the results
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)

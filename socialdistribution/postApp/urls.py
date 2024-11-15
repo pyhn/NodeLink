@@ -72,40 +72,6 @@ urlpatterns = [
         ),
         name="author-post-detail",
     ),
-    path(
-        "api/authors/<str:author_serial>/comments/",
-        views.CommentViewSet.as_view({"get": "list", "post": "create"}),
-        name="author-comments",
-    ),
-    path(
-        "api/authors/<str:author_serial>/comments/<uuid:uuid>/",
-        views.CommentViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="author-comment-detail",
-    ),
-    path(
-        "api/authors/<str:author_serial>/likes/",
-        views.LikeViewSet.as_view({"get": "list", "post": "create"}),
-        name="author-likes",
-    ),
-    path(
-        "api/authors/<str:author_serial>/likes/<uuid:uuid>/",
-        views.LikeViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="author-like-detail",
-    ),
     # Include router URLs for other ViewSets if needed
     path("api/", include(router.urls)),
     # Image endpoints
@@ -113,6 +79,11 @@ urlpatterns = [
         "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/image/",
         views.PostImageView.as_view(),
         name="post-image",
+    ),
+    path(
+        "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/likes/",
+        views.PostLikesAPIView.as_view(),
+        name="post-likes",
     ),
     # List all comments by author or add a comment to a post
     path(
