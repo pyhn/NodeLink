@@ -420,9 +420,7 @@ class PostViewSet(viewsets.ModelViewSet):
                                 "display_name": "John Doe",
                                 "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
-
                             },
-
                         },
                     ]
                 },
@@ -462,7 +460,6 @@ class PostViewSet(viewsets.ModelViewSet):
                             "display_name": "John Doe",
                             "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
-
                         },
                     }
                 },
@@ -515,7 +512,6 @@ class PostViewSet(viewsets.ModelViewSet):
                             "display_name": "John Doe",
                             "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
-
                         },
                     }
                 },
@@ -720,7 +716,6 @@ class CommentViewSet(viewsets.ModelViewSet):
                                 "display_name": "John Doe",
                                 "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
-
                             },
                         },
                     ]
@@ -760,7 +755,6 @@ class CommentViewSet(viewsets.ModelViewSet):
                             "display_name": "John Doe",
                             "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
-
                         },
                     }
                 },
@@ -1387,4 +1381,25 @@ class SingleCommentView(APIView):
 
         comment = get_object_or_404(Comment, uuid=comment_uuid)
         serializer = CommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SinglePostView(APIView):
+    def get(self, request, post_fqid):
+        """
+        GET: Retrieve a single post using its FQID.
+        """
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        if post.visibility != "p":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = PostSerializer(post)
         return Response(serializer.data, status=status.HTTP_200_OK)

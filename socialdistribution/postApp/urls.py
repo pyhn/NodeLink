@@ -132,5 +132,10 @@ urlpatterns = [
         views.SingleCommentView.as_view(),
         name="comment-detail",
     ),
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/$",
+        views.SinglePostView.as_view(),
+        name="post-detail",
+    ),
 ]
 #
