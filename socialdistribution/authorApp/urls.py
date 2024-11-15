@@ -28,7 +28,5 @@ urlpatterns = [
         name="deny_follow_request",
     ),
     path("unfriend/<int:friend_id>/", views.unfriend, name="unfriend"),
+    path("api/", include(router.urls)),
 ]
-
-# Include router URLs
-urlpatterns += router.urls

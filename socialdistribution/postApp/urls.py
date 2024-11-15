@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from . import views
 
@@ -108,4 +108,29 @@ urlpatterns = [
     ),
     # Include router URLs for other ViewSets if needed
     path("api/", include(router.urls)),
+    # Image endpoints
+    path(
+        "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/image/",
+        views.PostImageView.as_view(),
+        name="post-image",
+    ),
+    # List all comments by author or add a comment to a post
+    path(
+        "api/authors/<str:author_serial>/commented/",
+        views.CommentedView.as_view(),
+        name="author-commented",
+    ),
+    # Retrieve a specific comment made by an author (local/remote)
+    path(
+        "api/authors/<str:author_serial>/commented/<uuid:comment_serial>/",
+        views.CommentedView.as_view(),
+        name="author-comment-detail",
+    ),
+    # Retrieve a specific comment using its FQID (local)
+    re_path(
+        r"^api/commented/(?P<comment_fqid>.+)/$",
+        views.SingleCommentView.as_view(),
+        name="comment-detail",
+    ),
 ]
+#
