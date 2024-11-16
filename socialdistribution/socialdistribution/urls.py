@@ -39,14 +39,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("node1/", include("node_link.urls")),  # Root URL directed to node_link app
-    path("", RedirectView.as_view(url=reverse_lazy("authorApp:login"))),
-    path(
-        "authorApp/", include("authorApp.urls", namespace="authorApp")
-    ),  # URL for authorApp
-    path("postApp/", include("postApp.urls")),  # URL for postApp
-    path("admin/", admin.site.urls),  # Admin panel URL
-    # Swagger Stuff
+    # Admin panel and documentation URLs
+    path("admin/", admin.site.urls),
     path(
         "swagger<format>/", schema_view.without_ui(cache_timeout=0), name="schema-json"
     ),
@@ -55,8 +49,13 @@ urlpatterns = [
         schema_view.with_ui("swagger", cache_timeout=0),
         name="schema-swagger-ui",
     ),
-    # ReDoc URL
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+    # Redirect for the root URL
+    path("", RedirectView.as_view(url=reverse_lazy("authorApp:login")), name="index"),
+    # App-specific URLs
+    path("", include("postApp.urls")),  # PostApp URLs
+    path("", include("authorApp.urls", namespace="authorApp")),  # AuthorApp URLs
+    path("", include("node_link.urls")),  # NodeLink URLs
 ]
 
 if settings.DEBUG:

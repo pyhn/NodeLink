@@ -50,6 +50,7 @@ from datetime import datetime
 from PIL import Image
 import re
 from urllib.parse import unquote, urljoin
+import uuid
 
 
 @is_approved
@@ -66,7 +67,6 @@ def submit_post(request, username):
         visibility = request.POST.get("visibility", "p")
         content_type = request.POST.get("contentType", "p")
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-        print(f"contentt type: {content_type}")
         # Handle image upload
         if content_type in ["png", "jpeg", "a"]:
             img = request.FILES.get("img", None)
@@ -660,6 +660,20 @@ class LocalPostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve a list of local posts",
+        operation_description=(
+            "Retrieve a list of posts that are either public or unlisted and match the provided UUID."
+        ),
+        responses={
+            200: openapi.Response(
+                description="A list of posts.",
+                schema=PostSerializer(many=True),
+            ),
+            403: openapi.Response(description="Unauthorized access."),
+        },
+        tags=["Posts"],
+    )
     def get_queryset(self):
         return Post.objects.filter(
             visibility__in=["p", "u"], uuid=self.kwargs.get("uuid")
@@ -667,6 +681,35 @@ class LocalPostViewSet(viewsets.ModelViewSet):
 
 
 class PostImageView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve an image for a specific post",
+        operation_description=(
+            "Fetch the image content of a specific post. The image can be in JPEG, PNG, "
+            "or Base64 format, based on the content type of the post."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author who created the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "post_uuid",
+                openapi.IN_PATH,
+                description="UUID of the post whose image is to be retrieved.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(description="Image data returned successfully."),
+            403: openapi.Response(description="Post is not public."),
+            404: openapi.Response(description="Post not found or image invalid."),
+        },
+        tags=["Posts", "Images"],
+    )
     def get(self, request, author_serial, post_uuid):
         # Step 1: Retrieve the post
         post = get_object_or_404(
@@ -725,7 +768,6 @@ class PostImageView(APIView):
             if not image_type:
                 raise Http404("Unsupported or invalid image format.")
             mime_type = image_type
-            print(f"Detected Image Type: {mime_type}")
 
         # Step 7: Set the correct content type
         content_type = mime_type  # Use the extracted or determined MIME type
@@ -772,6 +814,80 @@ class PostImageView(APIView):
 
 
 class CommentedView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve comments by author or comment ID",
+        operation_description=(
+            "Fetch a specific comment by its ID or list all comments by an author. "
+            "Supports pagination for comments listing."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author whose comments are to be retrieved.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "comment_serial",
+                openapi.IN_PATH,
+                description="UUID of the specific comment to retrieve.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated comment results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of comments or details of a specific comment.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comments"
+                        ),
+                        "page": openapi.Schema(type=openapi.TYPE_STRING),
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "page_number": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="comment"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "content": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "contentType": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="text/markdown",
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "post": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "page": openapi.Schema(type=openapi.TYPE_STRING),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="Comment or author not found."),
+            400: openapi.Response(description="Invalid request."),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, author_serial=None, comment_serial=None):
         """
         GET: Fetch comments by an author or a specific comment
@@ -791,21 +907,121 @@ class CommentedView(APIView):
             if request.get_host() != author.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
-            # Use pagination or other list settings as needed
-            serializer = CommentSerializer(
-                comments, many=True, context={"request": request}
+            # Pagination logic (~5 comments per page)
+            page_size = 5
+            page_number = int(request.query_params.get("page", 1))
+            start_index = (page_number - 1) * page_size
+            end_index = start_index + page_size
+
+            paginated_comments = comments[start_index:end_index]
+
+            # Total comment count
+            total_count = comments.count()
+
+            # Construct response metadata
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
             )
+            author_page = urljoin(base_url, f"authors/{author.user.username}")
+            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+
+            # Prepare response data
+            response_data = {
+                "type": "comments",
+                "page": author_page,
+                "id": api_page,
+                "page_number": page_number,
+                "size": page_size,
+                "count": total_count,
+                "src": paginated_comments,  # Pass the queryset directly
+            }
+
+            # Serialize and return the response
+            serializer = CommentsSerializer(response_data, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(
             {"detail": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    @swagger_auto_schema(
+        operation_summary="Add a new comment",
+        operation_description="Create a new comment on a specified post by providing the author's username and the post's URL.",
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author creating the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["type", "post", "comment"],
+            properties={
+                "type": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="comment",
+                    description="Type of the object. Must be 'comment'.",
+                ),
+                "post": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="http://localhost/api/authors/author123/posts/post-uuid",
+                    description="Full URL of the post being commented on.",
+                ),
+                "comment": openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    example="This is a sample comment.",
+                    description="The content of the comment.",
+                ),
+            },
+        ),
+        responses={
+            201: openapi.Response(
+                description="Comment created successfully.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comment"
+                        ),
+                        "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                        "content": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="This is a sample comment.",
+                        ),
+                        "contentType": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="text/markdown"
+                        ),
+                        "published": openapi.Schema(
+                            type=openapi.TYPE_STRING, format="date-time"
+                        ),
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "post": openapi.Schema(type=openapi.TYPE_STRING),
+                        "page": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            400: openapi.Response(
+                description="Invalid input. Includes missing or incorrect fields.",
+                examples={
+                    "application/json": {"detail": "Invalid comment type."},
+                },
+            ),
+            404: openapi.Response(
+                description="Author or post not found.",
+                examples={
+                    "application/json": {"detail": "Invalid post URL or UUID."},
+                },
+            ),
+        },
+        tags=["Comments"],
+    )
     def post(self, request, author_serial=None):
         """
         POST: Add a new comment to a specified post
         """
-        print("is here lol")
         if not author_serial:
             return Response(
                 {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
@@ -819,24 +1035,107 @@ class CommentedView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = CommentSerializer(data=request.data, context={"request": request})
+        try:
+            # Extract necessary fields from the request data
+            post_url = request.data.get("post", "")
+            post_uuid = post_url.rstrip("/").split("/")[-1]
+            post = get_object_or_404(Post, uuid=post_uuid)
 
-        if serializer.is_valid():
-            # Validate that the author in the payload matches the URL author_serial
-            if serializer.validated_data["author"] != author:
+            comment_content = request.data.get("comment", "").strip()
+            if not comment_content:
                 return Response(
-                    {"detail": "Author in the payload does not match the URL."},
+                    {"detail": "Comment content cannot be empty."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Save the comment
-            serializer.save()
+            # Create the comment
+            comment = Comment.objects.create(
+                content=comment_content,
+                post=post,
+                author=author,
+                visibility="p",  # Default visibility
+                uuid=uuid.uuid4(),  # Generate a new UUID for the comment
+                created_by=author,
+            )
+
+            # Serialize the created comment to match the expected output format
+            serializer = CommentSerializer(comment, context={"request": request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return Response(
+                {"detail": "Invalid post URL or UUID."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class CommentedFQIDView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve comments by FQID",
+        operation_description=(
+            "Fetch comments by providing the Fully Qualified ID (FQID) of the author."
+            "Supports pagination for comments listing."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated comment results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of comments.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comments"
+                        ),
+                        "page": openapi.Schema(type=openapi.TYPE_STRING),
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "page_number": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="comment"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "content": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "contentType": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="text/markdown",
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "post": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "page": openapi.Schema(type=openapi.TYPE_STRING),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="Author not found."),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, author_fqid):
         """
         GET: Fetch comments by an author or a specific comment
@@ -852,10 +1151,37 @@ class CommentedFQIDView(APIView):
             if request.get_host() != author.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
-            # Use pagination or other list settings as needed
-            serializer = CommentSerializer(
-                comments, many=True, context={"request": request}
+            # Pagination logic (~5 comments per page)
+            page_size = 5
+            page_number = int(request.query_params.get("page", 1))
+            start_index = (page_number - 1) * page_size
+            end_index = start_index + page_size
+
+            paginated_comments = comments[start_index:end_index]
+
+            # Total comment count
+            total_count = comments.count()
+
+            # Construct response metadata
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
             )
+            author_page = urljoin(base_url, f"authors/{author.user.username}")
+            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+
+            # Prepare response data
+            response_data = {
+                "type": "comments",
+                "page": author_page,
+                "id": api_page,
+                "page_number": page_number,
+                "size": page_size,
+                "count": total_count,
+                "src": paginated_comments,  # Pass the queryset directly
+            }
+
+            # Serialize and return the response
+            serializer = CommentsSerializer(response_data, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(
@@ -864,6 +1190,62 @@ class CommentedFQIDView(APIView):
 
 
 class SingleCommentedView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve a single comment by FQID",
+        operation_description="Fetch details of a specific comment using its Fully Qualified ID (FQID).",
+        manual_parameters=[
+            openapi.Parameter(
+                "comment_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Details of the comment.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comment"
+                        ),
+                        "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                        "content": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="This is a sample comment.",
+                        ),
+                        "contentType": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="text/markdown"
+                        ),
+                        "published": openapi.Schema(
+                            type=openapi.TYPE_STRING, format="date-time"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/comments/comment-uuid",
+                        ),
+                        "post": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/posts/post-uuid",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/posts/post-uuid",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Comment not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, comment_fqid):
         """
         GET: Retrieve a single comment using its FQID.
@@ -878,6 +1260,45 @@ class SingleCommentedView(APIView):
 
 
 class SinglePostView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve a single post by FQID",
+        operation_description="Fetch details of a specific post using its Fully Qualified ID (FQID).",
+        manual_parameters=[
+            openapi.Parameter(
+                "post_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Details of the post.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "title": openapi.Schema(type=openapi.TYPE_STRING),
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="post"
+                        ),
+                        "description": openapi.Schema(type=openapi.TYPE_STRING),
+                        "content": openapi.Schema(type=openapi.TYPE_STRING),
+                        "visibility": openapi.Schema(type=openapi.TYPE_STRING),
+                        "node": openapi.Schema(type=openapi.TYPE_STRING),
+                        "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                        "uuid": openapi.Schema(type=openapi.TYPE_STRING),
+                        "contentType": openapi.Schema(type=openapi.TYPE_STRING),
+                        "created_by": openapi.Schema(type=openapi.TYPE_STRING),
+                    },
+                ),
+            ),
+            403: openapi.Response(description="Post is not public."),
+            404: openapi.Response(description="Post not found."),
+        },
+        tags=["Posts"],
+    )
     def get(self, request, post_fqid):
         """
         GET: Retrieve a single post using its FQID.
@@ -899,9 +1320,46 @@ class SinglePostView(APIView):
 
 
 class PostImageViewFQID(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve an image for a specific post",
+        operation_description=(
+            "Fetch the image content of a specific post using its Fully Qualified ID (FQID). "
+            "The image can be in JPEG, PNG, or Base64 format based on the post's content type."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "post_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Binary image data returned successfully.",
+                examples={
+                    "image/jpeg": "Binary data (JPEG image)",
+                    "image/png": "Binary data (PNG image)",
+                },
+            ),
+            403: openapi.Response(
+                description="Post is not public.",
+                examples={
+                    "application/json": {"detail": "Post is not public."},
+                },
+            ),
+            404: openapi.Response(
+                description="Post not found or image invalid.",
+                examples={
+                    "application/json": {"detail": "Post content is not an image."},
+                },
+            ),
+        },
+        tags=["Posts", "Images"],
+    )
     def get(self, request, post_fqid):
         # Step 1: Retrieve the post
-        print(f"pyhn here {post_fqid}")
         post_fqid = unquote(post_fqid)
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[len(fqid_parts) - 1]
@@ -960,7 +1418,6 @@ class PostImageViewFQID(APIView):
             if not image_type:
                 raise Http404("Unsupported or invalid image format.")
             mime_type = image_type
-            print(f"Detected Image Type: {mime_type}")
 
         # Step 7: Set the correct content type
         content_type = mime_type  # Use the extracted or determined MIME type
@@ -1011,6 +1468,101 @@ class PostCommentsView(APIView):
     API View to handle fetching comments for a specific post
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve comments for a specific post",
+        operation_description=(
+            "Fetch paginated comments for a specific post, ordered by the most recent. "
+            "The comments are filtered by the associated author and post ID."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author who created the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "post_serial",
+                openapi.IN_PATH,
+                description="UUID of the post for which comments are to be retrieved.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated comment results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of comments for the post.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comments"
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/posts/post-uuid",
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/posts/post-uuid/comments",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=20),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="comment"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "content": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="This is a sample comment.",
+                                    ),
+                                    "contentType": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="text/markdown",
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "post": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "page": openapi.Schema(type=openapi.TYPE_STRING),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Author or post not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+            400: openapi.Response(
+                description="Invalid request.",
+                examples={
+                    "application/json": {"detail": "Invalid request."},
+                },
+            ),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, author_serial=None, post_serial=None):
         """
         GET: Retrieve comments for a specific post
@@ -1064,6 +1616,94 @@ class PostCommentsViewFQID(APIView):
     API View to handle fetching comments of a specific post
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve comments for a specific post by FQID",
+        operation_description=(
+            "Fetch paginated comments for a specific post using its Fully Qualified ID (FQID), "
+            "ordered by the most recent. Supports pagination."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "post_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated comment results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of comments for the post.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comments"
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/posts/post-uuid",
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/posts/post-uuid/comments",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=20),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="comment"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "content": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="This is a sample comment.",
+                                    ),
+                                    "contentType": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="text/markdown",
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "post": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "page": openapi.Schema(type=openapi.TYPE_STRING),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Post not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+            400: openapi.Response(
+                description="Invalid request.",
+                examples={
+                    "application/json": {"detail": "Invalid request."},
+                },
+            ),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, post_fqid):
         # Decode and extract the UUID from the FQID
         post_fqid = unquote(post_fqid)
@@ -1118,6 +1758,78 @@ class RemoteCommentView(APIView):
     GET: Retrieve a specific comment using its remote FQID
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve a specific remote comment by FQID",
+        operation_description=(
+            "Fetch details of a specific comment using the author's username, the post's UUID, and the comment's remote Fully Qualified ID (FQID)."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author associated with the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "post_serial",
+                openapi.IN_PATH,
+                description="UUID of the post associated with the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "remote_comment_fqid",
+                openapi.IN_PATH,
+                description="Remote Fully Qualified ID (FQID) of the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Details of the specific comment.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="comment"
+                        ),
+                        "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                        "content": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="This is a sample comment.",
+                        ),
+                        "contentType": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="text/markdown"
+                        ),
+                        "published": openapi.Schema(
+                            type=openapi.TYPE_STRING, format="date-time"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/comments/comment-uuid",
+                        ),
+                        "post": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/posts/post-uuid",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/posts/post-uuid",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Author, post, or comment not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Comments"],
+    )
     def get(self, request, author_serial, post_serial, remote_comment_fqid):
 
         # Decode the remote_comment_fqid
@@ -1143,6 +1855,70 @@ class PostLikesAPIView(APIView):
     Endpoint to retrieve likes on a specific post of a specific author.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve likes on a specific post",
+        operation_description=(
+            "Fetch likes on a specific post by its UUID. Supports pagination for likes."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author who created the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "post_uuid",
+                openapi.IN_PATH,
+                description="UUID of the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated likes results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="List of likes on the post.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(type=openapi.TYPE_STRING),
+                        "id": openapi.Schema(type=openapi.TYPE_STRING),
+                        "page": openapi.Schema(type=openapi.TYPE_STRING),
+                        "page_number": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="like"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(type=openapi.TYPE_STRING),
+                                    "object": openapi.Schema(type=openapi.TYPE_STRING),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="Post or likes not found."),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, author_serial, post_uuid):
 
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
@@ -1176,6 +1952,91 @@ class PostLikesAPIView(APIView):
 
 
 class PostLikesFQIDAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve all likes for a specific post by FQID",
+        operation_description=(
+            "Fetch paginated likes for a specific post using its Fully Qualified ID (FQID). "
+            "Supports pagination for the likes."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "post_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the post.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated likes results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of likes for the post.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="likes"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/posts/post-uuid/likes",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/posts/post-uuid",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=20),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="like"
+                                    ),
+                                    "author": openapi.Schema(type=openapi.TYPE_OBJECT),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING, format="date-time"
+                                    ),
+                                    "id": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/likes/like-uuid",
+                                    ),
+                                    "object": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/posts/post-uuid",
+                                    ),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Post not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+            400: openapi.Response(
+                description="Invalid request.",
+                examples={
+                    "application/json": {"detail": "Invalid request."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, post_fqid):
         """
         GET: Retrieve all likes for a specific post based on fqid
@@ -1216,6 +2077,74 @@ class CommentLikesView(APIView):
     Endpoint to retrieve likes for a specific comment. Always returns a likes object with a count of zero.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve likes for a specific comment",
+        operation_description=(
+            "Fetch likes for a specific comment using the author's username, post's UUID, "
+            "and comment's Fully Qualified ID (FQID). Always returns a count of zero likes."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author associated with the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "post_serial",
+                openapi.IN_PATH,
+                description="UUID of the post associated with the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "comment_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the comment.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Likes object for the specified comment (count is always zero).",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="likes"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/posts/post-uuid/comments/comment-uuid/likes",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/posts/post-uuid/comments/comment-uuid/likes",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=0),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(type=openapi.TYPE_OBJECT),
+                            example=[],  # Always empty
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Comment not found.",
+                examples={
+                    "application/json": {"detail": "Comment not found."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, author_serial, post_serial, comment_fqid):
         try:
             # Verify the comment exists
@@ -1223,8 +2152,7 @@ class CommentLikesView(APIView):
             fqid_parts = comment_fqid.split("/")
             comment_uuid = fqid_parts[len(fqid_parts) - 1]
             post = get_object_or_404(Post, uuid=post_serial)
-            author = get_object_or_404(AuthorProfile, user__username=author_serial)
-            Comment.objects.get(uuid=comment_uuid, post=post, author=author)
+            Comment.objects.get(uuid=comment_uuid, post=post)
         except Comment.DoesNotExist:
             return Response(
                 {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
@@ -1249,6 +2177,85 @@ class SingleLikeView(APIView):
     Endpoint to retrieve a single like object by its LIKE_SERIAL.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve a single like by LIKE_SERIAL",
+        operation_description=(
+            "Fetch details of a specific like object using the author's username and the like's UUID (LIKE_SERIAL)."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author associated with the like.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "like_serial",
+                openapi.IN_PATH,
+                description="UUID of the like object to retrieve.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Details of the specific like object.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="like"
+                        ),
+                        "author": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "id": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/api/authors/author123",
+                                ),
+                                "displayName": openapi.Schema(
+                                    type=openapi.TYPE_STRING, example="John Doe"
+                                ),
+                                "host": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/",
+                                ),
+                                "github": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="https://github.com/johndoe",
+                                ),
+                                "profileImage": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/images/avatar.jpg",
+                                ),
+                            },
+                        ),
+                        "published": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            format="date-time",
+                            example="2024-11-16T10:00:00Z",
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/likes/like-uuid",
+                        ),
+                        "object": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/posts/post-uuid",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Like or author not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, author_serial, like_serial):
         # Fetch the author to validate the URL
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
@@ -1268,6 +2275,111 @@ class ThingsLikedByAuthorView(APIView):
     Endpoint to retrieve a list of things liked by a specific author.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve things liked by an author",
+        operation_description=(
+            "Fetch a paginated list of all the things liked by a specific author, "
+            "identified by their username."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_serial",
+                openapi.IN_PATH,
+                description="Username of the author whose liked objects are to be retrieved.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of things liked by the author.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="likes"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/liked",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/liked",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=10),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="like"
+                                    ),
+                                    "author": openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "id": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/api/authors/author123",
+                                            ),
+                                            "displayName": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="John Doe",
+                                            ),
+                                            "host": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/",
+                                            ),
+                                            "github": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="https://github.com/johndoe",
+                                            ),
+                                            "profileImage": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/images/avatar.jpg",
+                                            ),
+                                        },
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        format="date-time",
+                                        example="2024-11-16T10:00:00Z",
+                                    ),
+                                    "id": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/likes/like-uuid",
+                                    ),
+                                    "object": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/posts/post-uuid",
+                                    ),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, author_serial):
         # Retrieve the author by serial
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
@@ -1302,6 +2414,78 @@ class SingleLikeFQIDView(APIView):
     Endpoint to retrieve a single like object by its LIKE_SERIAL.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve a single like by LIKE_SERIAL",
+        operation_description=(
+            "Fetch details of a specific like object using its Fully Qualified ID (FQID)."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "like_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the like.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Details of the specific like object.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="like"
+                        ),
+                        "author": openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                "id": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/api/authors/author123",
+                                ),
+                                "displayName": openapi.Schema(
+                                    type=openapi.TYPE_STRING, example="John Doe"
+                                ),
+                                "host": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/",
+                                ),
+                                "github": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="https://github.com/johndoe",
+                                ),
+                                "profileImage": openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    example="http://localhost/images/avatar.jpg",
+                                ),
+                            },
+                        ),
+                        "published": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            format="date-time",
+                            example="2024-11-16T10:00:00Z",
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/likes/like-uuid",
+                        ),
+                        "object": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/posts/post-uuid",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Like object not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, like_fqid):
         # Fetch the author to validate the URL
         like_fqid = unquote(like_fqid)
@@ -1323,6 +2507,111 @@ class ThingsLikedByAuthorFQIDView(APIView):
     Endpoint to retrieve a list of things liked by a specific author.
     """
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve things liked by an author (FQID)",
+        operation_description=(
+            "Fetch a paginated list of all the things liked by a specific author, "
+            "identified by their Fully Qualified ID (FQID)."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "author_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the author whose liked objects are to be retrieved.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "page",
+                openapi.IN_QUERY,
+                description="Page number for paginated results.",
+                type=openapi.TYPE_INTEGER,
+                required=False,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of things liked by the author.",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "type": openapi.Schema(
+                            type=openapi.TYPE_STRING, example="likes"
+                        ),
+                        "id": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/api/authors/author123/liked",
+                        ),
+                        "page": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="http://localhost/authors/author123/liked",
+                        ),
+                        "page_number": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, example=1
+                        ),
+                        "size": openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+                        "count": openapi.Schema(type=openapi.TYPE_INTEGER, example=10),
+                        "src": openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                properties={
+                                    "type": openapi.Schema(
+                                        type=openapi.TYPE_STRING, example="like"
+                                    ),
+                                    "author": openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            "id": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/api/authors/author123",
+                                            ),
+                                            "displayName": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="John Doe",
+                                            ),
+                                            "host": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/",
+                                            ),
+                                            "github": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="https://github.com/johndoe",
+                                            ),
+                                            "profileImage": openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                example="http://localhost/images/avatar.jpg",
+                                            ),
+                                        },
+                                    ),
+                                    "published": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        format="date-time",
+                                        example="2024-11-16T10:00:00Z",
+                                    ),
+                                    "id": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/likes/like-uuid",
+                                    ),
+                                    "object": openapi.Schema(
+                                        type=openapi.TYPE_STRING,
+                                        example="http://localhost/api/posts/post-uuid",
+                                    ),
+                                },
+                            ),
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={
+                    "application/json": {"detail": "Not found."},
+                },
+            ),
+        },
+        tags=["Likes"],
+    )
     def get(self, request, author_fqid):
         # Retrieve the author by serial
 
