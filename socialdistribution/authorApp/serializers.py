@@ -77,7 +77,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 class FollowerSerializer(serializers.ModelSerializer):
     """Custom Serializer for followers to match the required output format"""
 
-    type = serializers.CharField(default="author", read_only=True)
+    type = serializers.CharField(default="follow", read_only=True)
     id = serializers.SerializerMethodField()
     host = serializers.SerializerMethodField()
     displayName = serializers.CharField(

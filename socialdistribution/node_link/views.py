@@ -12,6 +12,7 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
 from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
+from authorApp.serializers import FollowerSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
@@ -112,8 +113,7 @@ def author_inbox_view(request, author_serial):
     elif object_type == "comment":
         serializer = CommentSerializer(data=data, context={"author": author})
     elif object_type == " follow":
-        # look at which one to use
-        pass
+        serializer = FollowerSerializer(data=data, context={"author": author})
     else:
         return Response(
             {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
