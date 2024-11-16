@@ -24,20 +24,21 @@ class Node(models.Model):
         on_delete=models.CASCADE,
         related_name="deleted_nodes",
     )
+
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
-        self.save(update_fields=['password'])
+        self.save(update_fields=["password"])
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password)
-    
+
     def save(self, *args, **kwargs):
-        if not self.password.startswith('pbkdf2_') and self.password != '':
+        if not self.password.startswith("pbkdf2_") and self.password != "":
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.url
+        return str(self.url)
 
 
 class Notification(models.Model):
