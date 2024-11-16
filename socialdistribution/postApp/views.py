@@ -50,6 +50,7 @@ from datetime import datetime
 from PIL import Image
 import re
 from urllib.parse import unquote, urljoin
+import uuid
 
 
 @is_approved
@@ -791,10 +792,37 @@ class CommentedView(APIView):
             if request.get_host() != author.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
-            # Use pagination or other list settings as needed
-            serializer = CommentSerializer(
-                comments, many=True, context={"request": request}
+            # Pagination logic (~5 comments per page)
+            page_size = 5
+            page_number = int(request.query_params.get("page", 1))
+            start_index = (page_number - 1) * page_size
+            end_index = start_index + page_size
+
+            paginated_comments = comments[start_index:end_index]
+
+            # Total comment count
+            total_count = comments.count()
+
+            # Construct response metadata
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
             )
+            author_page = urljoin(base_url, f"authors/{author.user.username}")
+            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+
+            # Prepare response data
+            response_data = {
+                "type": "comments",
+                "page": author_page,
+                "id": api_page,
+                "page_number": page_number,
+                "size": page_size,
+                "count": total_count,
+                "src": paginated_comments,  # Pass the queryset directly
+            }
+
+            # Serialize and return the response
+            serializer = CommentsSerializer(response_data, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(
@@ -805,7 +833,6 @@ class CommentedView(APIView):
         """
         POST: Add a new comment to a specified post
         """
-        print("is here lol")
         if not author_serial:
             return Response(
                 {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
@@ -819,21 +846,38 @@ class CommentedView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = CommentSerializer(data=request.data, context={"request": request})
+        try:
+            # Extract necessary fields from the request data
+            post_url = request.data.get("post", "")
+            post_uuid = post_url.rstrip("/").split("/")[-1]
+            post = get_object_or_404(Post, uuid=post_uuid)
 
-        if serializer.is_valid():
-            # Validate that the author in the payload matches the URL author_serial
-            if serializer.validated_data["author"] != author:
+            comment_content = request.data.get("comment", "").strip()
+            if not comment_content:
                 return Response(
-                    {"detail": "Author in the payload does not match the URL."},
+                    {"detail": "Comment content cannot be empty."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Save the comment
-            serializer.save()
+            # Create the comment
+            comment = Comment.objects.create(
+                content=comment_content,
+                post=post,
+                author=author,
+                visibility="p",  # Default visibility
+                uuid=uuid.uuid4(),  # Generate a new UUID for the comment
+                created_by=author,
+            )
+
+            # Serialize the created comment to match the expected output format
+            serializer = CommentSerializer(comment, context={"request": request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return Response(
+                {"detail": "Invalid post URL or UUID."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class CommentedFQIDView(APIView):
@@ -852,10 +896,37 @@ class CommentedFQIDView(APIView):
             if request.get_host() != author.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
-            # Use pagination or other list settings as needed
-            serializer = CommentSerializer(
-                comments, many=True, context={"request": request}
+            # Pagination logic (~5 comments per page)
+            page_size = 5
+            page_number = int(request.query_params.get("page", 1))
+            start_index = (page_number - 1) * page_size
+            end_index = start_index + page_size
+
+            paginated_comments = comments[start_index:end_index]
+
+            # Total comment count
+            total_count = comments.count()
+
+            # Construct response metadata
+            base_url = (
+                request.build_absolute_uri("/") if request else "http://localhost/"
             )
+            author_page = urljoin(base_url, f"authors/{author.user.username}")
+            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+
+            # Prepare response data
+            response_data = {
+                "type": "comments",
+                "page": author_page,
+                "id": api_page,
+                "page_number": page_number,
+                "size": page_size,
+                "count": total_count,
+                "src": paginated_comments,  # Pass the queryset directly
+            }
+
+            # Serialize and return the response
+            serializer = CommentsSerializer(response_data, context={"request": request})
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(
@@ -1223,8 +1294,7 @@ class CommentLikesView(APIView):
             fqid_parts = comment_fqid.split("/")
             comment_uuid = fqid_parts[len(fqid_parts) - 1]
             post = get_object_or_404(Post, uuid=post_serial)
-            author = get_object_or_404(AuthorProfile, user__username=author_serial)
-            Comment.objects.get(uuid=comment_uuid, post=post, author=author)
+            Comment.objects.get(uuid=comment_uuid, post=post)
         except Comment.DoesNotExist:
             return Response(
                 {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
