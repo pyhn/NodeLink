@@ -1,20 +1,27 @@
 # Django imports
-from rest_framework import viewsets
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
 from django.shortcuts import render
 from django.http import HttpResponseNotAllowed
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
-from .serializers import NodeSerializer, NotificationSerializer
+from rest_framework.authentication import BasicAuthentication
+from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
+from authorApp.serializers import FollowerSerializer
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.decorators import action
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project imports
 from node_link.models import Node, Notification
-from authorApp.models import Friends, Follower
+from authorApp.models import Friends, Follower, AuthorProfile
 from postApp.models import Post
 from node_link.utils.common import is_approved
 
@@ -79,15 +86,40 @@ def notifications_view(request):
     return render(request, "notifications.html", {"notifications": notifications})
 
 
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import BasicAuthentication
-from node_link.auth_backends import RemoteNodeAuthBackend
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([BasicAuthentication])
+def author_inbox_view(request, author_serial):
+    """
+    Handles incoming activities directed to a specific author's inbox
 
-class InboxView(APIView):
-    authentication_classes = [BasicAuthentication]
-    permission_classes = [IsAuthenticated]
+    Supported types: "post", "like", "comment", "follow"
+    """
+    # retrieve the author
+    try:
+        author = AuthorProfile.objects.get(user__username=author_serial)
+    except AuthorProfile.DoesNotExist:
+        return Response({"error": "Author not found"}, status=404)
 
-    def post(self, request, author_id):
-        # Handle the incoming data
-        pass
+    # retrieve the activity
+    data = request.data
+    object_type = data.get("type")
+
+    # filter base on type
+    if object_type == "post":
+        serializer = PostSerializer(data=data, context={"author": author})
+    elif object_type == "like":
+        serializer = LikeSerializer(data=data, context={"author": author})
+    elif object_type == "comment":
+        serializer = CommentSerializer(data=data, context={"author": author})
+    elif object_type == " follow":
+        serializer = FollowerSerializer(data=data, context={"author": author})
+    else:
+        return Response(
+            {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # save the object to our database
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"status": "sucessful"}, status=status.HTTP_201_CREATED)
