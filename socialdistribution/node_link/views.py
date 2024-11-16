@@ -77,3 +77,17 @@ def notifications_view(request):
     ).order_by("-created_at")
     notifications.update(is_read=True)  # Mark notifications as read
     return render(request, "notifications.html", {"notifications": notifications})
+
+
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication
+from node_link.auth_backends import RemoteNodeAuthBackend
+
+class InboxView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, author_id):
+        # Handle the incoming data
+        pass

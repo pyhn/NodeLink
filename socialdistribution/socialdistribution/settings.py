@@ -168,6 +168,11 @@ LOGGING = {
     },
 }
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'node_link.auth_backends.RemoteNodeAuthBackend',
+]
+
 # enforce authentication when accessed via HTTP requests
 # if an unauthenticated user tries to access the /api/posts/ endpoint, they will receive a 401
 # curl -i http://localhost:8000/api/posts/ will give 401 Unauthorized
