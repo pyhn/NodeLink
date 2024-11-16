@@ -11,7 +11,7 @@ class RemoteNodeAuthBackend(BaseBackend):
     The RemoteNodeAuthBackend uses the Node model to authenticate incoming requests from remote nodes based on the stored credentials.
     """
 
-    def authenticate(self, request):
+    def authenticate(self, request, username=None, password=None, **kwargs):
         auth_header = request.META.get("HTTP_AUTHORIZATION")
         if not auth_header:
             return None
