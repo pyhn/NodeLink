@@ -33,7 +33,7 @@ class Node(models.Model):
         return check_password(raw_password, self.password)
 
     def save(self, *args, **kwargs):
-        if not self.password.startswith("pbkdf2_") and self.password != "":
+        if self.password and not self.password.startswith("pbkdf2_") and self.password != "":
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
