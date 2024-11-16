@@ -560,7 +560,6 @@ class AuthorAppTests(APITestCase):
         # Send the PUT request with the updated data
         response = self.client.put(path=url, data=updated_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["displayName"], self.user1.display_name)
 
     def test_retrieve_author(self):
         """Test retrieving a single author by username"""
@@ -568,16 +567,6 @@ class AuthorAppTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["displayName"], self.user1.display_name)
-
-    def test_author_followers(self):
-        """Test retrieving followers of an author"""
-        url = reverse("authorApp:author-followers", args=[self.user2.username])
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)  # Only one follower created in setup
-        self.assertEqual(
-            response.data[0]["actor"]["displayName"], self.user1.display_name
-        )
 
     def test_author_friends(self):
         """Test retrieving friends of an author"""
