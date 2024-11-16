@@ -10,4 +10,10 @@ router = DefaultRouter()
 urlpatterns = [
     path("notifications/", views.notifications_view, name="notifications"),
     path("<str:username>/", views.home, name="home"),
+    # author-specific inbox
+    path(
+        "api/authors/<str:author_serial>/inbox/",
+        views.author_inbox_view,
+        name="author-inbox",
+    ),
 ]
