@@ -700,6 +700,101 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
 
 
 class FollowersFQIDViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        methods=["get"],
+        operation_summary="Retrieve follower relationship",
+        operation_description=(
+            "Retrieve the relationship between a local author and a foreign author identified by their FQID."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Successful retrieval of follower relationship.",
+                schema=FollowerSerializer(),
+            ),
+            404: openapi.Response(description="Follower not found."),
+        },
+        tags=["Followers"],
+    )
+    @swagger_auto_schema(
+        methods=["put"],
+        operation_summary="Add a follower",
+        operation_description="Add a foreign author as a follower of a local author.",
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            201: openapi.Response(
+                description="Follower successfully added.",
+                examples={"application/json": {"detail": "Follower added."}},
+            ),
+            400: openapi.Response(
+                description="Bad request (e.g., follower already exists).",
+                examples={"application/json": {"detail": "Follower already exists."}},
+            ),
+        },
+        tags=["Followers"],
+    )
+    @swagger_auto_schema(
+        methods=["delete"],
+        operation_summary="Remove a follower",
+        operation_description="Remove a foreign author as a follower of a local author.",
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            204: openapi.Response(
+                description="Follower successfully removed.",
+                examples={"application/json": {"detail": "Follower removed."}},
+            ),
+            404: openapi.Response(
+                description="Follower not found.",
+                examples={"application/json": {"detail": "Follower does not exist."}},
+            ),
+        },
+        tags=["Followers"],
+    )
     @action(
         detail=True,
         methods=["get", "put", "delete"],
