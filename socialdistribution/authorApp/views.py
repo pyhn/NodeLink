@@ -761,6 +761,45 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
 
 
 class SingleAuthorView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve Author by Fully Qualified ID (FQID)",
+        operation_description=(
+            "Fetch detailed information about an author using their Fully Qualified ID (FQID). "
+            "The FQID typically follows the format `<host>/api/authors/<username>`."
+        ),
+        responses={
+            200: openapi.Response(
+                description="Successfully retrieved author details.",
+                examples={
+                    "application/json": {
+                        "id": "http://example.com/api/authors/username",
+                        "host": "http://example.com/",
+                        "type": "author",
+                        "displayName": "Author Display Name",
+                        "github": "https://github.com/username",
+                        "profileImage": "http://example.com/media/profile.jpg",
+                        "page": "http://example.com/authors/username",
+                    }
+                },
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={"application/json": {"detail": "Not found."}},
+            ),
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                name="author_fqid",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                description=(
+                    "Fully Qualified ID of the author. It should be in the format "
+                    "`<host>/api/authors/<username>`."
+                ),
+                required=True,
+            )
+        ],
+    )
     def get(self, request, author_fqid):
         """
         GET: Retrieve a single author using its FQID.
