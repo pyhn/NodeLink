@@ -85,6 +85,7 @@ class Like(MixinApp):
     author = models.ForeignKey(
         "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="likesPost"
     )
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     class Meta:
         constraints = [

@@ -2,6 +2,7 @@
 from django.urls import reverse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.core.files.images import get_image_dimensions
 from django.contrib.auth.decorators import login_required
 from django.http import (
@@ -13,7 +14,12 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from rest_framework import viewsets
-from .serializers import PostSerializer, CommentSerializer, LikeSerializer
+from .serializers import (
+    PostSerializer,
+    CommentSerializer,
+    LikeSerializer,
+    CommentsSerializer,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
@@ -43,7 +49,7 @@ import base64
 from datetime import datetime
 from PIL import Image
 import re
-from urllib.parse import unquote
+from urllib.parse import unquote, urljoin
 
 
 @is_approved
@@ -420,9 +426,7 @@ class PostViewSet(viewsets.ModelViewSet):
                                 "display_name": "John Doe",
                                 "profile_image": "http://example.com/images/johndoe.png",
                                 "github": "https://github.com/johndoe",
-
                             },
-
                         },
                     ]
                 },
@@ -462,7 +466,6 @@ class PostViewSet(viewsets.ModelViewSet):
                             "display_name": "John Doe",
                             "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
-
                         },
                     }
                 },
@@ -515,7 +518,6 @@ class PostViewSet(viewsets.ModelViewSet):
                             "display_name": "John Doe",
                             "profile_image": "http://example.com/images/johndoe.png",
                             "github": "https://github.com/johndoe",
-
                         },
                     }
                 },
@@ -664,555 +666,6 @@ class LocalPostViewSet(viewsets.ModelViewSet):
         )
 
 
-class CommentViewSet(viewsets.ModelViewSet):
-    """API endpoint for managing comments"""
-
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        author_serial = self.kwargs.get("author_serial")
-        if author_serial:
-            return Comment.objects.filter(author__user__username=author_serial)
-        return Comment.objects.all()
-
-    @swagger_auto_schema(
-        operation_description="Retrieve a list of comments for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author whose comments are to be retrieved.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "page",
-                openapi.IN_QUERY,
-                description="Page number for pagination.",
-                type=openapi.TYPE_INTEGER,
-                required=False,
-                example=1,
-            ),
-            openapi.Parameter(
-                "size",
-                openapi.IN_QUERY,
-                description="Number of comments per page.",
-                type=openapi.TYPE_INTEGER,
-                required=False,
-                example=10,
-            ),
-        ],
-        responses={
-            200: openapi.Response(
-                description="List of comments retrieved successfully.",
-                schema=CommentSerializer(many=True),
-                examples={
-                    "application/json": [
-                        {
-                            "uuid": "comment1-uuid",
-                            "content": "This is a comment.",
-                            "author": {
-                                "id": "author1-id",
-                                "username": "johndoe",
-                                "display_name": "John Doe",
-                                "profile_image": "http://example.com/images/johndoe.png",
-                                "github": "https://github.com/johndoe",
-
-                            },
-                        },
-                    ]
-                },
-            ),
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Create a new comment for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author creating the comment.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-        ],
-        request_body=CommentSerializer,
-        responses={
-            201: openapi.Response(
-                description="Comment created successfully.",
-                schema=CommentSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "new-comment-uuid",
-                        "content": "This is a new comment.",
-                        "author": {
-                            "id": "author1-id",
-                            "username": "johndoe",
-                            "display_name": "John Doe",
-                            "profile_image": "http://example.com/images/johndoe.png",
-                            "github": "https://github.com/johndoe",
-
-                        },
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You cannot create comments for another author.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def create(self, request, *args, **kwargs):
-        author_serial = self.kwargs.get("author_serial")
-        author = get_object_or_404(AuthorProfile, user__username=author_serial)
-        if request.user.author_profile != author:
-            raise PermissionDenied("You cannot create comments for another author.")
-        return super().create(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Retrieve a specific comment by UUID for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the comment to retrieve.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="comment1-uuid",
-            ),
-        ],
-        responses={
-            200: openapi.Response(
-                description="Comment retrieved successfully.",
-                schema=CommentSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "comment1-uuid",
-                        "content": "This is a comment.",
-                        "author": {
-                            "id": "author1-id",
-                            "username": "johndoe",
-                            "display_name": "John Doe",
-                            "profile_image": "http://example.com/images/johndoe.png",
-                            "github": "https://github.com/johndoe",
-                        },
-                    }
-                },
-            ),
-            404: "Not Found - Comment does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Update a comment entirely for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the comment to update.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="comment1-uuid",
-            ),
-        ],
-        request_body=CommentSerializer,
-        responses={
-            200: openapi.Response(
-                description="Comment updated successfully.",
-                schema=CommentSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "comment1-uuid",
-                        "content": "Updated comment content.",
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You do not have permission to edit this comment.",
-            404: "Not Found - Comment does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Partially update a comment for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the comment to partially update.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="comment1-uuid",
-            ),
-        ],
-        request_body=CommentSerializer,
-        responses={
-            200: openapi.Response(
-                description="Comment partially updated successfully.",
-                schema=CommentSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "comment1-uuid",
-                        "content": "Partially updated content.",
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You do not have permission to edit this comment.",
-            404: "Not Found - Comment does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Delete a comment for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the comment to delete.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="comment1-uuid",
-            ),
-        ],
-        responses={
-            204: "No Content - Comment deleted successfully.",
-            403: "Forbidden - You do not have permission to delete this comment.",
-            404: "Not Found - Comment does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Comments"],
-    )
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-
-
-class LikeViewSet(viewsets.ModelViewSet):
-    """API endpoint for managing likes"""
-
-    queryset = Like.objects.all()
-    serializer_class = LikeSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        author_serial = self.kwargs.get("author_serial")
-        if author_serial:
-            return Like.objects.filter(author__user__username=author_serial)
-        return Like.objects.all()
-
-    @swagger_auto_schema(
-        operation_description="Retrieve a list of likes for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author whose likes are to be retrieved.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "page",
-                openapi.IN_QUERY,
-                description="Page number for pagination.",
-                type=openapi.TYPE_INTEGER,
-                required=False,
-                example=1,
-            ),
-            openapi.Parameter(
-                "size",
-                openapi.IN_QUERY,
-                description="Number of likes per page.",
-                type=openapi.TYPE_INTEGER,
-                required=False,
-                example=10,
-            ),
-        ],
-        responses={
-            200: openapi.Response(
-                description="List of likes retrieved successfully.",
-                schema=LikeSerializer(many=True),
-                examples={
-                    "application/json": [
-                        {
-                            "uuid": "like1-uuid",
-                            "post": "post1-uuid",
-                            "author": {
-                                "id": "author1-id",
-                                "username": "johndoe",
-                                "display_name": "John Doe",
-                                "profile_image": "http://example.com/images/johndoe.png",
-                                "github": "https://github.com/johndoe",
-                            },
-                        },
-                    ]
-                },
-            ),
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Create a new like for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author creating the like.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-        ],
-        request_body=LikeSerializer,
-        responses={
-            201: openapi.Response(
-                description="Like created successfully.",
-                schema=LikeSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "new-like-uuid",
-                        "post": "post1-uuid",
-                        "author": {
-                            "id": "author1-id",
-                            "username": "johndoe",
-                            "display_name": "John Doe",
-                            "profile_image": "http://example.com/images/johndoe.png",
-                            "github": "https://github.com/johndoe",
-                        },
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You cannot create likes for another author.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def create(self, request, *args, **kwargs):
-        author_serial = self.kwargs.get("author_serial")
-        author = get_object_or_404(AuthorProfile, user__username=author_serial)
-        if request.user.author_profile != author:
-            raise PermissionDenied("You cannot create likes for another author.")
-        return super().create(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Retrieve a specific like by UUID for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the like to retrieve.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="like1-uuid",
-            ),
-        ],
-        responses={
-            200: openapi.Response(
-                description="Like retrieved successfully.",
-                schema=LikeSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "like1-uuid",
-                        "post": "post1-uuid",
-                        "author": {
-                            "id": "author1-id",
-                            "username": "johndoe",
-                            "display_name": "John Doe",
-                            "profile_image": "http://example.com/images/johndoe.png",
-                            "github": "https://github.com/johndoe",
-                        },
-                    }
-                },
-            ),
-            404: "Not Found - Like does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Update a like entirely for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the like to update.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="like1-uuid",
-            ),
-        ],
-        request_body=LikeSerializer,
-        responses={
-            200: openapi.Response(
-                description="Like updated successfully.",
-                schema=LikeSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "like1-uuid",
-                        "post": "post1-uuid",
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You do not have permission to edit this like.",
-            404: "Not Found - Like does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Partially update a like for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the like to partially update.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="like1-uuid",
-            ),
-        ],
-        request_body=LikeSerializer,
-        responses={
-            200: openapi.Response(
-                description="Like partially updated successfully.",
-                schema=LikeSerializer(),
-                examples={
-                    "application/json": {
-                        "uuid": "like1-uuid",
-                    }
-                },
-            ),
-            400: "Bad Request - Invalid data.",
-            403: "Forbidden - You do not have permission to edit this like.",
-            404: "Not Found - Like does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def partial_update(self, request, *args, **kwargs):
-        return super().partial_update(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        operation_description="Delete a like for a specific author.",
-        manual_parameters=[
-            openapi.Parameter(
-                "author_serial",
-                openapi.IN_PATH,
-                description="Username of the author.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="johndoe",
-            ),
-            openapi.Parameter(
-                "uuid",
-                openapi.IN_PATH,
-                description="UUID of the like to delete.",
-                type=openapi.TYPE_STRING,
-                required=True,
-                example="like1-uuid",
-            ),
-        ],
-        responses={
-            204: "No Content - Like deleted successfully.",
-            403: "Forbidden - You do not have permission to delete this like.",
-            404: "Not Found - Like does not exist.",
-            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
-        },
-        tags=["Likes"],
-    )
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
-
-
 class PostImageView(APIView):
     def get(self, request, author_serial, post_uuid):
         # Step 1: Retrieve the post
@@ -1352,31 +805,65 @@ class CommentedView(APIView):
         """
         POST: Add a new comment to a specified post
         """
-        if author_serial:
-            author = get_object_or_404(AuthorProfile, user__username=author_serial)
-            if request.data.get("type") != "comment":
+        print("is here lol")
+        if not author_serial:
+            return Response(
+                {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate that the author matches the provided `author_serial`
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        if request.data.get("type") != "comment":
+            return Response(
+                {"detail": "Invalid comment type."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = CommentSerializer(data=request.data, context={"request": request})
+
+        if serializer.is_valid():
+            # Validate that the author in the payload matches the URL author_serial
+            if serializer.validated_data["author"] != author:
                 return Response(
-                    {"detail": "Invalid comment type."},
+                    {"detail": "Author in the payload does not match the URL."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            comment_data = request.data.copy()
-            comment_data["author"] = author.id
-            serializer = CommentSerializer(
-                data=comment_data, context={"request": request}
-            )
+            # Save the comment
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            if serializer.is_valid():
-                serializer.save(author=author)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CommentedFQIDView(APIView):
+    def get(self, request, author_fqid):
+        """
+        GET: Fetch comments by an author or a specific comment
+        """
+        author_fqid = unquote(author_fqid)
+        fqid_parts = author_fqid.split("/")
+        author_serial = fqid_parts[len(fqid_parts) - 1]
+
+        if author_serial:
+            # List all comments by the author
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            comments = Comment.objects.filter(author=author)
+            if request.get_host() != author.local_node.url:
+                comments = comments.filter(post__visibility__in=["p", "u"])
+
+            # Use pagination or other list settings as needed
+            serializer = CommentSerializer(
+                comments, many=True, context={"request": request}
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(
-            {"detail": "Author not specified."}, status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST
         )
 
 
-class SingleCommentView(APIView):
+class SingleCommentedView(APIView):
     def get(self, request, comment_fqid):
         """
         GET: Retrieve a single comment using its FQID.
@@ -1388,3 +875,483 @@ class SingleCommentView(APIView):
         comment = get_object_or_404(Comment, uuid=comment_uuid)
         serializer = CommentSerializer(comment)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SinglePostView(APIView):
+    def get(self, request, post_fqid):
+        """
+        GET: Retrieve a single post using its FQID.
+        """
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        if post.visibility != "p":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = PostSerializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostImageViewFQID(APIView):
+    def get(self, request, post_fqid):
+        # Step 1: Retrieve the post
+        print(f"pyhn here {post_fqid}")
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        # Step 2: Check if the post is public
+        if post.visibility != "p":
+            return Response(
+                {"detail": "Post is not public."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Step 3: Determine the content type based on your conditionals
+        content_type_main = None
+        if post.contentType == "jpeg":
+            content_type_main = "image/jpeg"
+        elif post.contentType == "png":
+            content_type_main = "image/png"
+        else:
+            content_type_main = "application/base64"
+
+        # Step 4: Validate that the contentType is an image
+        if content_type_main not in ["image/png", "image/jpeg", "application/base64"]:
+            raise Http404("Post content is not an image.")
+
+        # Step 5: Extract base64 data from content
+        content = post.content.strip()
+
+        if content.startswith("data:"):
+            # Extract the base64 data from data URI
+            match = re.match(
+                r"data:(?P<mime_type>.+);base64,(?P<base64_data>.+)", content
+            )
+            if not match:
+                raise Http404("Invalid image data.")
+            base64_data = match.group("base64_data")
+            mime_type = match.group("mime_type")
+        else:
+            # Content is raw base64 data without data URI
+            base64_data = content
+            mime_type = content_type_main  # Use the main content type
+
+        # Remove any whitespace or newlines that may corrupt base64 decoding
+        base64_data = base64_data.replace("\n", "").replace("\r", "")
+
+        try:
+            image_data = base64.b64decode(base64_data)
+        except (TypeError, ValueError) as exc:
+            raise Http404("Invalid image data.") from exc
+
+        # Step 6: Detect the image type from binary data if necessary
+        if post.contentType == "a" or mime_type in ("application/base64", None):
+            # Detect image type from binary data
+            image_type = self.detect_image_type(image_data)
+            if not image_type:
+                raise Http404("Unsupported or invalid image format.")
+            mime_type = image_type
+            print(f"Detected Image Type: {mime_type}")
+
+        # Step 7: Set the correct content type
+        content_type = mime_type  # Use the extracted or determined MIME type
+
+        # Step 8: Return the image data with correct headers
+        response = HttpResponse(image_data, content_type=content_type)
+        response["Content-Length"] = len(image_data)
+        return response
+
+    def detect_image_type(self, image_data):
+        # Read the first few bytes to detect the image type
+        header = image_data[:12]  # Read more bytes to accommodate longer signatures
+
+        content_type = ""
+        # JPEG
+        if header.startswith(b"\xFF\xD8\xFF"):
+            content_type = "image/jpeg"
+
+        # PNG (including APNG)
+        elif header.startswith(b"\x89PNG\r\n\x1A\n"):
+            # For APNG detection, more in-depth analysis is needed
+            content_type = "image/png"
+
+        # GIF
+        elif header[:6] in (b"GIF87a", b"GIF89a"):
+            content_type = "image/gif"
+
+        # WebP
+        elif header.startswith(b"RIFF") and header[8:12] == b"WEBP":
+            content_type = "image/webp"
+
+        # AVIF
+        elif header[4:12] == b"ftypavif":
+            content_type = "image/avif"
+
+        # SVG
+        elif header.strip().startswith(b"<?xml") or b"<svg" in header.lower():
+            content_type = "image/svg+xml"
+
+        else:
+            content_type = None  # Unsupported image type
+
+        return content_type
+
+
+class PostCommentsView(APIView):
+    """
+    API View to handle fetching comments for a specific post
+    """
+
+    def get(self, request, author_serial=None, post_serial=None):
+        """
+        GET: Retrieve comments for a specific post
+        """
+        # Get the author and post
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        post = get_object_or_404(Post, uuid=post_serial, author=author)
+
+        # Filter comments associated with the post, ordered by newest to oldest
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+
+        # Pagination logic (~5 comments per page)
+        page_size = 5
+        page_number = int(request.query_params.get("page", 1))
+        start_index = (page_number - 1) * page_size
+        end_index = start_index + page_size
+
+        paginated_comments = comments[start_index:end_index]
+
+        # Total comment count
+        total_count = comments.count()
+
+        # Construct response metadata
+        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
+        post_page = urljoin(
+            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
+        )
+        api_page = urljoin(
+            base_url,
+            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
+        )
+
+        # Prepare response data
+        response_data = {
+            "type": "comments",
+            "page": post_page,
+            "id": api_page,
+            "page_number": page_number,
+            "size": page_size,
+            "count": total_count,
+            "src": paginated_comments,  # Pass the queryset directly
+        }
+
+        # Serialize and return the response
+        serializer = CommentsSerializer(response_data, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostCommentsViewFQID(APIView):
+    """
+    API View to handle fetching comments of a specific post
+    """
+
+    def get(self, request, post_fqid):
+        # Decode and extract the UUID from the FQID
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[-1]
+
+        # Retrieve the post using the UUID
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        # Filter comments associated with the post, ordered by newest to oldest
+        comments = Comment.objects.filter(post=post).order_by("-created_at")
+
+        # Pagination logic (~5 comments per page)
+        page_size = 5
+        page_number = int(request.query_params.get("page", 1))
+        start_index = (page_number - 1) * page_size
+        end_index = start_index + page_size
+
+        paginated_comments = comments[start_index:end_index]
+
+        # Total comment count
+        total_count = comments.count()
+
+        # Construct response metadata
+        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
+        post_page = urljoin(
+            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
+        )
+        api_page = urljoin(
+            base_url,
+            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
+        )
+
+        # Prepare response data
+        response_data = {
+            "type": "comments",
+            "page": post_page,
+            "id": api_page,
+            "page_number": page_number,
+            "size": page_size,
+            "count": total_count,
+            "src": paginated_comments,  # Pass the queryset directly
+        }
+
+        # Serialize and return the response
+        serializer = CommentsSerializer(response_data, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RemoteCommentView(APIView):
+    """
+    GET: Retrieve a specific comment using its remote FQID
+    """
+
+    def get(self, request, author_serial, post_serial, remote_comment_fqid):
+
+        # Decode the remote_comment_fqid
+        remote_comment_fqid = unquote(remote_comment_fqid)
+        fqid_parts = remote_comment_fqid.split("/")
+        comment_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        # Retrieve the author to ensure they exist
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_serial, author=author)
+
+        comment = get_object_or_404(Comment, uuid=comment_uuid, post=post)
+
+        serializer = CommentSerializer(comment)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostLikesAPIView(APIView):
+    """
+    Endpoint to retrieve likes on a specific post of a specific author.
+    """
+
+    def get(self, request, author_serial, post_uuid):
+
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Retrieve the post associated with the author
+        post = get_object_or_404(Post, uuid=post_uuid, author=author)
+
+        # Get all likes on the post
+        likes = Like.objects.filter(post=post).order_by("-created_at")
+
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the results
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class PostLikesFQIDAPIView(APIView):
+    def get(self, request, post_fqid):
+        """
+        GET: Retrieve all likes for a specific post based on fqid
+        """
+        post_fqid = unquote(post_fqid)
+        fqid_parts = post_fqid.split("/")
+        post_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        post = get_object_or_404(Post, uuid=post_uuid)
+
+        likes = Like.objects.filter(post=post).order_by("-created_at")
+
+        author_serial = post.author.user.username
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the results
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class CommentLikesView(APIView):
+    """
+    Endpoint to retrieve likes for a specific comment. Always returns a likes object with a count of zero.
+    """
+
+    def get(self, request, author_serial, post_serial, comment_fqid):
+        try:
+            # Verify the comment exists
+            comment_fqid = unquote(comment_fqid)
+            fqid_parts = comment_fqid.split("/")
+            comment_uuid = fqid_parts[len(fqid_parts) - 1]
+            post = get_object_or_404(Post, uuid=post_serial)
+            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            Comment.objects.get(uuid=comment_uuid, post=post, author=author)
+        except Comment.DoesNotExist:
+            return Response(
+                {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Response data with count always zero
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
+            "page_number": 1,
+            "size": 5,
+            "count": 0,
+            "src": [],  # Always empty since there will be no likes
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class SingleLikeView(APIView):
+    """
+    Endpoint to retrieve a single like object by its LIKE_SERIAL.
+    """
+
+    def get(self, request, author_serial, like_serial):
+        # Fetch the author to validate the URL
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Fetch the Like object by its UUID (like_serial)
+        like = get_object_or_404(Like, uuid=like_serial, author=author)
+
+        # Serialize the Like object
+        serializer = LikeSerializer(like, context={"request": request})
+
+        # Return the serialized Like object
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ThingsLikedByAuthorView(APIView):
+    """
+    Endpoint to retrieve a list of things liked by a specific author.
+    """
+
+    def get(self, request, author_serial):
+        # Retrieve the author by serial
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Fetch all likes made by the author
+        likes = Like.objects.filter(author=author).order_by("-created_at")
+
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the likes in the current page
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/liked",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/liked",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class SingleLikeFQIDView(APIView):
+    """
+    Endpoint to retrieve a single like object by its LIKE_SERIAL.
+    """
+
+    def get(self, request, like_fqid):
+        # Fetch the author to validate the URL
+        like_fqid = unquote(like_fqid)
+        fqid_parts = like_fqid.split("/")
+        like_uuid = fqid_parts[len(fqid_parts) - 1]
+
+        # Fetch the Like object by its UUID (like_serial)
+        like = get_object_or_404(Like, uuid=like_uuid)
+
+        # Serialize the Like object
+        serializer = LikeSerializer(like, context={"request": request})
+
+        # Return the serialized Like object
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ThingsLikedByAuthorFQIDView(APIView):
+    """
+    Endpoint to retrieve a list of things liked by a specific author.
+    """
+
+    def get(self, request, author_fqid):
+        # Retrieve the author by serial
+
+        author_fqid = unquote(author_fqid)
+        fqid_parts = author_fqid.split("/")
+        author_serial = fqid_parts[len(fqid_parts) - 1]
+
+        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+
+        # Fetch all likes made by the author
+        likes = Like.objects.filter(author=author).order_by("-created_at")
+
+        # Paginate the results (5 likes per page)
+        paginator = Paginator(likes, 5)
+        page_number = request.query_params.get("page", 1)
+        page = paginator.get_page(page_number)
+
+        # Serialize the likes in the current page
+        serializer = LikeSerializer(page.object_list, many=True)
+
+        # Construct the response body
+        response_data = {
+            "type": "likes",
+            "id": f"http://{request.get_host()}/api/authors/{author_serial}/liked",
+            "page": f"http://{request.get_host()}/authors/{author_serial}/liked",
+            "page_number": page.number,
+            "size": paginator.per_page,
+            "count": paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
