@@ -72,40 +72,6 @@ urlpatterns = [
         ),
         name="author-post-detail",
     ),
-    path(
-        "api/authors/<str:author_serial>/comments/",
-        views.CommentViewSet.as_view({"get": "list", "post": "create"}),
-        name="author-comments",
-    ),
-    path(
-        "api/authors/<str:author_serial>/comments/<uuid:uuid>/",
-        views.CommentViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="author-comment-detail",
-    ),
-    path(
-        "api/authors/<str:author_serial>/likes/",
-        views.LikeViewSet.as_view({"get": "list", "post": "create"}),
-        name="author-likes",
-    ),
-    path(
-        "api/authors/<str:author_serial>/likes/<uuid:uuid>/",
-        views.LikeViewSet.as_view(
-            {
-                "get": "retrieve",
-                "put": "update",
-                "patch": "partial_update",
-                "delete": "destroy",
-            }
-        ),
-        name="author-like-detail",
-    ),
     # Include router URLs for other ViewSets if needed
     path("api/", include(router.urls)),
     # Image endpoints
@@ -113,6 +79,11 @@ urlpatterns = [
         "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/image/",
         views.PostImageView.as_view(),
         name="post-image",
+    ),
+    path(
+        "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/likes/",
+        views.PostLikesAPIView.as_view(),
+        name="post-likes",
     ),
     # List all comments by author or add a comment to a post
     path(
@@ -126,11 +97,74 @@ urlpatterns = [
         views.CommentedView.as_view(),
         name="author-comment-detail",
     ),
+    re_path(
+        r"^api/authors/(?P<author_fqid>.+)/commented/$",
+        views.CommentedFQIDView.as_view(),
+        name="author-commented-fqid",
+    ),
+    re_path(
+        r"^api/authors/(?P<author_fqid>.+)/liked/$",
+        views.ThingsLikedByAuthorFQIDView.as_view(),
+        name="things-liked-by-author-fqid",
+    ),
+    re_path(
+        r"^api/liked/(?P<like_fqid>.+)/$",
+        views.SingleLikeFQIDView.as_view(),
+        name="single-like-fqid",
+    ),
+    re_path(
+        r"^api/authors/(?P<author_serial>[^/]+)/posts/(?P<post_serial>[^/]+)/comments/(?P<comment_fqid>.+)/likes/$",
+        views.CommentLikesView.as_view(),
+        name="comment-likes",
+    ),
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/likes/$",
+        views.PostLikesFQIDAPIView.as_view(),
+        name="post-likes-fqid",
+    ),
     # Retrieve a specific comment using its FQID (local)
     re_path(
         r"^api/commented/(?P<comment_fqid>.+)/$",
-        views.SingleCommentView.as_view(),
+        views.SingleCommentedView.as_view(),
         name="comment-detail",
+    ),
+    # Comments endpoint for a specific post
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/comments/$",
+        views.PostCommentsViewFQID.as_view(),
+        name="post-comments-fqid",
+    ),
+    # Retrieve a specific comment using its FQID (local)
+    re_path(
+        r"^api/authors/(?P<author_serial>[^/]+)/post/(?P<post_serial>[^/]+)/comment/(?P<remote_comment_fqid>.+)/$",
+        views.RemoteCommentView.as_view(),
+        name="remote-comment-detail",
+    ),
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/image/$",
+        views.PostImageViewFQID.as_view(),
+        name="post-detail-image",
+    ),
+    # retrieve specific post using its FQID
+    re_path(
+        r"^api/posts/(?P<post_fqid>.+)/$",
+        views.SinglePostView.as_view(),
+        name="post-detail",
+    ),
+    path(
+        "api/authors/<str:author_serial>/posts/<str:post_serial>/comments/",
+        views.PostCommentsView.as_view(),
+        name="post-comments",
+    ),
+    path(
+        "api/authors/<str:author_serial>/liked/",
+        views.ThingsLikedByAuthorView.as_view(),
+        name="author-liked",
+    ),
+    path(
+        "api/authors/<str:author_serial>/liked/<str:like_serial>/",
+        views.SingleLikeView.as_view(),
+        name="single-like",
     ),
 ]
 #
