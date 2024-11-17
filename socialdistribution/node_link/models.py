@@ -33,12 +33,20 @@ class Node(models.Model):
         return check_password(raw_password, self.password)
 
     def save(self, *args, **kwargs):
-        if self.password and not self.password.startswith("pbkdf2_") and self.password != "":
+        if (
+            self.password
+            and not self.password.startswith("pbkdf2_")
+            and self.password != ""
+        ):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return str(self.url)
+
+    @property
+    def is_authenticated(self):
+        return True
 
 
 class Notification(models.Model):
