@@ -107,7 +107,10 @@ def logout_view(request):
 def profile_display(request, author_un):
     if request.method == "GET":
         current_user = request.user.author_profile
-        author = get_object_or_404(AuthorProfile, user__username=author_un)
+        user_node = request.user.local_node
+        author = get_object_or_404(
+            AuthorProfile, user__username=author_un, local_node=user_node
+        )
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
 
         # Determine the button to display
