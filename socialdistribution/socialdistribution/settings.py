@@ -63,6 +63,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "node_link.middleware.ClearNodeAuthMiddleware",
 ]
 
 ROOT_URLCONF = "socialdistribution.urls"
@@ -91,16 +92,16 @@ WSGI_APPLICATION = "socialdistribution.wsgi.application"
 
 # Default to SQLite
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
 # Configure from DATABASE_URL environment variable if it exists
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -169,8 +170,8 @@ LOGGING = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'node_link.auth_backends.RemoteNodeAuthBackend',
+    "django.contrib.auth.backends.ModelBackend",
+    "node_link.auth_backends.RemoteNodeAuthBackend",
 ]
 
 # enforce authentication when accessed via HTTP requests
@@ -180,8 +181,9 @@ AUTHENTICATION_BACKENDS = [
 # from rest_framework.permissions import IsAuthenticated will be added in views.py to enforce authentication
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        "node_link.auth_backends.NodeBasicAuthentication",  # Custom Node authentication
+        "rest_framework.authentication.BasicAuthentication",  # Default User basic auth
+        "rest_framework.authentication.SessionAuthentication",  # Default User session auth
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
