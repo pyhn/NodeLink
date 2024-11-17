@@ -69,9 +69,6 @@ def signup_view(request):
             )
 
             auth_login(request, user)
-            messages.success(
-                request, f"Welcome {user.username}, your account has been created."
-            )
             return redirect("node_link:home", request.user.username)
         else:
             messages.error(request, "Please correct the errors below.")
@@ -87,7 +84,6 @@ def login_view(request):
             user = form.get_user()
             if user.is_approved:
                 auth_login(request, user)
-                messages.success(request, f"Welcome back, {user.username}!")
                 return redirect("node_link:home", username=user.username)
             else:
                 messages.error(request, "Your account is not approved.")
@@ -101,7 +97,6 @@ def login_view(request):
 
 def logout_view(request):
     auth_logout(request)
-    messages.info(request, "You have successfully logged out.")
     return redirect("authorApp:login")
 
 
