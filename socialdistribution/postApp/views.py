@@ -90,7 +90,7 @@ def submit_post(request, username):
             visibility=visibility,
             contentType=content_type,
             author=author,
-            node=author.local_node,  # Associate the post with the author's node
+            node=author.user.local_node,  # Associate the post with the author's node
             created_by=author,
             updated_by=author,
         )
@@ -649,7 +649,7 @@ class PostViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user.author_profile,
-            node=self.request.user.author_profile.local_node,
+            node=self.request.user.local_node,
             created_by=self.request.user.author_profile,
             updated_by=self.request.user.author_profile,
         )
@@ -904,7 +904,7 @@ class CommentedView(APIView):
             # List all comments by the author
             author = get_object_or_404(AuthorProfile, user__username=author_serial)
             comments = Comment.objects.filter(author=author)
-            if request.get_host() != author.local_node.url:
+            if request.get_host() != author.user.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
             # Pagination logic (~5 comments per page)
@@ -1148,7 +1148,7 @@ class CommentedFQIDView(APIView):
             # List all comments by the author
             author = get_object_or_404(AuthorProfile, user__username=author_serial)
             comments = Comment.objects.filter(author=author)
-            if request.get_host() != author.local_node.url:
+            if request.get_host() != author.user.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
             # Pagination logic (~5 comments per page)

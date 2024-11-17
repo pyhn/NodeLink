@@ -247,7 +247,7 @@ class LikeSerializer(serializers.ModelSerializer):
         return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
     def get_object(self, obj):
-        return f"http://{obj.post.author.local_node.url}/authors/{obj.post.author.user.username}/posts/{obj.post.uuid}"
+        return f"{obj.post.author.user.local_node.url}/authors/{obj.post.author.user.username}/posts/{obj.post.uuid}"
 
     def get_author(self, obj):
         return AuthorProfileSerializer(obj.author).data

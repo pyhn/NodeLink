@@ -39,8 +39,8 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         representation = {}
         representation[
             "id"
-        ] = f"{instance.local_node.url}api/authors/{instance.user.username}"
-        representation["host"] = instance.local_node.url
+        ] = f"{instance.user.local_node.url}api/authors/{instance.user.username}"
+        representation["host"] = instance.user.local_node.url
         representation["type"] = "author"
 
         representation["displayName"] = instance.user.display_name
@@ -48,7 +48,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 
         representation["profileImage"] = str(instance.user.profileImage)
         representation["page"] = str(
-            instance.local_node.url.rstrip("/")
+            instance.user.local_node.url.rstrip("/")
             + reverse("authorApp:profile_display", args=[instance.user.username])
         )
         return representation
@@ -94,16 +94,13 @@ class FollowerSerializer(serializers.ModelSerializer):
         fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
 
     def get_id(self, obj):
-        print(f"get id obj: {obj.actor.local_node.url}")
-        return f"{obj.actor.local_node.url}/api/authors/{obj.actor.user.username}"
+        return f"{obj.actor.user.local_node.url}/api/authors/{obj.actor.user.username}"
 
     def get_host(self, obj):
-        print(f"get host obj: {obj.actor.local_node.url}")
-        return obj.actor.local_node.url
+        return obj.actor.user.local_node.url
 
     def get_page(self, obj):
-        print(f"get page obj: {obj.actor.local_node.url}")
-        return f"{obj.actor.local_node.url}/authors/{obj.actor.user.username}"
+        return f"{obj.actor.user.local_node.url}/authors/{obj.actor.user.username}"
 
 
 # Serializer for friendships

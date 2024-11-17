@@ -23,10 +23,10 @@ class AuthorsSerializer(serializers.ModelSerializer):
 
     def get_id(self, obj):
         # Construct the API URL for the author
-        return f"{obj.local_node.url}/api/authors/{obj.user.username}"
+        return f"{obj.user.local_node.url}/api/authors/{obj.user.username}"
 
     def get_host(self, obj):
-        return obj.local_node.url
+        return obj.user.local_node.url
 
 
 class FollowRequestSerializer(serializers.ModelSerializer):
