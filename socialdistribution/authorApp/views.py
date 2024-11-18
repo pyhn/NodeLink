@@ -921,6 +921,8 @@ def author_inbox_view(request, author_serial):
     Supported types: "post", "like", "comment", "follow"
     """
     # retrieve the author
+    print("Incoming data:", request.data)
+
     try:
         author = AuthorProfile.objects.get(user__username=author_serial)
     except AuthorProfile.DoesNotExist:
