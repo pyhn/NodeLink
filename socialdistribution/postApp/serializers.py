@@ -111,7 +111,7 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Invalid author ID or host: {e}")
 
         # Check if the user exists, otherwise create it
-        user, _ = User.objects.get_or_create(
+        user, created = User.objects.get_or_create(
             username=username,
             defaults={
                 "display_name": display_name,
@@ -119,6 +119,10 @@ class PostSerializer(serializers.ModelSerializer):
                 "profileImage": profile_image,
             },
         )
+
+        if created:
+            user.profileImage = "/static/icons/user_icon.svg"
+            user.save()
 
         # Ensure the user is associated with the correct node
         if not user.local_node:
