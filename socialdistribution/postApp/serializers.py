@@ -263,10 +263,12 @@ class CommentSerializer(serializers.ModelSerializer):
         )
 
     def to_internal_value(self, data):
-        # Validate and parse incoming JSON
+        """
+        Custom logic to parse incoming data and ensure only required fields are processed.
+        """
         validated_data = {}
 
-        # Extract content
+        # Extract and validate content
         if "content" in data:
             validated_data["content"] = data["content"]
         else:
@@ -285,7 +287,7 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"post": "Post is required."})
 
-        # Parse and validate author
+        # Parse and validate author URL
         author_id = data.get("author", {}).get("id", "")
         if author_id:
             try:
@@ -300,13 +302,13 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"author": "Author is required."})
 
-        # Set default visibility
+        # Automatically set visibility to default ("p")
         validated_data["visibility"] = "p"
 
-        # Automatically generate UUID
+        # Automatically generate a new UUID
         validated_data["uuid"] = uuid.uuid4()
 
-        # Set created_by field from authenticated user
+        # Automatically set created_by to the authenticated user (if available)
         request = self.context.get("request")
         if request and request.user.is_authenticated:
             try:

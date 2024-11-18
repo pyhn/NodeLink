@@ -161,7 +161,7 @@ def create_comment(request, username, post_uuid):
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Create the comment
-        comment = Comment.objects.create(
+        Comment.objects.create(
             content=content,
             visibility="p",
             post=post,
@@ -171,43 +171,9 @@ def create_comment(request, username, post_uuid):
         )
         # Redirect back to the post detail page
 
-        comment_json = CommentSerializer(comment, context={"request": request}).data
-
-        send_comment_to_remote_inbox(comment_json, post)
-
         return render(request, "create_comment_card.html", {"success": True})
 
     return render(request, "create_comment_card.html", {"post": post})
-
-
-def send_comment_to_remote_inbox(comment_json, post):
-    """
-    Send the comment JSON object to the inbox of the post's author.
-
-    Args:
-        comment_json (dict): The serialized comment JSON object.
-        post (Post): The post object for which the comment is created.
-    """
-    # Extract the node associated with the post
-    node = post.node
-
-    # Construct the inbox URL for the author of the post
-    inbox_url = f"{node.url.rstrip('/')}/api/authors/{post.author.user.username}/inbox/"
-
-    try:
-        # Send the comment JSON to the inbox
-        response = requests.post(
-            inbox_url,
-            json=comment_json,
-            auth=(node.username, "testing"),  # Authentication credentials for the node
-            timeout=10,  # Set a reasonable timeout
-        )
-        response.raise_for_status()
-        print(
-            f"Comment sent successfully to {inbox_url}. Status: {response.status_code}"
-        )
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to send comment to {inbox_url}: {str(e)}")
 
 
 @is_approved
