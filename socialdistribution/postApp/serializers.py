@@ -122,7 +122,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         # Ensure the user is associated with the correct node
         if not user.local_node:
-            node = Node.objects.get_object_or_404(Node, url=host)
+            node = get_object_or_404(Node, url=host)
             user.local_node = node
             user.save()
 
@@ -152,7 +152,7 @@ class PostSerializer(serializers.ModelSerializer):
         # Set the created_by field
         validated_data["created_by"] = author
         validated_data["author"] = author
-        validated_data["updated_by"] = author
+        validated_data["update_by"] = author
 
         # Fetch and set the Node object based on the host in the author data
         author_data = self.initial_data.get("author", {})
