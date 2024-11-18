@@ -153,15 +153,10 @@ class PostSerializer(serializers.ModelSerializer):
         return validated_data
 
     def create(self, validated_data):
-        """
-        Create a Post object from incoming data.
-        """
         author = validated_data.pop("author", None)
         if not author:
-            raise serializers.ValidationError(
-                "Author information is required to create a post."
-            )
-        validated_data["node"] = author.user.local_node
+            raise serializers.ValidationError("Author is required to create a post.")
+        validated_data["author"] = author
         return Post.objects.create(**validated_data)
 
 
