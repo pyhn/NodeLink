@@ -107,9 +107,10 @@ def logout_view(request):
 def profile_display(request, author_un):
     if request.method == "GET":
         current_user = request.user.author_profile
-        user_node = request.user.local_node
+
         author = get_object_or_404(
-            AuthorProfile, user__username=author_un, local_node=user_node
+            AuthorProfile,
+            user__username=author_un,
         )
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
 
@@ -154,7 +155,7 @@ def profile_display(request, author_un):
 
         filtered_ids = []
         for a in all_ids:
-            if has_access(request, a.uuid):
+            if has_access(request, a.uuid, username=request.user.username):
                 filtered_ids.append(a)
 
         context = {
