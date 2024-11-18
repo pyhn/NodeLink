@@ -11,27 +11,30 @@ class PostSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     type = serializers.CharField(default="post")
     author = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
+    likes = serializers.SerializerMethodField()
+    published = serializers.DateTimeField(source="created_at", format="iso-8601")
 
     class Meta:
         model = Post
         fields = [
+            "type",
             "id",
             "title",
-            "type",
             "description",
+            "contentType",
             "content",
             "visibility",
-            "node",
             "author",
-            "uuid",
-            "contentType",
-            "created_by",
+            "comments",
+            "likes",
+            "published",
         ]
-        read_only_fields = ["comments", "likes", "published"]
+        read_only_fields = fields
 
     def get_id(self, obj):
         """
-        Constructs the full URL id for the post.
+        Constructs the full URL ID for the post.
         """
         host = obj.node.url.rstrip("/")
         author_id = obj.author.user.username
@@ -39,8 +42,50 @@ class PostSerializer(serializers.ModelSerializer):
         return f"{host}/api/authors/{author_id}/posts/{post_id}"
 
     def get_author(self, obj):
-        # Serialize the author using AuthorProfileSerializer
-        return AuthorProfileSerializer(obj.author).data
+        """
+        Returns the serialized author information.
+        """
+        return {
+            "type": "author",
+            "id": f"{obj.author.user.local_node.url.rstrip('/')}/api/authors/{obj.author.user.username}",
+            "host": obj.author.user.local_node.url.rstrip("/") + "/",
+            "displayName": obj.author.user.display_name,
+            "github": obj.author.github,
+            "profileImage": obj.author.user.profileImage.url,
+            "page": f"{obj.author.user.local_node.url.rstrip('/')}/authors/{obj.author.user.username}",
+        }
+
+    def get_comments(self, obj):
+        """
+        Returns the comments section for the post.
+        """
+        comments = obj.comments.all().order_by("-created_at")[
+            :5
+        ]  # Get 5 newest comments
+        return {
+            "type": "comments",
+            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/comments",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.comments.count(),
+            "src": CommentSerializer(comments, many=True, context=self.context).data,
+        }
+
+    def get_likes(self, obj):
+        """
+        Returns the likes section for the post.
+        """
+        likes = obj.postliked.all().order_by("-created_at")[:5]  # Get 5 newest likes
+        return {
+            "type": "likes",
+            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.postliked.count(),
+            "src": LikeSerializer(likes, many=True, context=self.context).data,
+        }
 
     def create(self, validated_data):
 
