@@ -263,12 +263,10 @@ class CommentSerializer(serializers.ModelSerializer):
         )
 
     def to_internal_value(self, data):
-        """
-        Custom logic to parse incoming data and ensure only required fields are processed.
-        """
+        # Validate and parse incoming JSON
         validated_data = {}
 
-        # Extract and validate content
+        # Extract content
         if "content" in data:
             validated_data["content"] = data["content"]
         else:
@@ -287,7 +285,7 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"post": "Post is required."})
 
-        # Parse and validate author URL
+        # Parse and validate author
         author_id = data.get("author", {}).get("id", "")
         if author_id:
             try:
@@ -302,13 +300,13 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"author": "Author is required."})
 
-        # Automatically set visibility to default ("p")
+        # Set default visibility
         validated_data["visibility"] = "p"
 
-        # Automatically generate a new UUID
+        # Automatically generate UUID
         validated_data["uuid"] = uuid.uuid4()
 
-        # Automatically set created_by to the authenticated user (if available)
+        # Set created_by field from authenticated user
         request = self.context.get("request")
         if request and request.user.is_authenticated:
             try:
@@ -326,10 +324,10 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_page(self, obj):
         # Return the URL to view the comment or the post in HTML format
-        request = self.context.get("request")
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_author_serial = obj.post.author.user.username
-        return urljoin(base_url, f"authors/{post_author_serial}/posts/{obj.post.uuid}")
+        host = obj.node.url.rstrip("/")
+        author_id = obj.author.user.username
+        post_id = obj.uuid
+        return f"{host}/authors/{author_id}/posts/{post_id}"
 
     def create(self, validated_data):
         # Override create to use the validated data without model changes
