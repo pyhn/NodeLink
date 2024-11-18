@@ -13,6 +13,7 @@ class PostSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField(read_only=True)
     comments = serializers.SerializerMethodField(read_only=True)
     likes = serializers.SerializerMethodField(read_only=True)
+    page = serializers.SerializerMethodField()
     published = serializers.DateTimeField(
         source="created_at", format="iso-8601", read_only=True
     )
@@ -21,16 +22,17 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             "type",
-            "id",
             "title",
+            "id",
+            "page",
             "description",
             "contentType",
             "content",
-            "visibility",
             "author",
             "comments",
             "likes",
             "published",
+            "visibility",
         ]
 
     def get_id(self, obj):
@@ -73,6 +75,15 @@ class PostSerializer(serializers.ModelSerializer):
             "count": obj.postliked.count(),
             "src": LikeSerializer(likes, many=True, context=self.context).data,
         }
+
+    def get_page(self, obj):
+        """
+        Constructs the HTML URL for the post.
+        """
+        host = obj.node.url.rstrip("/")
+        author_id = obj.author.user.username
+        post_id = obj.uuid
+        return f"{host}/authors/{author_id}/posts/{post_id}"
 
     def update(self, instance, validated_data):
         """
