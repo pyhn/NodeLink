@@ -52,6 +52,7 @@ from PIL import Image
 import re
 from urllib.parse import unquote, urljoin
 import uuid
+import requests
 
 
 @is_approved
@@ -84,7 +85,7 @@ def submit_post(request, username):
                 raise ValidationError("Image file is required for image posts.")
 
         # Create the post with the necessary fields
-        Post.objects.create(
+        post = Post.objects.create(
             title=title,
             description=description,
             content=content,
@@ -95,9 +96,58 @@ def submit_post(request, username):
             created_by=author,
             updated_by=author,
         )
+
+        post_json = PostSerializer(post, context={"request": request}).data
+
+        send_post_to_remote_inboxes(post_json)
+
         # Redirect to the post list page
         return redirect("node_link:home", username=username)
     return redirect("node_link:home", username=username)
+
+
+def send_post_to_remote_inboxes(post_json):
+    """
+    Send the post JSON object to the inbox of all remote users.
+
+    Args:
+        post_json (dict): The post JSON object to send.
+    """
+    # Find all remote users (usernames containing '__')
+    remote_users = User.objects.filter(username__contains="__")
+
+    for user in remote_users:
+        # Extract the remote node's URL and credentials
+        try:
+            node = user.local_node  # Assume `local_node` points to the Node model
+        except AttributeError:
+            print(f"User {user.username} does not have an associated node.")
+            continue
+
+        if not node.url or not node.username or not node.password:
+            print(f"Node for user {user.username} is missing credentials or URL.")
+            continue
+
+        # Extract the remote author's username
+        remote_author_serial = user.username.split("__")[1]
+
+        # Construct the inbox URL
+        inbox_url = f"{node.url.rstrip('/')}/api/authors/{remote_author_serial}/inbox"
+
+        # Send the POST request to the inbox
+        try:
+            response = requests.post(
+                inbox_url,
+                json=post_json,
+                auth=(node.username, node.password),
+                timeout=10,
+            )
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            print(
+                f"Successfully sent post to {inbox_url}. Response: {response.status_code}"
+            )
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to send post to {inbox_url}. Error: {str(e)}")
 
 
 @is_approved

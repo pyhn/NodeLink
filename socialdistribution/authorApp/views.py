@@ -1,42 +1,45 @@
+# Standard Library Imports
+from datetime import datetime
+from urllib.parse import unquote
+
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from rest_framework.permissions import IsAuthenticated
-
-from django.db.models import Q
 from django.contrib import messages
-from .forms import EditProfileForm
-from .serializers import (
-    AuthorProfileSerializer,
-    FollowerSerializer,
-    FriendSerializer,
-)
+from django.db import IntegrityError
+from django.db.models import Q
+from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+
+# Rest Framework Imports
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
-from rest_framework.decorators import action
-from node_link.utils.common import CustomPaginator
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+    action,
+)
+
+# Third-Party Imports
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from authorApp.models import AuthorProfile
-from django.db import IntegrityError
-from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 
 # Project Imports
-from .models import (
-    Friends,
-    Follower,
-    AuthorProfile,
-)
-from node_link.models import Node
-from .forms import SignUpForm, LoginForm
-from node_link.utils.common import has_access, is_approved
+from .forms import EditProfileForm, SignUpForm, LoginForm
+from .models import Friends, Follower, AuthorProfile
+from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from node_link.models import Node, Notification
+from node_link.utils.common import CustomPaginator, has_access, is_approved
 from postApp.models import Post
+from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
+from postApp.utils.fetch_github_activity import fetch_github_events
+from authorApp.models import AuthorProfile, Friends, Follower
+from authorApp.serializers import FollowerSerializer
 
-# Third Party Imports
-from datetime import datetime
-from urllib.parse import unquote
 
 # Create your views here.
 # sign up
@@ -906,3 +909,42 @@ class SingleAuthorView(APIView):
         author = get_object_or_404(AuthorProfile, user__username=author_username)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([BasicAuthentication])
+def author_inbox_view(request, author_serial):
+    """
+    Handles incoming activities directed to a specific author's inbox
+
+    Supported types: "post", "like", "comment", "follow"
+    """
+    # retrieve the author
+    try:
+        author = AuthorProfile.objects.get(user__username=author_serial)
+    except AuthorProfile.DoesNotExist:
+        return Response({"error": "Author not found"}, status=404)
+
+    # retrieve the activity
+    data = request.data
+    object_type = data.get("type")
+
+    # filter base on type
+    if object_type == "post":
+        serializer = PostSerializer(data=data, context={"author": author})
+    elif object_type == "like":
+        serializer = LikeSerializer(data=data, context={"author": author})
+    elif object_type == "comment":
+        serializer = CommentSerializer(data=data, context={"author": author})
+    elif object_type == " follow":
+        serializer = FollowerSerializer(data=data, context={"author": author})
+    else:
+        return Response(
+            {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # save the object to our database
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"status": "sucessful"}, status=status.HTTP_201_CREATED)
