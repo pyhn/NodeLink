@@ -2106,8 +2106,17 @@ class PostLikesAPIView(APIView):
 
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
 
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         # Retrieve the post associated with the author
-        post = get_object_or_404(Post, uuid=post_uuid, author=author)
+        post = get_object_or_404(Post, uuid=post_uuid, author=author, node=node)
 
         # Get all likes on the post
         likes = Like.objects.filter(post=post).order_by("-created_at")
@@ -2228,7 +2237,22 @@ class PostLikesFQIDAPIView(APIView):
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
+        post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
         likes = Like.objects.filter(post=post).order_by("-created_at")
 
@@ -2334,7 +2358,24 @@ class CommentLikesView(APIView):
             comment_fqid = unquote(comment_fqid)
             fqid_parts = comment_fqid.split("/")
             comment_uuid = fqid_parts[len(fqid_parts) - 1]
-            post = get_object_or_404(Post, uuid=post_serial)
+
+            for i, part in enumerate(fqid_parts):
+                if part == "authors" and i + 1 < len(fqid_parts):
+                    # Return the string after "authors"
+                    author_serial_fqid = fqid_parts[i + 1]
+                    break
+
+            try:
+                # Fetch the user based on username and infer their node
+                user = User.objects.get(username=author_serial_fqid)
+                node = user.local_node
+            except User.DoesNotExist:
+                return HttpResponseForbidden("User not found.")
+            except AttributeError:
+                return HttpResponseForbidden("User does not belong to a node.")
+
+            post = get_object_or_404(Post, uuid=post_serial, node=node)
+
             Comment.objects.get(uuid=comment_uuid, post=post)
         except Comment.DoesNotExist:
             return Response(
