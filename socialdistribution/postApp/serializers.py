@@ -152,6 +152,18 @@ class PostSerializer(serializers.ModelSerializer):
         # Set the created_by field
         validated_data["created_by"] = author
         validated_data["author"] = author
+
+        # Fetch and set the Node object based on the host in the author data
+        author_data = self.initial_data.get("author", {})
+        host = author_data.get("host")
+        try:
+            node = Node.objects.get(url=host)
+            validated_data["node"] = node
+        except Node.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                f"No Node found for host: {host}"
+            ) from exc
+
         # Create the Post instance
         return Post.objects.create(**validated_data)
 
