@@ -132,7 +132,7 @@ def send_post_to_remote_inboxes(post_json):
         remote_author_serial = user.username.split("__")[1]
 
         # Construct the inbox URL
-        inbox_url = f"{node.url.rstrip('/')}/api/authors/{remote_author_serial}/inbox"
+        inbox_url = f"{node.url.rstrip('/')}/api/authors/{remote_author_serial}/inbox/"
 
         # Send the POST request to the inbox
         try:
