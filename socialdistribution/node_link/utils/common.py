@@ -14,16 +14,7 @@ from postApp.models import Post
 
 def has_access(request, post_uuid, username):
 
-    try:
-        # Fetch the user based on username and infer their node
-        user = User.objects.get(username=username)
-        node = user.local_node
-    except User.DoesNotExist:
-        return HttpResponseForbidden("User not found.")
-    except AttributeError:
-        return HttpResponseForbidden("User does not belong to a node.")
-
-    post = get_object_or_404(Post, uuid=post_uuid, node=node)
+    post = get_object_or_404(Post, uuid=post_uuid)
 
     if (
         post.author.id == request.user.author_profile.id
