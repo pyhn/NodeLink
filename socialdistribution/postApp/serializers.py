@@ -98,9 +98,29 @@ class PostSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def create(self, validated_data):
+    def validate_author(self, value):
+        """
+        Validate and resolve the author field.
+        """
+        author_id = value.get("id")
+        try:
+            author = AuthorProfile.objects.get(user__username=author_id)
+            return author  # Return the resolved author object
+        except AuthorProfile.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                f"Author with ID {author_id} not found."
+            ) from exc
 
-        validated_data.pop("type")
+    def create(self, validated_data):
+        """
+        Create a Post object from incoming data.
+        """
+        author_data = validated_data.pop("author")
+        author = self.validate_author(
+            author_data
+        )  # This now correctly assigns the returned author object
+        validated_data["author"] = author
+        validated_data["node"] = author.user.local_node
         return Post.objects.create(**validated_data)
 
 
