@@ -6,6 +6,7 @@ from authorApp.serializers import AuthorProfileSerializer
 from urllib.parse import urljoin, urlparse
 from django.shortcuts import get_object_or_404
 import uuid
+from datetime import datetime
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -86,19 +87,6 @@ class PostSerializer(serializers.ModelSerializer):
         post_id = obj.uuid
         return f"{host}/authors/{author_id}/posts/{post_id}"
 
-    def update(self, instance, validated_data):
-        """
-        Handle the update operation while ignoring read-only fields.
-        """
-        # Update fields if present in validated_data
-        for field in ["title", "description", "content", "contentType", "visibility"]:
-            if field in validated_data:
-                setattr(instance, field, validated_data[field])
-
-        # Save the instance
-        instance.save()
-        return instance
-
     def validate_author(self, value):
         """
         Validate or create the author field from the incoming data.
@@ -153,11 +141,37 @@ class PostSerializer(serializers.ModelSerializer):
         return validated_data
 
     def create(self, validated_data):
+        """
+        Create a Post instance with required fields.
+        """
+        # Extract author from validated data
         author = validated_data.pop("author", None)
         if not author:
             raise serializers.ValidationError("Author is required to create a post.")
-        validated_data["author"] = author
+
+        # Set the created_by field
+        validated_data["created_by"] = author
+
+        # Create the Post instance
         return Post.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Update a Post instance while handling fields from MixinApp.
+        """
+        # Update modifiable fields
+        for field in ["title", "description", "content", "contentType", "visibility"]:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+
+        # Update updated_by field
+        user = self.context["request"].user.author_profile
+        instance.updated_by = user
+        instance.updated_at = datetime.now()
+
+        # Save the updated instance
+        instance.save()
+        return instance
 
 
 class CommentSerializer(serializers.ModelSerializer):
