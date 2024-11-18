@@ -28,6 +28,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
@@ -506,22 +507,35 @@ class PostViewSet(viewsets.ModelViewSet):
         responses={
             200: openapi.Response(
                 description="List of posts retrieved successfully.",
-                schema=PostSerializer(many=True),
                 examples={
-                    "application/json": [
-                        {
-                            "uuid": "post1-uuid",
-                            "title": "First Post",
-                            "content": "This is the content of the first post.",
-                            "author": {
-                                "id": "author1-id",
-                                "username": "johndoe",
-                                "display_name": "John Doe",
-                                "profile_image": "http://example.com/images/johndoe.png",
-                                "github": "https://github.com/johndoe",
+                    "application/json": {
+                        "type": "posts",
+                        "page_number": 1,
+                        "size": 10,
+                        "count": 42,
+                        "src": [
+                            {
+                                "id": "http://nodeaaaa/api/authors/johndoe/posts/1",
+                                "type": "post",
+                                "title": "My First Post",
+                                "description": "A short description",
+                                "content": "Hello world!",
+                                "visibility": "PUBLIC",
+                                "author": {
+                                    "id": "http://nodeaaaa/api/authors/johndoe",
+                                    "host": "http://nodeaaaa/api/",
+                                    "type": "author",
+                                    "displayName": "John Doe",
+                                    "github": "http://github.com/johndoe",
+                                    "profileImage": "http://nodeaaaa/api/authors/johndoe/image",
+                                    "page": "http://nodeaaaa/authors/johndoe",
+                                },
+                                "contentType": "text/plain",
+                                "published": "2024-11-17T12:00:00+00:00",
                             },
-                        },
-                    ]
+                            # More post objects
+                        ],
+                    }
                 },
             ),
             401: "Unauthorized - Authentication credentials were not provided or are invalid.",
@@ -529,7 +543,32 @@ class PostViewSet(viewsets.ModelViewSet):
         tags=["Posts"],
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        """
+        Custom list method to return paginated posts in the required format.
+        """
+        # Get queryset
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # Paginate the queryset
+        paginator = PageNumberPagination()
+        paginator.page_size = int(
+            request.query_params.get("size", 10)
+        )  # Default page size: 10
+        page = paginator.paginate_queryset(queryset, request)
+
+        # Serialize the data
+        serializer = self.get_serializer(page, many=True)
+
+        # Construct the response format
+        response_data = {
+            "type": "posts",
+            "page_number": paginator.page.number,
+            "size": paginator.page_size,
+            "count": paginator.page.paginator.count,
+            "src": serializer.data,
+        }
+
+        return Response(response_data)
 
     @swagger_auto_schema(
         operation_description="Create a new post for a specific author.",
@@ -2106,8 +2145,17 @@ class PostLikesAPIView(APIView):
 
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
 
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         # Retrieve the post associated with the author
-        post = get_object_or_404(Post, uuid=post_uuid, author=author)
+        post = get_object_or_404(Post, uuid=post_uuid, author=author, node=node)
 
         # Get all likes on the post
         likes = Like.objects.filter(post=post).order_by("-created_at")
@@ -2228,7 +2276,22 @@ class PostLikesFQIDAPIView(APIView):
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
+        post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
         likes = Like.objects.filter(post=post).order_by("-created_at")
 
@@ -2334,7 +2397,24 @@ class CommentLikesView(APIView):
             comment_fqid = unquote(comment_fqid)
             fqid_parts = comment_fqid.split("/")
             comment_uuid = fqid_parts[len(fqid_parts) - 1]
-            post = get_object_or_404(Post, uuid=post_serial)
+
+            for i, part in enumerate(fqid_parts):
+                if part == "authors" and i + 1 < len(fqid_parts):
+                    # Return the string after "authors"
+                    author_serial_fqid = fqid_parts[i + 1]
+                    break
+
+            try:
+                # Fetch the user based on username and infer their node
+                user = User.objects.get(username=author_serial_fqid)
+                node = user.local_node
+            except User.DoesNotExist:
+                return HttpResponseForbidden("User not found.")
+            except AttributeError:
+                return HttpResponseForbidden("User does not belong to a node.")
+
+            post = get_object_or_404(Post, uuid=post_serial, node=node)
+
             Comment.objects.get(uuid=comment_uuid, post=post)
         except Comment.DoesNotExist:
             return Response(

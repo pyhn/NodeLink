@@ -8,53 +8,100 @@ import uuid
 
 
 class PostSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField()
-    type = serializers.CharField(default="post")
-    author = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField(read_only=True)
+    type = serializers.CharField(default="post", read_only=True)
+    author = serializers.SerializerMethodField(read_only=True)
+    comments = serializers.SerializerMethodField(read_only=True)
+    likes = serializers.SerializerMethodField(read_only=True)
+    page = serializers.SerializerMethodField()
+    published = serializers.DateTimeField(
+        source="created_at", format="iso-8601", read_only=True
+    )
 
     class Meta:
         model = Post
         fields = [
-            "id",
-            "title",
             "type",
+            "title",
+            "id",
+            "page",
             "description",
-            "content",
-            "visibility",
-            "node",
-            "author",
-            "uuid",
             "contentType",
-            "created_by",
+            "content",
+            "author",
+            "comments",
+            "likes",
+            "published",
+            "visibility",
         ]
-        read_only_fields = ["comments", "likes", "published"]
 
     def get_id(self, obj):
-        """
-        Constructs the full URL id for the post.
-        """
         host = obj.node.url.rstrip("/")
         author_id = obj.author.user.username
         post_id = obj.uuid
         return f"{host}/api/authors/{author_id}/posts/{post_id}"
 
     def get_author(self, obj):
-        # Serialize the author using AuthorProfileSerializer
-        return AuthorProfileSerializer(obj.author).data
+        return {
+            "type": "author",
+            "id": f"{obj.author.user.local_node.url.rstrip('/')}/api/authors/{obj.author.user.username}",
+            "host": obj.author.user.local_node.url.rstrip("/") + "/",
+            "displayName": obj.author.user.display_name,
+            "github": obj.author.github,
+            "profileImage": obj.author.user.profileImage.url,
+            "page": f"{obj.author.user.local_node.url.rstrip('/')}/authors/{obj.author.user.username}",
+        }
+
+    def get_comments(self, obj):
+        comments = obj.comments.all().order_by("-created_at")[:5]
+        return {
+            "type": "comments",
+            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/comments",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.comments.count(),
+            "src": CommentSerializer(comments, many=True, context=self.context).data,
+        }
+
+    def get_likes(self, obj):
+        likes = obj.postliked.all().order_by("-created_at")[:5]
+        return {
+            "type": "likes",
+            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
+            "page_number": 1,
+            "size": 5,
+            "count": obj.postliked.count(),
+            "src": LikeSerializer(likes, many=True, context=self.context).data,
+        }
+
+    def get_page(self, obj):
+        """
+        Constructs the HTML URL for the post.
+        """
+        host = obj.node.url.rstrip("/")
+        author_id = obj.author.user.username
+        post_id = obj.uuid
+        return f"{host}/authors/{author_id}/posts/{post_id}"
+
+    def update(self, instance, validated_data):
+        """
+        Handle the update operation while ignoring read-only fields.
+        """
+        # Update fields if present in validated_data
+        for field in ["title", "description", "content", "contentType", "visibility"]:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+
+        # Save the instance
+        instance.save()
+        return instance
 
     def create(self, validated_data):
 
         validated_data.pop("type")
         return Post.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        instance.title = validated_data.get("title", instance.title)
-        instance.description = validated_data.get("description", instance.description)
-        instance.content = validated_data.get("content", instance.content)
-        instance.contentType = validated_data.get("contentType", instance.contentType)
-        instance.visibility = validated_data.get("visibility", instance.visibility)
-        instance.save()
-        return instance
 
 
 class CommentSerializer(serializers.ModelSerializer):
