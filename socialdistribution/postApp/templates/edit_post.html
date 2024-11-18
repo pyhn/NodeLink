@@ -131,7 +131,7 @@
     {% endif %}
 
     <div class="tab-container">
-        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_edit_post' post.uuid %}">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_edit_post' post.author.user.username post.uuid %}">
             {% csrf_token %}
 
             <!-- Tab Buttons -->

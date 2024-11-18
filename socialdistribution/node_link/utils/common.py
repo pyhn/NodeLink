@@ -2,17 +2,20 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.contrib import messages
 from django.urls import reverse
+from rest_framework.pagination import PageNumberPagination
 
 # Project Imports
-from authorApp.models import Friends
+from authorApp.models import Friends, User
 from postApp.models import Post
 
 
-def has_access(request, post_uuid):
+def has_access(request, post_uuid, username):
+
     post = get_object_or_404(Post, uuid=post_uuid)
+
     if (
         post.author.id == request.user.author_profile.id
         or post.visibility == "p"
@@ -41,3 +44,8 @@ def is_approved(view_func):
         return HttpResponseRedirect(reverse("authorApp:login"))
 
     return _wrapped_view
+
+
+class CustomPaginator(PageNumberPagination):
+    page_query_param = "page"
+    page_size_query_param = "size"

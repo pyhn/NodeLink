@@ -1,34 +1,45 @@
+# Standard Library Imports
+from datetime import datetime
+from urllib.parse import unquote
+
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.contrib import messages
-from .forms import EditProfileForm
-from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
-from rest_framework.response import Response
-from rest_framework import viewsets
-from rest_framework.decorators import action
-from rest_framework.views import APIView
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-from authorApp.models import AuthorProfile
 from django.db import IntegrityError
+from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 
-# Project Imports
-from .models import (
-    Friends,
-    Follower,
-    AuthorProfile,
+# Rest Framework Imports
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.response import Response
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+    action,
 )
-from node_link.models import Node
-from .forms import SignUpForm, LoginForm
-from node_link.utils.common import has_access, is_approved
-from postApp.models import Post
 
-# Third Party Imports
-from datetime import datetime
+# Third-Party Imports
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+# Project Imports
+from .forms import EditProfileForm, SignUpForm, LoginForm
+from .models import Friends, Follower, AuthorProfile
+from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from node_link.models import Node, Notification
+from node_link.utils.common import CustomPaginator, has_access, is_approved
+from postApp.models import Post
+from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
+from postApp.utils.fetch_github_activity import fetch_github_events
+from authorApp.models import AuthorProfile, Friends, Follower
+from authorApp.serializers import FollowerSerializer
+
 
 # Create your views here.
 # sign up
@@ -45,25 +56,25 @@ def signup_view(request):
             user.last_name = form.cleaned_data["last_name"]
             # user.username = form.cleaned_data['username']
             user.description = form.cleaned_data["description"]
-            user.save()
 
             # Retrieve the first node in the Node table
             first_node = Node.objects.first()
             if not first_node:
                 messages.error(request, "No nodes are available to assign.")
                 return redirect("authorApp:signup")
+            user.local_node = first_node
+
+            user.save()
 
             # Create an AuthorProfile linked to the user and assign the first node
             AuthorProfile.objects.create(
                 user=user,
-                local_node=first_node,
                 # Set other author-specific fields if necessary
             )
 
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+
             auth_login(request, user)
-            messages.success(
-                request, f"Welcome {user.username}, your account has been created."
-            )
             return redirect("node_link:home", request.user.username)
         else:
             messages.error(request, "Please correct the errors below.")
@@ -73,24 +84,25 @@ def signup_view(request):
 
 
 def login_view(request):
-    if request.user.is_authenticated and request.user.is_approved:
-        return redirect("node_link:home", username=form.get_user().username)
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
-            auth_login(request, form.get_user())
-            messages.success(request, f"Welcome back, {form.get_user().username}!")
-            return redirect("node_link:home", username=form.get_user().username)
+            user = form.get_user()
+            if user.is_approved:
+                auth_login(request, user)
+                return redirect("node_link:home", username=user.username)
+            else:
+                messages.error(request, "Your account is not approved.")
         else:
             messages.error(request, "Invalid username or password.")
     else:
         form = LoginForm()
+
     return render(request, "login.html", {"form": form})
 
 
 def logout_view(request):
     auth_logout(request)
-    messages.info(request, "You have successfully logged out.")
     return redirect("authorApp:login")
 
 
@@ -98,7 +110,11 @@ def logout_view(request):
 def profile_display(request, author_un):
     if request.method == "GET":
         current_user = request.user.author_profile
-        author = get_object_or_404(AuthorProfile, user__username=author_un)
+
+        author = get_object_or_404(
+            AuthorProfile,
+            user__username=author_un,
+        )
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
 
         # Determine the button to display
@@ -142,7 +158,7 @@ def profile_display(request, author_un):
 
         filtered_ids = []
         for a in all_ids:
-            if has_access(request, a.uuid):
+            if has_access(request, a.uuid, username=request.user.username):
                 filtered_ids.append(a)
 
         context = {
@@ -430,7 +446,12 @@ def edit_profile(request):
 
 
 # ViewSet for AuthorProfile API
-class AuthorProfileViewSet(viewsets.ViewSet):
+class AuthorProfileViewSet(viewsets.ModelViewSet):
+
+    queryset = AuthorProfile.objects.all()
+    serializer_class = AuthorProfileSerializer
+    permission_classes = [IsAuthenticated]
+
     @swagger_auto_schema(
         operation_description="Retrieve a list of all authors.",
         responses={
@@ -438,33 +459,37 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                 description="A list of authors.",
                 schema=AuthorProfileSerializer(many=True),
                 examples={
-                    "application/json": [
-                        {
-                            "type": "author",
-                            "id": "http://localhost:8000/api/authors/johndoe",
-                            "host": "http://localhost:8000",
-                            "user": {
-                                "username": "johndoe",
-                                "first_name": "John",
-                                "last_name": "Doe",
-                                "email": "john@example.com",
-                                "date_ob": "1990-01-01",
+                    "application/json": {
+                        "type": "authors",
+                        "authors": [
+                            {
+                                "type": "author",
+                                "id": "http://localhost:8000/api/authors/johndoe",
+                                "host": "http://localhost:8000",
+                                "displayName": "John Doe",
+                                "github": "https://github.com/johndoe",
                                 "profileImage": "http://example.com/images/johndoe.png",
-                            },
-                            "github": "https://github.com/johndoe",
-                            "local_node": "http://localhost:8000",
-                        },
-                    ]
+                                "page": "http://localhost:8000/authors/johndoe/profile",
+                            }
+                        ],
+                    }
                 },
             )
         },
         tags=["Authors"],
     )
-    # Retrieve all authors
-    def list(self, request):
-        authors = AuthorProfile.objects.all()
-        serializer = AuthorProfileSerializer(authors, many=True)
-        return Response(serializer.data)
+    def list(self, request, *args, **kwargs):
+        authors = AuthorProfile.objects.all().order_by("id")
+        if request.query_params:
+            paginator = CustomPaginator()
+            paginated_authors = paginator.paginate_queryset(authors, request)
+            serializer = AuthorProfileSerializer(paginated_authors, many=True)
+        else:
+            serializer = AuthorProfileSerializer(authors, many=True)
+
+        # Wrap the serialized data in the required format
+        response_data = {"type": "authors", "authors": serializer.data}
+        return Response(response_data)
 
     @swagger_auto_schema(
         operation_description="Retrieve an author's profile by username.",
@@ -483,6 +508,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                             "last_name": "Doe",
                             "email": "john@example.com",
                             "date_ob": "1990-01-01",
+                            "display_name": "John Doe",
                             "profileImage": "http://example.com/images/johndoe.png",
                         },
                         "github": "https://github.com/johndoe",
@@ -507,11 +533,70 @@ class AuthorProfileViewSet(viewsets.ViewSet):
             ),
         ],
     )
+
     # Retrieve a single author by username
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, *args, **kwargs):
+        pk = kwargs.get("pk")
         author = get_object_or_404(AuthorProfile, user__username=pk)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Update a Author entirely.",
+        request_body=AuthorProfileSerializer,
+        responses={
+            200: openapi.Response(
+                description="Author updated successfully.",
+                schema=AuthorProfileSerializer(),
+                examples={
+                    "application/json": {
+                        "type": "author",
+                        "id": "http://localhost:8000/api/authors/johndoe",
+                        "host": "http://localhost:8000",
+                        "user": {
+                            "username": "johndoe",
+                            "first_name": "John",
+                            "last_name": "Doe",
+                            "email": "john@example.com",
+                            "date_ob": "1990-01-01",
+                            "profileImage": "http://example.com/images/johndoe.png",
+                        },
+                        "github": "https://github.com/johndoe",
+                        "local_node": "http://localhost:8000",
+                    }
+                },
+            ),
+            400: "Bad Request - Invalid data.",
+            404: "Not Found - Notification does not exist.",
+            401: "Unauthorized - Authentication credentials were not provided or are invalid.",
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                "username",
+                openapi.IN_PATH,
+                description="Username of the author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+                example="johndoe",
+            ),
+        ],
+        tags=["Authors"],
+    )
+    def update(self, request, *args, **kwargs):
+
+        username = kwargs.get("pk")
+
+        # Retrieve the author by username instead of id
+        author = get_object_or_404(AuthorProfile, user__username=username)
+
+        # Use the serializer to validate and update the data
+        serializer = self.get_serializer(author, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            data=serializer.data,
+        )
 
     @swagger_auto_schema(
         operation_description="Retrieve followers of an author.",
@@ -532,6 +617,7 @@ class AuthorProfileViewSet(viewsets.ViewSet):
                                     "last_name": "Doe",
                                     "email": "jane@example.com",
                                     "date_ob": "1992-05-15",
+                                    "display_name": "John Doe",
                                     "profileImage": "http://example.com/images/janedoe.png",
                                 },
                                 "github": "https://github.com/janedoe",
@@ -563,12 +649,18 @@ class AuthorProfileViewSet(viewsets.ViewSet):
     # Custom action to list followers of an author
     @action(detail=True, methods=["get"])
     def followers(self, request, pk=None):
+        # Get the author by username or pk
         author = get_object_or_404(AuthorProfile, user__username=pk)
+        # Filter followers where this author is the 'object'
         followers = Follower.objects.filter(object=author)
+        # Serialize the data
         serializer = FollowerSerializer(followers, many=True)
-        return Response(serializer.data)
+        # Structure the response to match the required format
+        response_data = {"type": "followers", "followers": serializer.data}
+        return Response(response_data)
 
     @swagger_auto_schema(
+        auto_schema=None,
         operation_description="Retrieve friends of an author.",
         responses={
             200: openapi.Response(
@@ -608,3 +700,253 @@ class AuthorProfileViewSet(viewsets.ViewSet):
         friends = Friends.objects.filter((Q(user1=author) | Q(user2=author)))
         serializer = FriendSerializer(friends, many=True)
         return Response(serializer.data)
+
+
+class FollowersFQIDViewSet(viewsets.ViewSet):
+    @swagger_auto_schema(
+        methods=["get"],
+        operation_summary="Retrieve follower relationship",
+        operation_description=(
+            "Retrieve the relationship between a local author and a foreign author identified by their FQID."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Successful retrieval of follower relationship.",
+                schema=FollowerSerializer(),
+            ),
+            404: openapi.Response(description="Follower not found."),
+        },
+        tags=["Followers"],
+    )
+    @swagger_auto_schema(
+        methods=["put"],
+        operation_summary="Add a follower",
+        operation_description="Add a foreign author as a follower of a local author.",
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            201: openapi.Response(
+                description="Follower successfully added.",
+                examples={"application/json": {"detail": "Follower added."}},
+            ),
+            400: openapi.Response(
+                description="Bad request (e.g., follower already exists).",
+                examples={"application/json": {"detail": "Follower already exists."}},
+            ),
+        },
+        tags=["Followers"],
+    )
+    @swagger_auto_schema(
+        methods=["delete"],
+        operation_summary="Remove a follower",
+        operation_description="Remove a foreign author as a follower of a local author.",
+        manual_parameters=[
+            openapi.Parameter(
+                "pk",
+                openapi.IN_PATH,
+                description="Username of the local author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+            openapi.Parameter(
+                "follower_fqid",
+                openapi.IN_PATH,
+                description="Fully Qualified ID (FQID) of the foreign author.",
+                type=openapi.TYPE_STRING,
+                required=True,
+            ),
+        ],
+        responses={
+            204: openapi.Response(
+                description="Follower successfully removed.",
+                examples={"application/json": {"detail": "Follower removed."}},
+            ),
+            404: openapi.Response(
+                description="Follower not found.",
+                examples={"application/json": {"detail": "Follower does not exist."}},
+            ),
+        },
+        tags=["Followers"],
+    )
+    @action(
+        detail=True,
+        methods=["get", "put", "delete"],
+        url_path="followers/(?P<follower_fqid>.+)",
+    )
+    def manage_follower(self, request, pk=None, follower_fqid=None):
+        # Decode the foreign author FQID
+        follower_fqid = unquote(follower_fqid)
+        fqid_parts = follower_fqid.split("/")
+        foreign_username = fqid_parts[len(fqid_parts) - 1]
+        # Fetch the local author
+        local_author = get_object_or_404(AuthorProfile, user__username=pk)
+
+        # Check if the follower is already in the follower list
+        try:
+            foreign_author = get_object_or_404(
+                AuthorProfile, user__username=foreign_username
+            )
+            follower_relationship = Follower.objects.get(
+                actor=foreign_author, object=local_author
+            )
+        except (AuthorProfile.DoesNotExist, Follower.DoesNotExist):
+            follower_relationship = None
+
+        if request.method == "GET":
+            # Check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                serializer = FollowerSerializer(follower_relationship)
+                return Response(serializer.data)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        elif request.method == "PUT":
+            # Add FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if not follower_relationship:
+                Follower.objects.create(
+                    actor=foreign_author,
+                    object=local_author,
+                    status="a",
+                    created_by=foreign_author,
+                )
+                return Response(
+                    {"detail": "Follower added."}, status=status.HTTP_201_CREATED
+                )
+            return Response(
+                {"detail": "Follower already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        elif request.method == "DELETE":
+            # Remove FOREIGN_AUTHOR_FQID as a follower of AUTHOR_SERIAL
+            if follower_relationship:
+                follower_relationship.delete()
+                return Response(
+                    {"detail": "Follower removed."}, status=status.HTTP_204_NO_CONTENT
+                )
+            return Response(
+                {"detail": "Follower does not exist."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class SingleAuthorView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Retrieve Author by Fully Qualified ID (FQID)",
+        operation_description=(
+            "Fetch detailed information about an author using their Fully Qualified ID (FQID). "
+            "The FQID typically follows the format `<host>/api/authors/<username>`."
+        ),
+        responses={
+            200: openapi.Response(
+                description="Successfully retrieved author details.",
+                examples={
+                    "application/json": {
+                        "id": "http://example.com/api/authors/username",
+                        "host": "http://example.com/",
+                        "type": "author",
+                        "displayName": "Author Display Name",
+                        "github": "https://github.com/username",
+                        "profileImage": "http://example.com/media/profile.jpg",
+                        "page": "http://example.com/authors/username",
+                    }
+                },
+            ),
+            404: openapi.Response(
+                description="Author not found.",
+                examples={"application/json": {"detail": "Not found."}},
+            ),
+        },
+        manual_parameters=[
+            openapi.Parameter(
+                name="author_fqid",
+                in_=openapi.IN_PATH,
+                type=openapi.TYPE_STRING,
+                description=(
+                    "Fully Qualified ID of the author. It should be in the format "
+                    "`<host>/api/authors/<username>`."
+                ),
+                required=True,
+            )
+        ],
+    )
+    def get(self, request, author_fqid):
+        """
+        GET: Retrieve a single author using its FQID.
+        """
+        author_fqid = unquote(author_fqid)
+        fqid_parts = author_fqid.split("/")
+        author_username = fqid_parts[len(fqid_parts) - 1]
+
+        author = get_object_or_404(AuthorProfile, user__username=author_username)
+        serializer = AuthorProfileSerializer(author)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@authentication_classes([BasicAuthentication])
+def author_inbox_view(request, author_serial):
+    """
+    Handles incoming activities directed to a specific author's inbox
+
+    Supported types: "post", "like", "comment", "follow"
+    """
+    # retrieve the author
+    print("Incoming data:", request.data)
+
+    try:
+        author = AuthorProfile.objects.get(user__username=author_serial)
+    except AuthorProfile.DoesNotExist:
+        return Response({"error": "Author not found"}, status=404)
+
+    # retrieve the activity
+    data = request.data
+    object_type = data.get("type")
+
+    # filter base on type
+    if object_type == "post":
+        serializer = PostSerializer(data=data, context={"author": author})
+    elif object_type == "like":
+        serializer = LikeSerializer(data=data, context={"author": author})
+    elif object_type == "comment":
+        serializer = CommentSerializer(data=data, context={"author": author})
+    elif object_type == " follow":
+        serializer = FollowerSerializer(data=data, context={"author": author})
+    else:
+        return Response(
+            {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # save the object to our database
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"status": "sucessful"}, status=status.HTTP_201_CREATED)

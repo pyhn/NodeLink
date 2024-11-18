@@ -82,7 +82,7 @@
  <div id="editOverlay" class="overlay">
     <div class="overlay-content">
         <p>Do you want to edit this post?</p>
-        <form action = "{% url 'postApp:edit_post' post.uuid %}" method="get">
+        <form action="{% url 'postApp:edit_post' post.author.user.username post.uuid %}" method="get">
             <button class="confirm-btn" type="submit">Yes, Edit</button>
         </form>
         <button class="cancel-btn" onclick="closeEditOverlay()">Cancel</button>

@@ -33,10 +33,17 @@ class Post(MixinApp):
     author = models.ForeignKey(
         "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="posts"
     )
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=True)
     contentType = models.CharField(
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["uuid", "node"], name="unique_uuid_node_combination"
+            )
+        ]
 
 
 class Comment(MixinApp):
@@ -85,6 +92,7 @@ class Like(MixinApp):
     author = models.ForeignKey(
         "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="likesPost"
     )
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     class Meta:
         constraints = [
