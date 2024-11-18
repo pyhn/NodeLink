@@ -135,7 +135,7 @@ class AuthorToUserSerializer(serializers.Serializer):
             # Generate unique username (domain + last part of the ID)
             domain = urlparse(host).netloc
             author_id_last_part = id_url.rstrip("/").split("/")[-1]
-            username = f"{domain}_{author_id_last_part}"
+            username = f"{domain}__{author_id_last_part}"
             node = get_object_or_404(Node, url=host)
             # Create or update user
             user, _ = User.objects.update_or_create(
