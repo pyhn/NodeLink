@@ -1,8 +1,9 @@
 from rest_framework import serializers
 from postApp.models import Post, Comment, Like
-from authorApp.models import AuthorProfile
+from authorApp.models import AuthorProfile, User
+from node_link.models import Node
 from authorApp.serializers import AuthorProfileSerializer
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from django.shortcuts import get_object_or_404
 import uuid
 
@@ -98,29 +99,45 @@ class PostSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def validate_author(self, value):
-        """
-        Validate and resolve the author field.
-        """
-        author_id = value.get("id")
-        try:
-            author = AuthorProfile.objects.get(user__username=author_id)
-            return author  # Return the resolved author object
-        except AuthorProfile.DoesNotExist as exc:
-            raise serializers.ValidationError(
-                f"Author with ID {author_id} not found."
-            ) from exc
+    def validate_author(self, author_data):
+        # Extract author information
+        author_id = author_data.get("id")
+        host = author_data.get("host")
+        display_name = author_data.get("displayName")
+        github = author_data.get("github")
+        profile_image = author_data.get("profileImage")
+
+        # Generate username
+        domain = urlparse(host).netloc
+        author_id_last_part = author_id.rstrip("/").split("/")[-1]
+        username = f"{domain}__{author_id_last_part}"
+
+        # Retrieve or create the user
+        node = get_object_or_404(Node, url=host)
+        user, _ = User.objects.update_or_create(
+            username=username,
+            defaults={
+                "display_name": display_name,
+                "github_user": github,
+                "profileImage": profile_image,
+                "local_node": node,
+            },
+        )
+
+        # Retrieve or create the author profile
+        author_profile, _ = AuthorProfile.objects.get_or_create(user=user)
+        return author_profile
 
     def create(self, validated_data):
-        """
-        Create a Post object from incoming data.
-        """
+        # Pop author data from validated_data
         author_data = validated_data.pop("author")
-        author = self.validate_author(
-            author_data
-        )  # This now correctly assigns the returned author object
-        validated_data["author"] = author
-        validated_data["node"] = author.user.local_node
+        author_profile = self.validate_author(author_data)
+
+        # Add author and node to validated_data
+        validated_data["author"] = author_profile
+        validated_data["node"] = author_profile.user.local_node
+
+        # Create and return the Post object
         return Post.objects.create(**validated_data)
 
 

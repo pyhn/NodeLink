@@ -139,7 +139,7 @@ def send_post_to_remote_inboxes(post_json):
             response = requests.post(
                 inbox_url,
                 json=post_json,
-                auth=(node.username, node.password),
+                auth=(node.username, "testing"),
                 timeout=10,
             )
             response.raise_for_status()  # Raise an exception for HTTP errors
