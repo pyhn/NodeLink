@@ -456,30 +456,25 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
                 description="A list of authors.",
                 schema=AuthorProfileSerializer(many=True),
                 examples={
-                    "application/json": [
-                        {
-                            "type": "author",
-                            "id": "http://localhost:8000/api/authors/johndoe",
-                            "host": "http://localhost:8000",
-                            "user": {
-                                "username": "johndoe",
-                                "first_name": "John",
-                                "last_name": "Doe",
-                                "email": "john@example.com",
-                                "date_ob": "1990-01-01",
-                                "display_name": "John Doe",
+                    "application/json": {
+                        "type": "authors",
+                        "authors": [
+                            {
+                                "type": "author",
+                                "id": "http://localhost:8000/api/authors/johndoe",
+                                "host": "http://localhost:8000",
+                                "displayName": "John Doe",
+                                "github": "https://github.com/johndoe",
                                 "profileImage": "http://example.com/images/johndoe.png",
-                            },
-                            "github": "https://github.com/johndoe",
-                            "local_node": "http://localhost:8000",
-                        },
-                    ]
+                                "page": "http://localhost:8000/authors/johndoe/profile",
+                            }
+                        ],
+                    }
                 },
             )
         },
         tags=["Authors"],
     )
-    # Retrieve all authors
     def list(self, request, *args, **kwargs):
         authors = AuthorProfile.objects.all().order_by("id")
         if request.query_params:
@@ -488,7 +483,10 @@ class AuthorProfileViewSet(viewsets.ModelViewSet):
             serializer = AuthorProfileSerializer(paginated_authors, many=True)
         else:
             serializer = AuthorProfileSerializer(authors, many=True)
-        return Response(serializer.data)
+
+        # Wrap the serialized data in the required format
+        response_data = {"type": "authors", "authors": serializer.data}
+        return Response(response_data)
 
     @swagger_auto_schema(
         operation_description="Retrieve an author's profile by username.",
