@@ -53,20 +53,23 @@ def signup_view(request):
             user.last_name = form.cleaned_data["last_name"]
             # user.username = form.cleaned_data['username']
             user.description = form.cleaned_data["description"]
-            user.save()
 
             # Retrieve the first node in the Node table
             first_node = Node.objects.first()
             if not first_node:
                 messages.error(request, "No nodes are available to assign.")
                 return redirect("authorApp:signup")
+            user.local_node = first_node
+
+            user.save()
 
             # Create an AuthorProfile linked to the user and assign the first node
             AuthorProfile.objects.create(
                 user=user,
-                local_node=first_node,
                 # Set other author-specific fields if necessary
             )
+
+            user.backend = "django.contrib.auth.backends.ModelBackend"
 
             auth_login(request, user)
             return redirect("node_link:home", request.user.username)
@@ -104,7 +107,11 @@ def logout_view(request):
 def profile_display(request, author_un):
     if request.method == "GET":
         current_user = request.user.author_profile
-        author = get_object_or_404(AuthorProfile, user__username=author_un)
+
+        author = get_object_or_404(
+            AuthorProfile,
+            user__username=author_un,
+        )
         all_ids = list(Post.objects.filter(author=author).order_by("-created_at"))
 
         # Determine the button to display
@@ -148,7 +155,7 @@ def profile_display(request, author_un):
 
         filtered_ids = []
         for a in all_ids:
-            if has_access(request, a.uuid):
+            if has_access(request, a.uuid, username=request.user.username):
                 filtered_ids.append(a)
 
         context = {

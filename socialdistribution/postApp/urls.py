@@ -33,9 +33,11 @@ urlpatterns = [
         views.delete_post,
         name="delete_post",
     ),
-    path("edit_post/<uuid:post_uuid>/", views.edit_post, name="edit_post"),
     path(
-        "submit_edit_post/<uuid:post_uuid>/",
+        "<str:username>/edit_post/<uuid:post_uuid>/", views.edit_post, name="edit_post"
+    ),
+    path(
+        "<str:username>/submit_edit_post/<uuid:post_uuid>/",
         views.submit_edit_post,
         name="submit_edit_post",
     ),

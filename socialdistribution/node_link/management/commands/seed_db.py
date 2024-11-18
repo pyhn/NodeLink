@@ -31,6 +31,7 @@ class Command(BaseCommand):
             last_name=fake.last_name(),
             email=fake.email(),
             password=make_password("adminpassword123"),
+            local_node=None,
             is_staff=True,
             is_superuser=True,
         )
@@ -41,6 +42,9 @@ class Command(BaseCommand):
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
         )
+
+        admin_user.local_node = node
+        admin_user.save()
 
         # Create fake authors
         authors = []
@@ -54,6 +58,7 @@ class Command(BaseCommand):
                 password=make_password("password123"),
                 date_ob=fake.date(),  # Optional: set a random date of birth
                 display_name=fake.name(),
+                local_node=node,
                 is_approved=True,
             )
             author_profile = AuthorProfile.objects.create(
@@ -61,7 +66,6 @@ class Command(BaseCommand):
                 github=fake.url(),
                 github_token=fake.sha1(),
                 github_user=fake.user_name(),
-                local_node=node,
             )
             authors.append(author_profile)
         logger.info(f"{len(authors)} fake authors created.")

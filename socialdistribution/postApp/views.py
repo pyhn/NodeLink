@@ -35,7 +35,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project imports
-from authorApp.models import AuthorProfile
+from authorApp.models import AuthorProfile, User
 from node_link.models import Notification
 from node_link.utils.common import has_access, is_approved
 from postApp.models import Comment, Like, Post
@@ -90,7 +90,7 @@ def submit_post(request, username):
             visibility=visibility,
             contentType=content_type,
             author=author,
-            node=author.local_node,  # Associate the post with the author's node
+            node=author.user.local_node,  # Associate the post with the author's node
             created_by=author,
             updated_by=author,
         )
@@ -101,7 +101,17 @@ def submit_post(request, username):
 
 @is_approved
 def create_comment(request, username, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid)
+
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
     if request.method == "POST":
         content = request.POST.get("content")
@@ -125,7 +135,17 @@ def create_comment(request, username, post_uuid):
 
 @is_approved
 def like_post(request, username, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid)
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
+
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
     Like.objects.create(
@@ -140,7 +160,17 @@ def like_post(request, username, post_uuid):
 
 @is_approved
 def delete_post(request, username, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid)
+
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
     # check if they are allow to delete
     if post.author.user == request.user:
         post.visibility = "d"
@@ -149,8 +179,17 @@ def delete_post(request, username, post_uuid):
 
 
 @is_approved
-def edit_post(request, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid)
+def edit_post(request, username, post_uuid):
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
     if post.author.user != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
@@ -178,12 +217,21 @@ def edit_post(request, post_uuid):
         return render(request, "edit_post.html", context)
     else:
         # If request method is not GET, redirect to edit page
-        return redirect("postApp:edit_post", post_uuid=post_uuid)
+        return redirect("postApp:edit_post", username=username, post_uuid=post_uuid)
 
 
 @is_approved
-def submit_edit_post(request, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid)
+def submit_edit_post(request, username, post_uuid):
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
     if post.author.user != request.user:
         return HttpResponseForbidden("You are not allowed to edit this post.")
@@ -209,7 +257,9 @@ def submit_edit_post(request, post_uuid):
             MAX_UPLOAD_SIZE = 2 * 1024 * 1024  # 2 MB
             if img.size > MAX_UPLOAD_SIZE:
                 messages.error(request, "Image file too large ( > 2MB ).")
-                return redirect("postApp:edit_post", post_uuid=post_uuid)  # Early exit
+                return redirect(
+                    "postApp:edit_post", username=username, post_uuid=post_uuid
+                )  # Early exit
 
             try:
                 content, actual_content_type = check_image(img, content_type, False)
@@ -217,7 +267,9 @@ def submit_edit_post(request, post_uuid):
 
             except (IOError, SyntaxError):
                 # The file is not a valid image
-                return redirect("postApp:edit_post", post_uuid=post_uuid)  # Early exit
+                return redirect(
+                    "postApp:edit_post", username=username, post_uuid=post_uuid
+                )  # Early exit
         else:
             # If no new image is uploaded, keep the existing content
             content = post.content
@@ -255,9 +307,18 @@ def post_card(
     Returns:
         _type_: _description_
     """
-    post = get_object_or_404(Post, uuid=post_uuid)
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
     # check is user has permission to see post
-    if has_access(request=request, post_uuid=post_uuid):
+    if has_access(request=request, post_uuid=post_uuid, username=username):
 
         user_has_liked = post.postliked.filter(
             author=request.user.author_profile
@@ -284,8 +345,17 @@ def post_card(
 
 @is_approved
 def post_detail(request, username, post_uuid: str):
-    post = get_object_or_404(Post, uuid=post_uuid)
-    if has_access(request=request, post_uuid=post_uuid):
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=username)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(Post, uuid=post_uuid, node=node)
+    if has_access(request=request, post_uuid=post_uuid, username=username):
         user_has_liked = False
 
         if request.user.is_authenticated:
@@ -318,7 +388,19 @@ def post_detail(request, username, post_uuid: str):
 # renders the form for sharing the post to other authors
 @is_approved
 def render_share_form(request, author_serial, post_uuid):
-    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=author_serial)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(
+        Post, uuid=post_uuid, author__user__username=author_serial, node=node
+    )
 
     if post.visibility != "p":
         return HttpResponseForbidden("You can only share public posts.")
@@ -337,7 +419,18 @@ def handle_share_post(request, author_serial, post_uuid):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    post = get_object_or_404(Post, uuid=post_uuid, author__user__username=author_serial)
+    try:
+        # Fetch the user based on username and infer their node
+        user = User.objects.get(username=author_serial)
+        node = user.local_node
+    except User.DoesNotExist:
+        return HttpResponseForbidden("User not found.")
+    except AttributeError:
+        return HttpResponseForbidden("User does not belong to a node.")
+
+    post = get_object_or_404(
+        Post, uuid=post_uuid, author__user__username=author_serial, node=node
+    )
 
     # ensure that the post is actually public
     if post.visibility != "p":
@@ -649,7 +742,7 @@ class PostViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user.author_profile,
-            node=self.request.user.author_profile.local_node,
+            node=self.request.user.local_node,
             created_by=self.request.user.author_profile,
             updated_by=self.request.user.author_profile,
         )
@@ -711,9 +804,19 @@ class PostImageView(APIView):
         tags=["Posts", "Images"],
     )
     def get(self, request, author_serial, post_uuid):
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         # Step 1: Retrieve the post
         post = get_object_or_404(
-            Post, uuid=post_uuid, author__user__username=author_serial
+            Post, uuid=post_uuid, author__user__username=author_serial, node=node
         )
 
         # Step 2: Check if the post is public
@@ -904,7 +1007,7 @@ class CommentedView(APIView):
             # List all comments by the author
             author = get_object_or_404(AuthorProfile, user__username=author_serial)
             comments = Comment.objects.filter(author=author)
-            if request.get_host() != author.local_node.url:
+            if request.get_host() != author.user.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
             # Pagination logic (~5 comments per page)
@@ -1039,7 +1142,17 @@ class CommentedView(APIView):
             # Extract necessary fields from the request data
             post_url = request.data.get("post", "")
             post_uuid = post_url.rstrip("/").split("/")[-1]
-            post = get_object_or_404(Post, uuid=post_uuid)
+
+            try:
+                # Fetch the user based on username and infer their node
+                user = User.objects.get(username=author_serial)
+                node = user.local_node
+            except User.DoesNotExist:
+                return HttpResponseForbidden("User not found.")
+            except AttributeError:
+                return HttpResponseForbidden("User does not belong to a node.")
+
+            post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
             comment_content = request.data.get("comment", "").strip()
             if not comment_content:
@@ -1148,7 +1261,7 @@ class CommentedFQIDView(APIView):
             # List all comments by the author
             author = get_object_or_404(AuthorProfile, user__username=author_serial)
             comments = Comment.objects.filter(author=author)
-            if request.get_host() != author.local_node.url:
+            if request.get_host() != author.user.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
 
             # Pagination logic (~5 comments per page)
@@ -1307,7 +1420,22 @@ class SinglePostView(APIView):
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
+        post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
         if post.visibility != "p":
             return Response(
@@ -1364,7 +1492,22 @@ class PostImageViewFQID(APIView):
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
+        post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
         # Step 2: Check if the post is public
         if post.visibility != "p":
@@ -1568,8 +1711,18 @@ class PostCommentsView(APIView):
         GET: Retrieve comments for a specific post
         """
         # Get the author and post
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
-        post = get_object_or_404(Post, uuid=post_serial, author=author)
+        post = get_object_or_404(Post, uuid=post_serial, author=author, node=node)
 
         # Filter comments associated with the post, ordered by newest to oldest
         comments = Comment.objects.filter(post=post).order_by("-created_at")
@@ -1710,8 +1863,23 @@ class PostCommentsViewFQID(APIView):
         fqid_parts = post_fqid.split("/")
         post_uuid = fqid_parts[-1]
 
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         # Retrieve the post using the UUID
-        post = get_object_or_404(Post, uuid=post_uuid)
+        post = get_object_or_404(Post, uuid=post_uuid, node=node)
 
         # Filter comments associated with the post, ordered by newest to oldest
         comments = Comment.objects.filter(post=post).order_by("-created_at")
@@ -1837,11 +2005,26 @@ class RemoteCommentView(APIView):
         fqid_parts = remote_comment_fqid.split("/")
         comment_uuid = fqid_parts[len(fqid_parts) - 1]
 
+        for i, part in enumerate(fqid_parts):
+            if part == "authors" and i + 1 < len(fqid_parts):
+                # Return the string after "authors"
+                author_serial_fqid = fqid_parts[i + 1]
+                break
+
+        try:
+            # Fetch the user based on username and infer their node
+            user = User.objects.get(username=author_serial_fqid)
+            node = user.local_node
+        except User.DoesNotExist:
+            return HttpResponseForbidden("User not found.")
+        except AttributeError:
+            return HttpResponseForbidden("User does not belong to a node.")
+
         # Retrieve the author to ensure they exist
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
 
         # Retrieve the post associated with the author
-        post = get_object_or_404(Post, uuid=post_serial, author=author)
+        post = get_object_or_404(Post, uuid=post_serial, author=author, node=node)
 
         comment = get_object_or_404(Comment, uuid=comment_uuid, post=post)
 

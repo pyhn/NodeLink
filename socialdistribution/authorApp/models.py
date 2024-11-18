@@ -20,6 +20,16 @@ class User(AbstractUser):
     display_name = models.CharField(max_length=50, null=False, blank=False)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
+    local_node = models.ForeignKey(
+        "node_link.Node", null=True, on_delete=models.CASCADE
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["local_node", "username"], name="unique_user_node_combination"
+            )
+        ]
 
     def __str__(self):
         return str(self.display_name) or str(self.username)
@@ -35,10 +45,7 @@ class AuthorProfile(models.Model):
     github = models.CharField(max_length=255, null=True, blank=True)
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
-    local_node = models.ForeignKey("node_link.Node", on_delete=models.CASCADE)
     last_github_event_id = models.CharField(max_length=50, null=True, blank=True)
-
-
 
     def __str__(self):
         return f"{self.user.username} (Author)"
