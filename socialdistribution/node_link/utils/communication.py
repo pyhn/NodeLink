@@ -1,7 +1,8 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from urllib.parse import urlparse
-from .models import Node
+from node_link.models import Node
+
 
 def extract_base_url(full_url):
     """
@@ -11,6 +12,7 @@ def extract_base_url(full_url):
     parsed_url = urlparse(full_url)
     base_url = f"{parsed_url.scheme}://{parsed_url.netloc}/"
     return base_url
+
 
 def send_to_remote_inbox(full_url, data):
     """
@@ -29,12 +31,8 @@ def send_to_remote_inbox(full_url, data):
 
     auth = HTTPBasicAuth(remote_node.username, remote_node.password)
 
-    headers = {'Content-Type': 'application/json'}
+    headers = {"Content-Type": "application/json"}
 
     response = requests.post(inbox_url, json=data, auth=auth, headers=headers)
 
-    if response.status_code in [200, 201]:
-        return True
-    else:
-        # Handle error responses
-        return False
+    return response.status_code in [200, 201]
