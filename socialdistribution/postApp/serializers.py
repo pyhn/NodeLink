@@ -134,7 +134,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         # Ensure the user is associated with the correct node
         if not user.local_node:
-            node, _ = Node.objects.get_or_create(url=host)
+            node = Node.objects.get_object_or_404(Node, url=host)
             user.local_node = node
             user.save()
 
