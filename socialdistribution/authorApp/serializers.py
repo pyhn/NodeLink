@@ -150,7 +150,7 @@ class AuthorToUserSerializer(serializers.Serializer):
             users.append(user)
         return users
 
-    def validate(self, data):
-        if data.get("type") != "authors":
+    def validate(self, attrs):
+        if attrs.get("type") != "authors":
             raise serializers.ValidationError("Invalid type. Expected 'authors'.")
-        return data
+        return attrs
