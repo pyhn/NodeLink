@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from authorApp.models import AuthorProfile, Follower, Friends, User
 from django.urls import reverse
+from urllib.parse import urlparse
+from django.shortcuts import get_object_or_404
+from node_link.models import Node
 
 # Serializer for User data
 class UserSerializer(serializers.ModelSerializer):
@@ -113,3 +116,41 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["user1", "user2"]
+
+
+class AuthorToUserSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    authors = serializers.ListField()
+
+    def create(self, validated_data):
+        users = []
+        for author_data in validated_data["authors"]:
+            # Extract fields
+            id_url = author_data.get("id")
+            host = author_data.get("host")
+            display_name = author_data.get("displayName")
+            github = author_data.get("github")
+            profile_image = author_data.get("profileImage")
+
+            # Generate unique username (domain + last part of the ID)
+            domain = urlparse(host).netloc
+            author_id_last_part = id_url.rstrip("/").split("/")[-1]
+            username = f"{domain}__{author_id_last_part}"
+            node = get_object_or_404(Node, url=host)
+            # Create or update user
+            user, _ = User.objects.update_or_create(
+                username=username,
+                defaults={
+                    "display_name": display_name,
+                    "github_user": github,
+                    "profileImage": profile_image,
+                    "local_node": node,
+                },
+            )
+            users.append(user)
+        return users
+
+    def validate(self, attrs):
+        if attrs.get("type") != "authors":
+            raise serializers.ValidationError("Invalid type. Expected 'authors'.")
+        return attrs

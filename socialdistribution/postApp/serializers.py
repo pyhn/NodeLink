@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from postApp.models import Post, Comment, Like
-from authorApp.models import AuthorProfile
+from authorApp.models import AuthorProfile, User
+from node_link.models import Node
 from authorApp.serializers import AuthorProfileSerializer
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from django.shortcuts import get_object_or_404
 import uuid
+from datetime import datetime
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -85,23 +87,104 @@ class PostSerializer(serializers.ModelSerializer):
         post_id = obj.uuid
         return f"{host}/authors/{author_id}/posts/{post_id}"
 
+    def validate_author(self, value):
+        """
+        Validate or create the author field from the incoming data.
+        """
+        if not value or not isinstance(value, dict):
+            raise serializers.ValidationError("Author data is missing or malformed.")
+
+        author_id = value.get("id")
+        host = value.get("host")
+        display_name = value.get("displayName", "Unknown Author")
+        github = value.get("github", "")
+        profile_image = value.get("profileImage", "")
+
+        # Extract username from the author ID
+        try:
+            username = author_id.rstrip("/").split("/")[-1]
+            domain = urlparse(host).netloc
+            username = (
+                f"{domain}__{username}"  # Ensure unique username for remote authors
+            )
+        except Exception as e:
+            raise serializers.ValidationError(f"Invalid author ID or host: {e}")
+
+        # Check if the user exists, otherwise create it
+        user, _ = User.objects.get_or_create(
+            username=username,
+            defaults={
+                "display_name": display_name,
+                "github_user": github,
+                "profileImage": profile_image,
+            },
+        )
+
+        # Ensure the user is associated with the correct node
+        if not user.local_node:
+            node = get_object_or_404(Node, url=host)
+            user.local_node = node
+            user.save()
+
+        # Check if the author profile exists, otherwise create it
+        author, _ = AuthorProfile.objects.get_or_create(user=user)
+
+        return author
+
+    def to_internal_value(self, data):
+        """
+        Convert incoming JSON into a validated internal Python representation.
+        """
+        validated_data = super().to_internal_value(data)
+        author_data = data.get("author")
+        validated_data["author"] = self.validate_author(author_data)
+        return validated_data
+
+    def create(self, validated_data):
+        """
+        Create a Post instance with required fields.
+        """
+        # Extract author from validated data
+        author = validated_data.pop("author", None)
+        if not author:
+            raise serializers.ValidationError("Author is required to create a post.")
+
+        # Set the created_by field
+        validated_data["created_by"] = author
+        validated_data["author"] = author
+        validated_data["updated_by"] = author
+
+        # Fetch and set the Node object based on the host in the author data
+        author_data = self.initial_data.get("author", {})
+        host = author_data.get("host")
+        try:
+            node = Node.objects.get(url=host)
+            validated_data["node"] = node
+        except Node.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                f"No Node found for host: {host}"
+            ) from exc
+
+        # Create the Post instance
+        return Post.objects.create(**validated_data)
+
     def update(self, instance, validated_data):
         """
-        Handle the update operation while ignoring read-only fields.
+        Update a Post instance while handling fields from MixinApp.
         """
-        # Update fields if present in validated_data
+        # Update modifiable fields
         for field in ["title", "description", "content", "contentType", "visibility"]:
             if field in validated_data:
                 setattr(instance, field, validated_data[field])
 
-        # Save the instance
+        # Update updated_by field
+        user = self.context["request"].user.author_profile
+        instance.updated_by = user
+        instance.updated_at = datetime.now()
+
+        # Save the updated instance
         instance.save()
         return instance
-
-    def create(self, validated_data):
-
-        validated_data.pop("type")
-        return Post.objects.create(**validated_data)
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -243,10 +326,10 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_page(self, obj):
         # Return the URL to view the comment or the post in HTML format
-        request = self.context.get("request")
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_author_serial = obj.post.author.user.username
-        return urljoin(base_url, f"authors/{post_author_serial}/posts/{obj.post.uuid}")
+        host = obj.node.url.rstrip("/")
+        author_id = obj.author.user.username
+        post_id = obj.uuid
+        return f"{host}/authors/{author_id}/posts/{post_id}"
 
     def create(self, validated_data):
         # Override create to use the validated data without model changes

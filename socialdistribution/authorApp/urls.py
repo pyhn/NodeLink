@@ -31,6 +31,11 @@ urlpatterns = [
     path("unfriend/<int:friend_id>/", views.unfriend, name="unfriend"),
     path("api/", include(router.urls)),
     # Retrieve a specific comment using its FQID (local)
+    path(
+        "api/authors/<str:author_serial>/inbox/",
+        views.author_inbox_view,
+        name="author-inbox",
+    ),
     re_path(
         r"^api/authors/(?P<author_fqid>.+)/$",
         views.SingleAuthorView.as_view(),
