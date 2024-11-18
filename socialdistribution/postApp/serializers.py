@@ -151,7 +151,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         # Set the created_by field
         validated_data["created_by"] = author
-
+        validated_data["author"] = author
         # Create the Post instance
         return Post.objects.create(**validated_data)
 
