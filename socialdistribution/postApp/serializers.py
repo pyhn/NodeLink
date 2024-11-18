@@ -152,7 +152,7 @@ class PostSerializer(serializers.ModelSerializer):
         # Set the created_by field
         validated_data["created_by"] = author
         validated_data["author"] = author
-        validated_data["update_by"] = author
+        validated_data["updated_by"] = author
 
         # Fetch and set the Node object based on the host in the author data
         author_data = self.initial_data.get("author", {})
