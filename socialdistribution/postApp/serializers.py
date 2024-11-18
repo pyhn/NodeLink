@@ -8,12 +8,14 @@ import uuid
 
 
 class PostSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField()
-    type = serializers.CharField(default="post")
-    author = serializers.SerializerMethodField()
-    comments = serializers.SerializerMethodField()
-    likes = serializers.SerializerMethodField()
-    published = serializers.DateTimeField(source="created_at", format="iso-8601")
+    id = serializers.SerializerMethodField(read_only=True)
+    type = serializers.CharField(default="post", read_only=True)
+    author = serializers.SerializerMethodField(read_only=True)
+    comments = serializers.SerializerMethodField(read_only=True)
+    likes = serializers.SerializerMethodField(read_only=True)
+    published = serializers.DateTimeField(
+        source="created_at", format="iso-8601", read_only=True
+    )
 
     class Meta:
         model = Post
@@ -30,21 +32,14 @@ class PostSerializer(serializers.ModelSerializer):
             "likes",
             "published",
         ]
-        read_only_fields = fields
 
     def get_id(self, obj):
-        """
-        Constructs the full URL ID for the post.
-        """
         host = obj.node.url.rstrip("/")
         author_id = obj.author.user.username
         post_id = obj.uuid
         return f"{host}/api/authors/{author_id}/posts/{post_id}"
 
     def get_author(self, obj):
-        """
-        Returns the serialized author information.
-        """
         return {
             "type": "author",
             "id": f"{obj.author.user.local_node.url.rstrip('/')}/api/authors/{obj.author.user.username}",
@@ -56,12 +51,7 @@ class PostSerializer(serializers.ModelSerializer):
         }
 
     def get_comments(self, obj):
-        """
-        Returns the comments section for the post.
-        """
-        comments = obj.comments.all().order_by("-created_at")[
-            :5
-        ]  # Get 5 newest comments
+        comments = obj.comments.all().order_by("-created_at")[:5]
         return {
             "type": "comments",
             "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
@@ -73,10 +63,7 @@ class PostSerializer(serializers.ModelSerializer):
         }
 
     def get_likes(self, obj):
-        """
-        Returns the likes section for the post.
-        """
-        likes = obj.postliked.all().order_by("-created_at")[:5]  # Get 5 newest likes
+        likes = obj.postliked.all().order_by("-created_at")[:5]
         return {
             "type": "likes",
             "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
@@ -87,19 +74,23 @@ class PostSerializer(serializers.ModelSerializer):
             "src": LikeSerializer(likes, many=True, context=self.context).data,
         }
 
+    def update(self, instance, validated_data):
+        """
+        Handle the update operation while ignoring read-only fields.
+        """
+        # Update fields if present in validated_data
+        for field in ["title", "description", "content", "contentType", "visibility"]:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
+
+        # Save the instance
+        instance.save()
+        return instance
+
     def create(self, validated_data):
 
         validated_data.pop("type")
         return Post.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        instance.title = validated_data.get("title", instance.title)
-        instance.description = validated_data.get("description", instance.description)
-        instance.content = validated_data.get("content", instance.content)
-        instance.contentType = validated_data.get("contentType", instance.contentType)
-        instance.visibility = validated_data.get("visibility", instance.visibility)
-        instance.save()
-        return instance
 
 
 class CommentSerializer(serializers.ModelSerializer):
