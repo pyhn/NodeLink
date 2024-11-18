@@ -99,45 +99,69 @@ class PostSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def validate_author(self, author_data):
-        # Extract author information
-        author_id = author_data.get("id")
-        host = author_data.get("host")
-        display_name = author_data.get("displayName")
-        github = author_data.get("github")
-        profile_image = author_data.get("profileImage")
+    def validate_author(self, value):
+        """
+        Validate or create the author field from the incoming data.
+        """
+        if not value or not isinstance(value, dict):
+            raise serializers.ValidationError("Author data is missing or malformed.")
 
-        # Generate username
-        domain = urlparse(host).netloc
-        author_id_last_part = author_id.rstrip("/").split("/")[-1]
-        username = f"{domain}__{author_id_last_part}"
+        author_id = value.get("id")
+        host = value.get("host")
+        display_name = value.get("displayName", "Unknown Author")
+        github = value.get("github", "")
+        profile_image = value.get("profileImage", "")
 
-        # Retrieve or create the user
-        node = get_object_or_404(Node, url=host)
-        user, _ = User.objects.update_or_create(
+        # Extract username from the author ID
+        try:
+            username = author_id.rstrip("/").split("/")[-1]
+            domain = urlparse(host).netloc
+            username = (
+                f"{domain}__{username}"  # Ensure unique username for remote authors
+            )
+        except Exception as e:
+            raise serializers.ValidationError(f"Invalid author ID or host: {e}")
+
+        # Check if the user exists, otherwise create it
+        user, _ = User.objects.get_or_create(
             username=username,
             defaults={
                 "display_name": display_name,
                 "github_user": github,
                 "profileImage": profile_image,
-                "local_node": node,
             },
         )
 
-        # Retrieve or create the author profile
-        author_profile, _ = AuthorProfile.objects.get_or_create(user=user)
-        return author_profile
+        # Ensure the user is associated with the correct node
+        if not user.local_node:
+            node, _ = Node.objects.get_or_create(url=host)
+            user.local_node = node
+            user.save()
+
+        # Check if the author profile exists, otherwise create it
+        author, _ = AuthorProfile.objects.get_or_create(user=user)
+
+        return author
+
+    def to_internal_value(self, data):
+        """
+        Convert incoming JSON into a validated internal Python representation.
+        """
+        validated_data = super().to_internal_value(data)
+        author_data = data.get("author")
+        validated_data["author"] = self.validate_author(author_data)
+        return validated_data
 
     def create(self, validated_data):
-        # Pop author data from validated_data
-        author_data = validated_data.pop("author")
-        author_profile = self.validate_author(author_data)
-
-        # Add author and node to validated_data
-        validated_data["author"] = author_profile
-        validated_data["node"] = author_profile.user.local_node
-
-        # Create and return the Post object
+        """
+        Create a Post object from incoming data.
+        """
+        author = validated_data.pop("author", None)
+        if not author:
+            raise serializers.ValidationError(
+                "Author information is required to create a post."
+            )
+        validated_data["node"] = author.user.local_node
         return Post.objects.create(**validated_data)
 
 
