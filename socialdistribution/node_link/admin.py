@@ -22,6 +22,15 @@ class NodeAdminForm(forms.ModelForm):
         model = Node
         fields = ["url", "username", "password", "is_active"]
 
+    def clean_password(self):
+        """
+        Override the clean_password method to store the raw password.
+        """
+        raw_password = self.cleaned_data.get("password")
+        if raw_password:
+            self.cleaned_data["_raw_password"] = raw_password
+        return raw_password
+
     def save(self, commit=True):
         node = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
@@ -54,20 +63,38 @@ class NodeAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
 
-        try:
-            api_url = f"{obj.url.rstrip('/')}/api/authors/"
-            response = requests.get(api_url, timeout=10)
-            response.raise_for_status()  # Raise an exception for HTTP errors
+        if not change:
+            # Fetch authors after node is created
+            authors_url = obj.url.rstrip("/") + "/api/authors/"  # Ensure single '/'
+            raw_password = form.cleaned_data.get(
+                "_raw_password"
+            )  # Retrieve the raw password
 
-            data = response.json()
-            serializer = AuthorToUserSerializer(data=data)
+            if not raw_password:
+                print("Password not provided. Cannot fetch authors.")
+                return
+
+            auth = (obj.username, raw_password)
+
+            try:
+                response = requests.get(authors_url, auth=auth, timeout=10)
+                response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to fetch authors from {authors_url}: {e}")
+                return
+
+            try:
+                authors_data = response.json()
+            except ValueError as e:
+                print(f"Invalid JSON response from {authors_url}: {e}")
+                return
+
+            # Validate and save authors using the AuthorToUserSerializer
+            serializer = AuthorToUserSerializer(data=authors_data)
             if serializer.is_valid():
-                users = serializer.save()
-                print(f"Successfully added {len(users)} authors from node {obj.url}.")
-            else:
-                print(
-                    f"Failed to process authors from {obj.url}. Errors: {serializer.errors}"
-                )
 
-        except requests.exceptions.RequestException as e:
-            print(f"Error connecting to node {obj.url}. Details: {str(e)}")
+                users = serializer.save()
+                print(f"Successfully added {len(users)} authors from {obj.url}.")
+
+            else:
+                print(f"Invalid data from {authors_url}: {serializer.errors}")
