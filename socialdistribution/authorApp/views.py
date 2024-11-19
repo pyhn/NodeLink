@@ -63,6 +63,7 @@ def signup_view(request):
                 messages.error(request, "No nodes are available to assign.")
                 return redirect("authorApp:signup")
             user.local_node = first_node
+            user.user_serial = user.username
 
             user.save()
 

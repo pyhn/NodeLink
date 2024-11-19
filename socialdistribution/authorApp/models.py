@@ -46,7 +46,9 @@ class AuthorProfile(models.Model):
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     last_github_event_id = models.CharField(max_length=50, null=True, blank=True)
-    fqid = models.TextField(blank=True, editable=False)  # New field for fqid
+    fqid = models.TextField(
+        blank=True, editable=False, unique=True
+    )  # New field for fqid
 
     def save(self, *args, **kwargs):
         # Generate fqid dynamically
@@ -54,7 +56,9 @@ class AuthorProfile(models.Model):
             self.user.local_node.url
         )  # Assuming the `Node` model has a `url` field
         user_serial = self.user.user_serial  # Use the `user_serial` field
+
         self.fqid = f"{node_url}/api/authors/{user_serial}"
+
         super().save(*args, **kwargs)
 
 
