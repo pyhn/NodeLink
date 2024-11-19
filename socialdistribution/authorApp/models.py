@@ -24,7 +24,11 @@ class User(AbstractUser):
         "node_link.Node", null=True, on_delete=models.CASCADE
     )
 
-    is_remote = models.BooleanField(default=False)
+    # save the serial from response object here
+    # example: "id":"http://nodeaaaa/api/authors/111" this is a remote example
+    # save the user_serial as 111
+    # when it comes to a local user (during sign up), this user_serial would be the username
+
     user_serial = models.CharField(max_length=150, null=False, blank=False, default="")
 
     def __str__(self):

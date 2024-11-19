@@ -38,7 +38,6 @@ class Post(MixinApp):
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
 
-    is_remote = models.BooleanField(default=False)
     post_serial = models.TextField(blank=True, editable=False)
     fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
 
@@ -67,7 +66,6 @@ class Comment(MixinApp):
     )
     # contentType = models.CharField(max_length=225, default="text/markdown")#!!! POST NOTE !!!API NOTE is this necessary
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
-    is_remote = models.BooleanField(default=False)
     comment_serial = models.TextField(blank=True, editable=False)
     fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
 
@@ -112,7 +110,6 @@ class Like(MixinApp):
     )
 
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
-    is_remote = models.BooleanField(default=False)
     like_serial = models.TextField(blank=True, editable=False)
     fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
 
