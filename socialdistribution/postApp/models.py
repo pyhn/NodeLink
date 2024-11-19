@@ -37,6 +37,9 @@ class Post(MixinApp):
     contentType = models.CharField(
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
+
+    is_remote = models.BooleanField(default=False)
+    post_serial = models.TextField(blank=True, editable=False)
     fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
 
     def save(self, *args, **kwargs):
@@ -45,7 +48,7 @@ class Post(MixinApp):
         username = (
             self.author.user.username
         )  # Assuming `AuthorProfile` is linked to a User model with a username
-        self.fqid = f"{node_url}/api/authors/{username}/posts/{self.uuid}"
+        self.fqid = f"{node_url}/api/authors/{username}/posts/{self.post_serial}"
         super().save(*args, **kwargs)
 
 
@@ -64,6 +67,18 @@ class Comment(MixinApp):
     )
     # contentType = models.CharField(max_length=225, default="text/markdown")#!!! POST NOTE !!!API NOTE is this necessary
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_remote = models.BooleanField(default=False)
+    comment_serial = models.TextField(blank=True, editable=False)
+    fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
+
+    def save(self, *args, **kwargs):
+        # Generate fqid dynamically
+        node_url = self.author.user.local_node.url
+        username = (
+            self.author.user.user_serial
+        )  # Assuming `AuthorProfile` is linked to a User model with a username
+        self.fqid = f"{node_url}/api/authors/{username}/commented/{self.comment_serial}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Comment by {self.author.user.display_name} on {self.post.title}"
@@ -95,7 +110,22 @@ class Like(MixinApp):
     author = models.ForeignKey(
         "authorApp.AuthorProfile", on_delete=models.CASCADE, related_name="likesPost"
     )
+
     uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_remote = models.BooleanField(default=False)
+    like_serial = models.TextField(blank=True, editable=False)
+    fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
+
+    def save(self, *args, **kwargs):
+        # Generate fqid dynamically
+        node_url = (
+            self.author.user.local_node.url
+        )  # Assuming the `Node` model has a `url` field
+        username = (
+            self.author.user.user_serial
+        )  # Assuming `AuthorProfile` is linked to a User model with a username
+        self.fqid = f"{node_url}/api/authors/{username}/liked/{self.like_serial}"
+        super().save(*args, **kwargs)
 
     class Meta:
         constraints = [
