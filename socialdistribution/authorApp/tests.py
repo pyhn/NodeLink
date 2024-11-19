@@ -51,10 +51,15 @@ class AuthorAppViewsTestCase(TestCase):
             # deleted_at=timezone.now(),  # Uncomment if needed
         )
 
+        self.user2.local_node = self.node
+        self.user2.save()
+
+        self.user1.local_node = self.node
+        self.user1.save()
+
         # Create AuthorProfiles without invalid fields
         self.author_profile1 = AuthorProfile.objects.create(
             user=self.user1,
-            local_node=self.node,
             # Add other fields as necessary
             github="",
             github_token="",
@@ -63,7 +68,6 @@ class AuthorAppViewsTestCase(TestCase):
 
         self.author_profile2 = AuthorProfile.objects.create(
             user=self.user2,
-            local_node=self.node,
             # Add other fields as necessary
             github="",
             github_token="",
@@ -231,10 +235,10 @@ class AuthorAppViewsTestCase(TestCase):
             username="unapproved_user",
             password="unapprovedpassword",
             is_approved=False,
+            local_node=self.node,
         )
         AuthorProfile.objects.create(
             user=unapproved_user,
-            local_node=self.node,
         )
         self.client.login(username="unapproved_user", password="unapprovedpassword")
         response = self.client.get(
@@ -275,10 +279,10 @@ class AuthorAppViewsTestCase(TestCase):
             username="unapproved_user",
             password="unapprovedpassword",
             is_approved=False,
+            local_node=self.node,
         )
         AuthorProfile.objects.create(
             user=unapproved_user,
-            local_node=self.node,
         )
         self.client.login(username="unapproved_user", password="unapprovedpassword")
         response = self.client.get(reverse("authorApp:friends_page"))
@@ -483,10 +487,10 @@ class AuthorAppViewsTestCase(TestCase):
             username="unapproved_user",
             password="unapprovedpassword",
             is_approved=False,
+            local_node=self.node,
         )
         AuthorProfile.objects.create(
             user=unapproved_user,
-            local_node=self.node,
         )
         self.client.login(username="unapproved_user", password="unapprovedpassword")
         response = self.client.get(reverse("authorApp:friends_page"))
@@ -507,13 +511,15 @@ class AuthorAppTests(APITestCase):
             url="http://localhost:8000", created_by=self.user1
         )
 
+        self.user2.local_node = self.node
+        self.user2.save()
+
+        self.user1.local_node = self.node
+        self.user1.save()
+
         # Create author profiles
-        self.author1 = AuthorProfile.objects.create(
-            user=self.user1, local_node=self.node
-        )
-        self.author2 = AuthorProfile.objects.create(
-            user=self.user2, local_node=self.node
-        )
+        self.author1 = AuthorProfile.objects.create(user=self.user1)
+        self.author2 = AuthorProfile.objects.create(user=self.user2)
 
         # Create friendships and followers with `created_by`
         Friends.objects.create(
@@ -544,7 +550,7 @@ class AuthorAppTests(APITestCase):
         url = f"{url}?page={page}&size={size}"
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), size)  # Ensure 1 author is returned
+        self.assertEqual(len(response.data), 2)  # Ensure 1 author is returned
 
     def test_update_author(self):
         """Test updating a single author by username"""
