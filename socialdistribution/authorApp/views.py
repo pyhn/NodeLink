@@ -923,6 +923,10 @@ def author_inbox_view(request, author_serial):
     # retrieve the author
     print("Incoming data:", request.data)
 
+    # get the nodes that we have locally
+    # check the request for the id of the node and check if it is active
+    # if not active return resposne to them saying they don't have access
+
     try:
         author = AuthorProfile.objects.get(user__username=author_serial)
     except AuthorProfile.DoesNotExist:
