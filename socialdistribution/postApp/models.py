@@ -37,13 +37,16 @@ class Post(MixinApp):
     contentType = models.CharField(
         max_length=10, choices=type_choices, default="p", blank=False, null=False
     )
+    fqid = models.TextField(blank=True, editable=False)  # Field for the unique fqid
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["uuid", "node"], name="unique_uuid_node_combination"
-            )
-        ]
+    def save(self, *args, **kwargs):
+        # Generate fqid dynamically
+        node_url = self.node.url  # Assuming the `Node` model has a `url` field
+        username = (
+            self.author.user.username
+        )  # Assuming `AuthorProfile` is linked to a User model with a username
+        self.fqid = f"{node_url}/api/authors/{username}/posts/{self.uuid}"
+        super().save(*args, **kwargs)
 
 
 class Comment(MixinApp):
