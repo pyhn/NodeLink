@@ -136,7 +136,9 @@ class AuthorToUserSerializer(serializers.Serializer):
             domain = urlparse(host).netloc
             author_id_last_part = id_url.rstrip("/").split("/")[-1]
             username = f"{domain}__{author_id_last_part}"
+
             node = get_object_or_404(Node, url=host)
+
             # Create or update user
             user, _ = User.objects.update_or_create(
                 username=username,
@@ -145,6 +147,7 @@ class AuthorToUserSerializer(serializers.Serializer):
                     "github_user": github,
                     "profileImage": profile_image,
                     "local_node": node,
+                    "user_serial": author_id_last_part,
                 },
             )
             users.append(user)

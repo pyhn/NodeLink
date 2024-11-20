@@ -24,12 +24,12 @@ class User(AbstractUser):
         "node_link.Node", null=True, on_delete=models.CASCADE
     )
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["local_node", "username"], name="unique_user_node_combination"
-            )
-        ]
+    # save the serial from response object here
+    # example: "id":"http://nodeaaaa/api/authors/111" this is a remote example
+    # save the user_serial as 111
+    # when it comes to a local user (during sign up), this user_serial would be the username
+
+    user_serial = models.CharField(max_length=150, null=False, blank=False, default="")
 
     def __str__(self):
         return str(self.display_name) or str(self.username)
@@ -46,9 +46,20 @@ class AuthorProfile(models.Model):
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     last_github_event_id = models.CharField(max_length=50, null=True, blank=True)
+    fqid = models.TextField(
+        blank=True, editable=False, unique=True
+    )  # New field for fqid
 
-    def __str__(self):
-        return f"{self.user.username} (Author)"
+    def save(self, *args, **kwargs):
+        # Generate fqid dynamically
+        node_url = (
+            self.user.local_node.url
+        )  # Assuming the `Node` model has a `url` field
+        user_serial = self.user.user_serial  # Use the `user_serial` field
+
+        self.fqid = f"{node_url}/api/authors/{user_serial}"
+
+        super().save(*args, **kwargs)
 
 
 class Friends(MixinApp):

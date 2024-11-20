@@ -25,6 +25,8 @@ class Node(models.Model):
         related_name="deleted_nodes",
     )
 
+    is_remote = models.BooleanField(default=False)
+
     def set_password(self, raw_password):
         self.password = make_password(raw_password)
         self.save(update_fields=["password"])

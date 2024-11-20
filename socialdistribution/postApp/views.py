@@ -97,6 +97,9 @@ def submit_post(request, username):
             updated_by=author,
         )
 
+        post.post_serial = post.uuid
+        post.save()
+
         post_json = PostSerializer(post, context={"request": request}).data
 
         send_post_to_remote_inboxes(post_json)
@@ -161,7 +164,7 @@ def create_comment(request, username, post_uuid):
         author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
         # Create the comment
-        Comment.objects.create(
+        comment = Comment.objects.create(
             content=content,
             visibility="p",
             post=post,
@@ -170,6 +173,9 @@ def create_comment(request, username, post_uuid):
             updated_by=author,
         )
         # Redirect back to the post detail page
+
+        comment.comment_serial = comment.uuid
+        comment.save()
 
         return render(request, "create_comment_card.html", {"success": True})
 
@@ -183,12 +189,15 @@ def like_post(request, username, post_uuid):
 
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
 
-    Like.objects.create(
+    like = Like.objects.create(
         post=post,
         author=author,  # Include the author field
         created_by=author,
         updated_by=author,
     )
+
+    like.like_serial = like.uuid
+    like.save()
 
     return redirect("postApp:post_detail", username, post_uuid)
 
