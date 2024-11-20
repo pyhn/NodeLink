@@ -37,7 +37,7 @@ def fetch_remote_authors():
             print(f"Invalid JSON resonse from {authors_url}: {e}")
             return
         # use the sereializer to save the authors data
-        serializer = AuthorToUserSerializer(data=authors_data, many=True)
+        serializer = AuthorToUserSerializer(data=authors_data)
         # check if the data is valid
         if serializer.is_valid():
             # save the authors data
