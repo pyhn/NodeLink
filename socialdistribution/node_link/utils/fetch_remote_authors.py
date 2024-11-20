@@ -10,6 +10,11 @@ def fetch_remote_authors():
     # get all ACTIVE and REMOTE nodes
     remote_nodes = Node.objects.filter(is_remote=True, is_active=True)
 
+    # check if there are no remote nodes
+    if not remote_nodes:
+        print("No remote nodes found.")
+        return
+
     print("fetching...")
     # loop through each one and fetch the authors
     for node in remote_nodes:
