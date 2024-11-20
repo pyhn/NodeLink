@@ -24,6 +24,7 @@ def fetch_remote_authors():
             response.raise_for_status()
             # get the authors data from the response
             authors_data = response.json()
+            print(authors_data)
             # use the sereializer to save the authors data
             serializer = AuthorToUserSerializer(data=authors_data, many=True)
             # check if the data is valid
