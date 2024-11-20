@@ -35,6 +35,7 @@ class NodeAdminForm(forms.ModelForm):
         node = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
         if raw_password:
+            node.raw_password = raw_password
             node.password = make_password(raw_password)
         else:
             if node.pk:
