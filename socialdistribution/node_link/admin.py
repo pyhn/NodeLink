@@ -34,14 +34,6 @@ class NodeAdminForm(forms.ModelForm):
     def save(self, commit=True):
         node = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
-
-        # get the current site's URL from the request (this is basically our local node)
-        current_site_url = self.request.scheme + "://" + self.request.get_host()
-        print(current_site_url)
-        # if the node we are adding is not the same as the current local node, set node.is_remote = true
-        if node.url.rstrip("/") != current_site_url.rstrip("/"):
-            node.is_remote = True
-
         if raw_password:
             node.password = make_password(raw_password)
         else:
@@ -60,63 +52,61 @@ class NodeAdmin(admin.ModelAdmin):
         "url",
         "username",
         "is_active",
+        "is_remote",
         "created_by",
         "created_at",
         "updated_at",
     )
-    readonly_fields = ("created_by", "created_at", "updated_at")
+    readonly_fields = ("is_remote", "created_by", "created_at", "updated_at")
 
     def save_model(self, request, obj, form, change):
         if not obj.pk:
             obj.created_by = request.user
+
+        # get the current local url
+        current_site_url = request.scheme + "://" + request.get_host()
+        print(current_site_url)
+
+        # set "is_remote" attribute based on URL comparison
+        if obj.url.rstrip("/") != current_site_url.rstrip("/"):
+            obj.is_remote = True
+        else:
+            # by default it is false since it is local
+            obj.is_remote = False
+
+        # save the object
         super().save_model(request, obj, form, change)
 
-        if not change:
-            # get the current site's URL from the request (this is basically our local node)
-            current_site_url = request.scheme + "://" + request.get_host()
-            print(current_site_url)
+        # fetch remote authors if it is a new remote node
+        if obj.is_remote and not change:
+            # Fetch authors after remote node is created
+            authors_url = obj.url.rstrip("/") + "/api/authors/"  # Ensure single '/'
+            raw_password = form.cleaned_data.get(
+                "_raw_password"
+            )  # Retrieve the raw password
+            if not raw_password:
+                print("Password not provided. Cannot fetch authors.")
+                return
 
-            # only when the url of the object != current_site_url (local url) will we fetch authors
-            # otherwise, when we add our local node, it will fetch to itself which will be empty since
-            # no authors can be made when there is no node. This will take uncessary HTTP
-            if obj.url.rstrip("/") != current_site_url.rstrip("/"):
-                # Fetch authors after remote node is created
-                authors_url = obj.url.rstrip("/") + "/api/authors/"  # Ensure single '/'
-                raw_password = form.cleaned_data.get(
-                    "_raw_password"
-                )  # Retrieve the raw password
-                if not raw_password:
-                    print("Password not provided. Cannot fetch authors.")
-                    return
+            auth = (obj.username, raw_password)
 
-                auth = (obj.username, raw_password)
+            try:
+                response = requests.get(authors_url, auth=auth, timeout=10)
+                response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+                authors_data = response.json()
+            except requests.exceptions.RequestException as e:
+                print(f"Failed to fetch authors from {authors_url}: {e}")
+                return
+            except ValueError as e:
+                print(f"Invalid JSON response from {authors_url}: {e}")
+                return
 
-                try:
-                    response = requests.get(authors_url, auth=auth, timeout=10)
-                    response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
-                    authors_data = response.json()
-                except requests.exceptions.RequestException as e:
-                    print(f"Failed to fetch authors from {authors_url}: {e}")
-                    return
-                except ValueError as e:
-                    print(f"Invalid JSON response from {authors_url}: {e}")
-                    return
+            # Validate and save authors using the AuthorToUserSerializer
+            serializer = AuthorToUserSerializer(data=authors_data)
+            if serializer.is_valid():
 
-                # Validate and save authors using the AuthorToUserSerializer
-                serializer = AuthorToUserSerializer(data=authors_data)
-                if serializer.is_valid():
+                users = serializer.save()
+                print(f"Successfully added {len(users)} authors from {obj.url}.")
 
-                    users = serializer.save()
-                    print(f"Successfully added {len(users)} authors from {obj.url}.")
-
-                else:
-                    print(f"Invalid data from {authors_url}: {serializer.errors}")
             else:
-                # skip fetching authors for local node
-                print("Local node detected. Skipping author fetch.")
-
-                # print password (just curious)
-                raw_password = form.cleaned_data.get(
-                    "password"
-                )  # Retrieve the local raw password
-                print(f"Local node's password{raw_password}")
+                print(f"Invalid data from {authors_url}: {serializer.errors}")
