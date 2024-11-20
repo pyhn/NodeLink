@@ -34,6 +34,14 @@ class NodeAdminForm(forms.ModelForm):
     def save(self, commit=True):
         node = super().save(commit=False)
         raw_password = self.cleaned_data.get("password")
+
+        # get the current site's URL from the request (this is basically our local node)
+        current_site_url = self.request.scheme + "://" + self.request.get_host()
+        print(current_site_url)
+        # if the node we are adding is not the same as the current local node, set node.is_remote = true
+        if node.url.rstrip("/") != current_site_url.rstrip("/"):
+            node.is_remote = True
+
         if raw_password:
             node.password = make_password(raw_password)
         else:
