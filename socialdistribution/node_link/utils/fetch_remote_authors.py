@@ -37,6 +37,7 @@ def fetch_remote_authors():
             print(f"Invalid JSON resonse from {authors_url}: {e}")
             return
         # use the sereializer to save the authors data
+        # do this SET A CONDITIONAL THAT CHECKS the node exists in the db and is active
         serializer = AuthorToUserSerializer(data=authors_data)
         # check if the data is valid
         if serializer.is_valid():

@@ -920,7 +920,7 @@ def author_inbox_view(request, author_serial):
 
     Supported types: "post", "like", "comment", "follow"
     """
-
+    # do this check if the request info contains a node that is active. if not, then send an access denied JSON
     # before serializing the data, we fetch to ensure that we have an upadted database of authors
     fetch_remote_authors()
     # retrieve the author
