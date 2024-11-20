@@ -11,4 +11,4 @@ class Command(BaseCommand):
         """
         # call the function that actually runs the fetch (socialdistribution/node_link/utils/fetch_remote_authors.py)
         fetch_remote_authors()
-        self.stdout.write("Successfully fetched authors from remote nodes.")
+        self.stdout.write("Finished calling fetched_remote_authors.")

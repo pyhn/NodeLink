@@ -39,7 +39,9 @@ class NodeAdminForm(forms.ModelForm):
         else:
             if node.pk:
                 # Keep the existing password if not changed
-                node.password = Node.objects.get(pk=node.pk).password
+                existing_node = Node.objects.get(pk=node.pk)
+                node.password = existing_node.password
+                node.raw_password = existing_node.raw_password
         if commit:
             node.save()
         return node

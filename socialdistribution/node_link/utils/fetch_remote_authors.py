@@ -20,8 +20,8 @@ def fetch_remote_authors():
     for node in remote_nodes:
         # append authors api endpoint to the node's url
         authors_url = node.url.rstrip("/") + "/api/authors/"
-        # auth that will be used to access the endpoint
-        auth = (node.username, node.password)
+        # Basic Authentication requires the raw password to authenticate with the remote server.
+        auth = (node.username, node.raw_password)
         try:
             # now, try to send a request.get to the endpoint
             response = requests.get(authors_url, auth=auth, timeout=10)
@@ -30,14 +30,18 @@ def fetch_remote_authors():
             # get the authors data from the response
             authors_data = response.json()
             print(authors_data)
-            # use the sereializer to save the authors data
-            serializer = AuthorToUserSerializer(data=authors_data, many=True)
-            # check if the data is valid
-            if serializer.is_valid():
-                # save the authors data
-                serializer.save()
-                print(f"Fetched authors from {node.url}")
-            else:
-                print(f"Invalid data from {node.url}: {serializer.errors}")
         except requests.RequestException as e:
-            print(f"Error fethcing authors from {node.url}: {e}")
+            print(f"Error fethcing authors from {authors_url}: {e}")
+            return
+        except ValueError as e:
+            print(f"Invalid JSON resonse from {authors_url}: {e}")
+            return
+        # use the sereializer to save the authors data
+        serializer = AuthorToUserSerializer(data=authors_data, many=True)
+        # check if the data is valid
+        if serializer.is_valid():
+            # save the authors data
+            serializer.save()
+            print(f"Fetched authors from {node.url}")
+        else:
+            print(f"Invalid data from {node.url}: {serializer.errors}")
