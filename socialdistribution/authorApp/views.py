@@ -34,6 +34,7 @@ from .models import Friends, Follower, AuthorProfile
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from node_link.models import Node, Notification
 from node_link.utils.common import CustomPaginator, has_access, is_approved
+from node_link.utils.fetch_remote_authors import fetch_remote_authors
 from postApp.models import Post
 from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
 from postApp.utils.fetch_github_activity import fetch_github_events
@@ -41,8 +42,6 @@ from authorApp.models import AuthorProfile, Friends, Follower
 from authorApp.serializers import FollowerSerializer
 
 
-# Create your views here.
-# sign up
 def signup_view(request):
     if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home", username=request.user.username)
@@ -921,6 +920,9 @@ def author_inbox_view(request, author_serial):
 
     Supported types: "post", "like", "comment", "follow"
     """
+
+    # before serializing the data, we fetch to ensure that we have an upadted database of authors
+    fetch_remote_authors()
     # retrieve the author
     print("Incoming data:", request.data)
 
