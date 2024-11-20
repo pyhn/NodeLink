@@ -18,6 +18,7 @@ urlpatterns = [
     path("edit-profile/", views.edit_profile, name="edit_profile"),
     path("friends/", views.friends_page, name="friends_page"),
     path("follow/<int:author_id>/", views.follow_author, name="follow_author"),
+    path("users/", views.explore_users, name="user_list"),
     path(
         "accept_request/<int:request_id>/",
         views.accept_follow_request,

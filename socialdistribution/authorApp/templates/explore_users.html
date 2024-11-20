@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Friends - SocialDistribution{% endblock %}
+
+{% block content %}
+<ul class="nav nav-pills">
+    <li class="nav-item "><a href="{% url 'authorApp:friends_page' %}">Your Friends</a></li>
+    <li class="nav-item active" ><a href="#">Explore People</a></li>
+
+</ul>
+
+<div class="container">
+    <form method="get" class="mb-3">
+        <input type="text" name="q" placeholder="Search users..." value="{{ search_query }}" />
+        <button type="submit">Search</button>
+    </form>
+    <div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    <a href="?sort=user__display_name&direction={{direction}}&q={{ search_query }}">Name</a>
+                </th>
+                <th>
+                    <a href="?sort=user__local_node&direction={{direction}}&q={{ search_query }}">Node</a>
+                </th>
+                <th>Follow</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.display_name }}</a></td>
+                <td>{{ author.user.local_node }}</td>
+                <td>
+                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Follow</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock%}

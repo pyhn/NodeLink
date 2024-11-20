@@ -432,7 +432,7 @@ def follow_author(request, author_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@login_required
+@is_approved
 def edit_profile(request):
     if request.method == "POST":
         form = EditProfileForm(request.POST, instance=request.user)
@@ -444,6 +444,49 @@ def edit_profile(request):
     else:
         form = EditProfileForm(instance=request.user)
     return render(request, "authorApp/edit_profile.html", {"form": form})
+
+
+@is_approved
+def explore_users(request):
+    query = request.GET.get("q", "")  # Search query
+    sort_by = request.GET.get("sort", "user__display_name")  # Sorting parameter
+    direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
+
+    current_author = request.user.author_profile
+
+    exclude_id = [
+        a.user2.id if a.user1 == current_author else a.user1.id
+        for a in Friends.objects.filter(
+            Q(user1=current_author) | Q(user2=current_author)
+        )
+    ] + [
+        a.object.id
+        for a in list(
+            Follower.objects.filter(actor=current_author, status__in=["a", "p"])
+        )
+    ]
+    all_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
+
+    # Filter by search query
+    if query:
+        all_authors = all_authors.filter(user__display_name__icontains=query)
+
+    # Sorting logic
+
+    if direction == "desc":
+        sort_by = f"-{sort_by}"
+        direction = "asc"
+    else:
+        direction = "desc"
+    all_authors = all_authors.order_by(sort_by)
+
+    context = {
+        "authors": all_authors,
+        "search_query": query,
+        "sort_by": sort_by.lstrip("-"),
+        "direction": direction,
+    }
+    return render(request, "explore_users.html", context)
 
 
 # ViewSet for AuthorProfile API

@@ -3,8 +3,16 @@
 {% block title %}Friends - SocialDistribution{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Explore Authors</h1>
 
+<ul class="nav nav-pills">
+    <li class="nav-item active"><a href="#">Your Friends</a></li>
+    <li class="nav-item" ><a href="{% url 'authorApp:user_list' %}">Explore People</a></li>
+
+</ul>
+
+
+
+</div>
 <!-- All Three Tables Side by Side -->
 <div class="row">
 
