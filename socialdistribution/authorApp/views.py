@@ -807,16 +807,12 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
     def manage_follower(self, request, pk=None, follower_fqid=None):
         # Decode the foreign author FQID
         follower_fqid = unquote(follower_fqid)
-        fqid_parts = follower_fqid.split("/")
-        foreign_username = fqid_parts[len(fqid_parts) - 1]
         # Fetch the local author
         local_author = get_object_or_404(AuthorProfile, user__username=pk)
-
+        print(f"follower fqid {follower_fqid}")
         # Check if the follower is already in the follower list
         try:
-            foreign_author = get_object_or_404(
-                AuthorProfile, user__username=foreign_username
-            )
+            foreign_author = get_object_or_404(AuthorProfile, fqid=follower_fqid)
             follower_relationship = Follower.objects.get(
                 actor=foreign_author, object=local_author
             )
@@ -904,10 +900,8 @@ class SingleAuthorView(APIView):
         GET: Retrieve a single author using its FQID.
         """
         author_fqid = unquote(author_fqid)
-        fqid_parts = author_fqid.split("/")
-        author_username = fqid_parts[len(fqid_parts) - 1]
 
-        author = get_object_or_404(AuthorProfile, user__username=author_username)
+        author = get_object_or_404(AuthorProfile, fqid=author_fqid)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

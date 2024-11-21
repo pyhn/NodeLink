@@ -9,7 +9,7 @@ router = DefaultRouter()
 
 # Define urlpatterns for both API and regular views
 urlpatterns = [
-    # Regular view paths
+    # Simple identifier-based paths
     path("<str:username>/create_post/", views.create_post, name="create_post"),
     path("<str:username>/submit_post/", views.submit_post, name="submit_post"),
     path(
@@ -41,7 +41,7 @@ urlpatterns = [
         views.submit_edit_post,
         name="submit_edit_post",
     ),
-    # paths for sharing render and handle
+    # Sharing endpoints
     path(
         "share/<str:author_serial>/<uuid:post_uuid>/form/",
         views.render_share_form,
@@ -52,6 +52,7 @@ urlpatterns = [
         views.handle_share_post,
         name="handle_share_post",
     ),
+    # Author and post-specific API endpoints (simple paths)
     path(
         "api/authors/<str:author_serial>/posts/",
         views.PostViewSet.as_view({"get": "list", "post": "create"}),
@@ -74,8 +75,6 @@ urlpatterns = [
         ),
         name="author-post-detail",
     ),
-    # Include router URLs for other ViewSets if needed
-    path("api/", include(router.urls)),
     # Image endpoints
     path(
         "api/authors/<str:author_serial>/posts/<uuid:post_uuid>/image/",
@@ -87,86 +86,65 @@ urlpatterns = [
         views.PostLikesAPIView.as_view(),
         name="post-likes",
     ),
-    # List all comments by author or add a comment to a post
     path(
         "api/authors/<str:author_serial>/commented/",
         views.CommentedView.as_view(),
         name="author-commented",
     ),
-    # Retrieve a specific comment made by an author (local/remote)
     path(
         "api/authors/<str:author_serial>/commented/<uuid:comment_serial>/",
         views.CommentedView.as_view(),
         name="author-comment-detail",
     ),
+    # FQID-based endpoints (specific regex)
     re_path(
-        r"^api/authors/(?P<author_fqid>.+)/commented/$",
+        r"^api/authors/(?P<author_fqid>https?://[^/]+/.+)/commented/$",
         views.CommentedFQIDView.as_view(),
         name="author-commented-fqid",
     ),
     re_path(
-        r"^api/authors/(?P<author_fqid>.+)/liked/$",
+        r"^api/authors/(?P<author_fqid>https?://[^/]+/.+)/liked/$",
         views.ThingsLikedByAuthorFQIDView.as_view(),
         name="things-liked-by-author-fqid",
     ),
     re_path(
-        r"^api/liked/(?P<like_fqid>.+)/$",
+        r"^api/liked/(?P<like_fqid>https?://[^/]+/.+)/$",
         views.SingleLikeFQIDView.as_view(),
         name="single-like-fqid",
     ),
     re_path(
-        r"^api/authors/(?P<author_serial>[^/]+)/posts/(?P<post_serial>[^/]+)/comments/(?P<comment_fqid>.+)/likes/$",
+        r"^api/authors/(?P<author_serial>[^/]+)/posts/(?P<post_serial>[^/]+)/comments/(?P<comment_fqid>https?://[^/]+/.+)/likes/$",
         views.CommentLikesView.as_view(),
         name="comment-likes",
     ),
     re_path(
-        r"^api/posts/(?P<post_fqid>.+)/likes/$",
+        r"^api/posts/(?P<post_fqid>https?://[^/]+/.+)/likes/$",
         views.PostLikesFQIDAPIView.as_view(),
         name="post-likes-fqid",
     ),
-    # Retrieve a specific comment using its FQID (local)
     re_path(
-        r"^api/commented/(?P<comment_fqid>.+)/$",
+        r"^api/commented/(?P<comment_fqid>https?://[^/]+/.+)/$",
         views.SingleCommentedView.as_view(),
         name="comment-detail",
     ),
-    # Comments endpoint for a specific post
     re_path(
-        r"^api/posts/(?P<post_fqid>.+)/comments/$",
+        r"^api/posts/(?P<post_fqid>https?://[^/]+/.+)/comments/$",
         views.PostCommentsViewFQID.as_view(),
         name="post-comments-fqid",
     ),
-    # Retrieve a specific comment using its FQID (local)
     re_path(
-        r"^api/authors/(?P<author_serial>[^/]+)/post/(?P<post_serial>[^/]+)/comment/(?P<remote_comment_fqid>.+)/$",
+        r"^api/authors/(?P<author_serial>[^/]+)/post/(?P<post_serial>[^/]+)/comment/(?P<remote_comment_fqid>https?://[^/]+/.+)/$",
         views.RemoteCommentView.as_view(),
         name="remote-comment-detail",
     ),
     re_path(
-        r"^api/posts/(?P<post_fqid>.+)/image/$",
+        r"^api/posts/(?P<post_fqid>https?://[^/]+/.+)/image/$",
         views.PostImageViewFQID.as_view(),
         name="post-detail-image",
     ),
-    # retrieve specific post using its FQID
     re_path(
-        r"^api/posts/(?P<post_fqid>.+)/$",
+        r"^api/posts/(?P<post_fqid>https?://[^/]+/.+)/$",
         views.SinglePostView.as_view(),
         name="post-detail",
     ),
-    path(
-        "api/authors/<str:author_serial>/posts/<str:post_serial>/comments/",
-        views.PostCommentsView.as_view(),
-        name="post-comments",
-    ),
-    path(
-        "api/authors/<str:author_serial>/liked/",
-        views.ThingsLikedByAuthorView.as_view(),
-        name="author-liked",
-    ),
-    path(
-        "api/authors/<str:author_serial>/liked/<str:like_serial>/",
-        views.SingleLikeView.as_view(),
-        name="single-like",
-    ),
 ]
-#
