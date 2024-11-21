@@ -63,11 +63,14 @@ class NodeBasicAuthentication(BaseAuthentication):
         # Authenticate the node
         try:
             node = Node.objects.get(username=username, is_active=True)
-            if not node.check_password(password):
-                raise AuthenticationFailed("Invalid username or password.")
         except Node.DoesNotExist as exc:
             # Explicitly re-raise with context
             raise AuthenticationFailed("Node not found or inactive.") from exc
+        if not node.check_password(password):
+            raise AuthenticationFailed("Invalid username or password :P.")
+
+        if not node.is_active:
+            raise AuthenticationFailed("This node has been inactivated temporarily")
 
         # Return the authenticated node and None as the auth (no token here)
         return (node, None)

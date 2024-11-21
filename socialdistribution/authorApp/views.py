@@ -14,6 +14,7 @@ from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 # Rest Framework Imports
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
+from node_link.auth_backends import NodeBasicAuthentication
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -913,7 +914,7 @@ class SingleAuthorView(APIView):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
+@authentication_classes([NodeBasicAuthentication])
 def author_inbox_view(request, author_serial):
     """
     Handles incoming activities directed to a specific author's inbox
