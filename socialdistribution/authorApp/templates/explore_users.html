@@ -3,17 +3,20 @@
 {% block title %}Friends - SocialDistribution{% endblock %}
 
 {% block content %}
-<ul class="nav nav-pills">
-    <li class="nav-item "><a href="{% url 'authorApp:friends_page' %}">Your Friends</a></li>
-    <li class="nav-item active" ><a href="#">Explore People</a></li>
+<div class=" navbar" >
+
+<ul class="nav nav-pills  mr-auto">
+    <li class="nav-item pill "> <a class="nav-link"  href="{% url 'authorApp:friends_page' %}">Your Friends</a></li>
+    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Explore People</a></li>
 
 </ul>
-
-<div class="container">
-    <form method="get" class="mb-3">
-        <input type="text" name="q" placeholder="Search users..." value="{{ search_query }}" />
-        <button type="submit">Search</button>
+ <form method="get" class="form-inline my-2 my-lg-0" >
+        <input class="form-control mr-sm-2"  type="text" name="q" placeholder="Search users..." value="{{ search_query }}" />
+        <button class="btn btn-outline-success my-2 my-sm-0"  type="submit">Search</button>
     </form>
+</div>
+<div class="container">
+
     <div class="table-responsive">
     <table class="table">
         <thead>
@@ -31,7 +34,7 @@
         <tbody>
             {% for author in authors %}
             <tr>
-                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.display_name }}</a></td>
+                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.user_serial }}</a></td>
                 <td>{{ author.user.local_node }}</td>
                 <td>
                     <form action="{% url 'authorApp:follow_author' author.id %}" method="post">

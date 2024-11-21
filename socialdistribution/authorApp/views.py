@@ -461,7 +461,7 @@ def edit_profile(request):
 @is_approved
 def explore_users(request):
     query = request.GET.get("q", "")  # Search query
-    sort_by = request.GET.get("sort", "user__display_name")  # Sorting parameter
+    sort_by = request.GET.get("sort", "user__user_serial")  # Sorting parameter
     direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
 
     current_author = request.user.author_profile
@@ -481,7 +481,7 @@ def explore_users(request):
 
     # Filter by search query
     if query:
-        all_authors = all_authors.filter(user__display_name__icontains=query)
+        all_authors = all_authors.filter(user__user_serial__icontains=query)
 
     # Sorting logic
 
@@ -870,7 +870,7 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
         # Check if the follower is already in the follower list
         try:
             foreign_author = get_object_or_404(
-                AuthorProfile, user__username=foreign_username
+                AuthorProfile, user__username=f"{fqid_parts[2]}__{foreign_username}"
             )
             follower_relationship = Follower.objects.get(
                 actor=foreign_author, object=local_author
