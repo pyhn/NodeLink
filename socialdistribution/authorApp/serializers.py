@@ -29,7 +29,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
     host = serializers.CharField(required=False)
     type = serializers.CharField(default="author", required=False)
     displayName = serializers.CharField(required=False)
-    github = serializers.CharField(required=False, allow_blank=True)
+    github = serializers.CharField(allow_null=True, required=False)
     profileImage = serializers.CharField(required=False)
     page = serializers.CharField(required=False)
 
@@ -81,7 +81,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         id_url = validated_data.get("id")
         host = validated_data.get("host")
         display_name = validated_data.get("displayName")
-        github = validated_data.get("github", "")
+        github = validated_data.get("github")
         profile_image = validated_data.get("profileImage", "")
         # page = validated_data.get("page", "")
 
@@ -114,7 +114,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
             username=username,
             defaults={
                 "display_name": display_name,
-                "github": github,
+                "github_user": github,
                 "profileImage": profile_image,
                 "local_node": node,
                 "user_serial": serial,
