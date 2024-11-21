@@ -7,6 +7,7 @@ from urllib.parse import urljoin, urlparse
 from django.shortcuts import get_object_or_404
 import uuid
 from datetime import datetime
+from node_link.utils.common import remove_api_suffix
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -19,6 +20,8 @@ class PostSerializer(serializers.ModelSerializer):
     published = serializers.DateTimeField(
         source="created_at", format="iso-8601", read_only=True
     )
+    visibility = serializers.SerializerMethodField()
+    contentType = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -38,28 +41,33 @@ class PostSerializer(serializers.ModelSerializer):
         ]
 
     def get_id(self, obj):
-        host = obj.node.url.rstrip("/")
-        author_id = obj.author.user.username
-        post_id = obj.uuid
-        return f"{host}/api/authors/{author_id}/posts/{post_id}"
+        return obj.fqid
+
+    def get_visibility(self, obj):
+        return obj.get_visibility_display()
+
+    def get_contentType(self, obj):
+        return obj.get_contentType_display()
 
     def get_author(self, obj):
         return {
             "type": "author",
-            "id": f"{obj.author.user.local_node.url.rstrip('/')}/api/authors/{obj.author.user.username}",
+            "id": f"{obj.author.user.local_node.url.rstrip('/')}/authors/{obj.author.user.user_serial}",
             "host": obj.author.user.local_node.url.rstrip("/") + "/",
             "displayName": obj.author.user.display_name,
             "github": obj.author.github,
+            "page": f"{obj.author.user.local_node.url.rstrip('/')}/{obj.author.user.username}/profile",
             "profileImage": obj.author.user.profileImage.url,
-            "page": f"{obj.author.user.local_node.url.rstrip('/')}/authors/{obj.author.user.username}",
         }
 
     def get_comments(self, obj):
         comments = obj.comments.all().order_by("-created_at")[:5]
+        host = obj.node.url
+        host_no_api = remove_api_suffix(host)
         return {
             "type": "comments",
-            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
-            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/comments",
+            "page": f"{host_no_api}/authors/{obj.author.user.username}/post_list/{obj.uuid}",
+            "id": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.user_serial}/posts/{obj.post_serial}/comments",
             "page_number": 1,
             "size": 5,
             "count": obj.comments.count(),
@@ -68,10 +76,12 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_likes(self, obj):
         likes = obj.postliked.all().order_by("-created_at")[:5]
+        host = obj.node.url
+        host_no_api = remove_api_suffix(host)
         return {
             "type": "likes",
-            "page": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.username}/posts/{obj.uuid}",
-            "id": f"{obj.node.url.rstrip('/')}/api/authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
+            "page": f"{host_no_api}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "id": f"{host}authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
             "page_number": 1,
             "size": 5,
             "count": obj.postliked.count(),
@@ -82,10 +92,10 @@ class PostSerializer(serializers.ModelSerializer):
         """
         Constructs the HTML URL for the post.
         """
-        host = obj.node.url.rstrip("/")
+        host = remove_api_suffix(obj.node.url)
         author_id = obj.author.user.username
         post_id = obj.uuid
-        return f"{host}/authors/{author_id}/posts/{post_id}"
+        return f"{host}/authors/{author_id}/post_list/{post_id}"
 
     def validate_author(self, value):
         """
@@ -195,18 +205,21 @@ class CommentSerializer(serializers.ModelSerializer):
     id = serializers.SerializerMethodField()
     post = serializers.SerializerMethodField()
     page = serializers.SerializerMethodField()
+    comment = serializers.CharField(source="content")
+    likes = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
         fields = [
             "type",
             "author",
-            "content",
+            "comment",
             "contentType",
             "published",
             "id",
             "post",
             "page",
+            "likes",
         ]
 
     def get_author(self, obj):
@@ -216,16 +229,13 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             # If obj is a model instance, serialize the author properly
             author_data = AuthorProfileSerializer(obj.author).data
-            request = self.context.get("request")
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-
+            host = obj.author.user.local_node.url
+            host_no_api = remove_api_suffix(host)
             author_data.update(
                 {
                     "type": "author",
-                    "page": urljoin(base_url, f"authors/{obj.author.user.username}"),
-                    "host": base_url,
+                    "page": f"{host_no_api}/{obj.author.user.username}/profile",
+                    "host": host,
                 }
             )
             return author_data
@@ -241,25 +251,22 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_id(self, obj):
         if isinstance(obj, dict):
             # Handle dict scenario
+            print(f"object {obj}")
             return obj.get("id", "")
         else:
             # Handle model instance scenario
-            request = self.context.get("request")
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-            author_serial = obj.author.user.username
-            return urljoin(
-                base_url, f"api/authors/{author_serial}/commented/{obj.uuid}"
-            )
+            return obj.fqid
 
     def get_post(self, obj):
         # Construct the full URL for the post the comment is on
-        request = self.context.get("request")
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_author_serial = obj.post.author.user.username
-        return urljoin(
-            base_url, f"api/authors/{post_author_serial}/posts/{obj.post.uuid}"
+        host = obj.author.user.local_node.url
+        return f"{host}authors/{obj.post.author.user.user_serial}/posts/{obj.post.post_serial}"
+
+    def get_page(self, obj):
+        host = obj.author.user.local_node.url
+        host_no_api = remove_api_suffix(host)
+        return (
+            f"{host_no_api}/{obj.post.author.user.username}/posts_list/{obj.post.uuid}"
         )
 
     def to_internal_value(self, data):
@@ -324,12 +331,24 @@ class CommentSerializer(serializers.ModelSerializer):
 
         return validated_data
 
-    def get_page(self, obj):
-        # Return the URL to view the comment or the post in HTML format
-        host = obj.node.url.rstrip("/")
-        author_id = obj.author.user.username
-        post_id = obj.uuid
-        return f"{host}/authors/{author_id}/posts/{post_id}"
+    def get_likes(self, obj):
+        """
+        Construct the likes field for the comment.
+        Since likes are not implemented, src is empty and count is zero.
+        """
+        comment_id = obj.fqid
+        host_no_api = remove_api_suffix(obj.post.node.url)
+        post_author = obj.post.author
+        post = obj.post
+        return {
+            "type": "likes",
+            "id": f"{comment_id}/likes",
+            "page": f"{host_no_api}/{post_author.user.username}/post_list/{post.uuid}",
+            "page_number": 1,
+            "size": 5,
+            "count": 0,
+            "src": [],  # No likes implemented, so this is empty
+        }
 
     def create(self, validated_data):
         # Override create to use the validated data without model changes
@@ -362,6 +381,7 @@ class LikeSerializer(serializers.ModelSerializer):
     published = serializers.SerializerMethodField()
     object = serializers.SerializerMethodField()
     author = serializers.SerializerMethodField()
+    id = serializers.SerializerMethodField()
 
     class Meta:
         model = Like
@@ -377,7 +397,10 @@ class LikeSerializer(serializers.ModelSerializer):
         return obj.created_at.isoformat() if hasattr(obj, "created_at") else None
 
     def get_object(self, obj):
-        return f"{obj.post.author.user.local_node.url}/authors/{obj.post.author.user.username}/posts/{obj.post.uuid}"
+        return f"{obj.post.author.user.local_node.url}authors/{obj.post.author.user.username}/posts/{obj.post.uuid}"
 
     def get_author(self, obj):
         return AuthorProfileSerializer(obj.author).data
+
+    def get_id(self, obj):
+        return obj.fqid

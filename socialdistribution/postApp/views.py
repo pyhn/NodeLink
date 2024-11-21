@@ -43,6 +43,7 @@ from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
 from authorApp.serializers import AuthorProfileSerializer
 from postApp.serializers import CommentSerializer
+from node_link.utils.common import remove_api_suffix
 
 # Package imports
 import commonmark
@@ -1031,12 +1032,10 @@ class CommentedView(APIView):
             # Total comment count
             total_count = comments.count()
 
-            # Construct response metadata
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-            author_page = urljoin(base_url, f"authors/{author.user.username}")
-            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+            host_with_api = author.user.local_node.url
+            host_no_api = remove_api_suffix(host_with_api)
+            author_page = f"{host_no_api}authors/{author.user.username}"
+            api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
             response_data = {
@@ -1276,12 +1275,10 @@ class CommentedFQIDView(APIView):
             # Total comment count
             total_count = comments.count()
 
-            # Construct response metadata
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-            author_page = urljoin(base_url, f"authors/{author.user.username}")
-            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+            host_with_api = author.user.local_node.url
+            host_no_api = remove_api_suffix(host_with_api)
+            author_page = f"{host_no_api}authors/{author.user.username}"
+            api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
             response_data = {
@@ -1699,15 +1696,10 @@ class PostCommentsView(APIView):
         # Total comment count
         total_count = comments.count()
 
-        # Construct response metadata
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_page = urljoin(
-            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
-        )
-        api_page = urljoin(
-            base_url,
-            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
-        )
+        host_with_api = author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        post_page = f"{host_no_api}/authors/{author.user.user_serial}/post_list/{post.post_serial}"
+        api_page = f"{host_with_api}authors/{author.user.user_serial}/posts/{post.post_serial}/comments"
 
         # Prepare response data
         response_data = {
@@ -2050,12 +2042,13 @@ class PostLikesAPIView(APIView):
 
         # Serialize the results
         serializer = LikeSerializer(page.object_list, many=True)
-
+        host = post.node.url
+        host_no_api = remove_api_suffix(host)
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "id": f"{host}/authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"{host_no_api}/authors/{author_serial}/posts/{post_uuid}",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
@@ -2171,12 +2164,13 @@ class PostLikesFQIDAPIView(APIView):
 
         # Serialize the results
         serializer = LikeSerializer(page.object_list, many=True)
-
+        host = post.node.url
+        host_no_api = remove_api_suffix(host)
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "id": f"{host}authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"{host_no_api}/authors/{author_serial}/posts/{post_uuid}",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
