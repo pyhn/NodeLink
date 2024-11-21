@@ -1,6 +1,6 @@
 import requests
 from node_link.models import Node
-from authorApp.serializers import AuthorToUserSerializer
+from authorApp.serializers import AuthorProfileSerializer, AuthorToUserSerializer
 
 
 def fetch_remote_authors():
@@ -30,19 +30,35 @@ def fetch_remote_authors():
             # get the authors data from the response
             authors_data = response.json()
             print(authors_data)
+            authors_list = authors_data.get("authors", [])
         except requests.RequestException as e:
             print(f"Error fethcing authors from {authors_url}: {e}")
-            return
+            continue
         except ValueError as e:
             print(f"Invalid JSON resonse from {authors_url}: {e}")
-            return
-        # use the sereializer to save the authors data
-        # do this SET A CONDITIONAL THAT CHECKS the node exists in the db and is active
-        serializer = AuthorToUserSerializer(data=authors_data)
-        # check if the data is valid
-        if serializer.is_valid():
-            # save the authors data
-            serializer.save()
-            print(f"Fetched authors from {node.url}")
-        else:
-            print(f"Invalid data from {node.url}: {serializer.errors}")
+            continue
+
+        # process each author in the list and see if the node they belong is active
+        for author_data in authors_list:
+            host = author_data.get("host")
+            if not host:
+                print(f"Author data missing 'host: {author_data}")
+                continue  # skip this author and continue with the next one
+            # see if that associated node is active
+            try:
+                Node.objects.get(url=host, is_remote=True, is_active=True)
+            except Node.DoesNotExist:
+                print(
+                    f"Associated node for author '{author_data.get('displayName')}' is not active: {host} or DNE"
+                )
+                continue  # skip this author
+
+            # use the sereializer to save the authors data
+            serializer = AuthorProfileSerializer(data=author_data)
+            if serializer.is_valid():
+                serializer.save()
+                print(
+                    f"Imported author {author_data.get('displayName')} from {node.url}"
+                )
+            else:
+                print(f"Invalid data for author from {node.url}: {serializer.errors}")
