@@ -15,6 +15,19 @@ def fetch_remote_authors():
         print("No remote nodes found.")
         return
 
+    # Log existing remote nodes
+    print("Existing Remote Nodes in Database:")
+    for node in remote_nodes:
+        print(f"- {node.url} (Active: {node.is_active})")
+
+    # Retrieve the local node's URL
+    try:
+        local_node = Node.objects.get(is_remote=False, is_active=True)
+        local_host = local_node.url.rstrip("/")
+    except Node.DoesNotExist:
+        print("Local node not found.")
+        return
+
     print("fetching...")
     # loop through each one and fetch the authors
     for node in remote_nodes:
@@ -44,6 +57,12 @@ def fetch_remote_authors():
             if not host:
                 print(f"Author data missing 'host: {author_data}")
                 continue  # skip this author and continue with the next one
+
+            # Skip authors that belong to the local node
+            if host.rstrip("/") == local_host:
+                print(f"Skipping local author '{author_data.get('displayName')}'.")
+                continue
+
             # see if that associated node is active
             try:
                 Node.objects.get(url=host, is_remote=True, is_active=True)
