@@ -106,7 +106,7 @@ class FollowerSerializer(serializers.ModelSerializer):
 
     def get_page(self, obj):
         host = remove_api_suffix(obj.actor.user.local_node.url)
-        return f"{host}/profile/{obj.actor.user.username}"
+        return f"{host}/{obj.actor.user.username}/profile"
 
 
 # Serializer for friendships
