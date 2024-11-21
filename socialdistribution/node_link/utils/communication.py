@@ -14,25 +14,30 @@ def extract_base_url(full_url):
     return base_url
 
 
-def send_to_remote_inbox(full_url, data):
+def send_to_remote_inboxes(json, author):
     """
-    Sends data to a remote author's inbox.
-    - inbox_url: The full inbox URL of the remote author (e.g., 'http://remote-node.com/api/authors/456/inbox')
-    - data: A dictionary containing the data to send (e.g., a post, comment, like, follow request)
+    Send the post JSON object to the inbox of all remote users.
+
+    Args:
+        author(AuthorProfile): Author to send to
+        json (dict): The post JSON object to send.
     """
-    remote_node_url = extract_base_url(full_url)
+    # Find all remote users (usernames containing '__')
+
+    # Extract the remote author's username
+
+    # Construct the inbox URL
+    inbox_url = f"{author.fqid}/inbox/"
+
+    # Send the POST request to the inbox
     try:
-        remote_node = Node.objects.get(url=remote_node_url, is_active=True)
-    except Node.DoesNotExist:
-        # Handle error: remote node not found or inactive
-        return False
-
-    inbox_url = f"{full_url}/inbox"  # Adjust if API structure is different
-
-    auth = HTTPBasicAuth(remote_node.username, remote_node.password)
-
-    headers = {"Content-Type": "application/json"}
-
-    response = requests.post(inbox_url, json=data, auth=auth, headers=headers)
-
-    return response.status_code in [200, 201]
+        response = requests.post(
+            inbox_url,
+            json=json,
+            auth=(author.user.local_node.username, author.user.local_node.password),
+            timeout=10,
+        )
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        print(f"Successfully sent to {inbox_url}. Response: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to send to {inbox_url}. Error: {str(e)}")

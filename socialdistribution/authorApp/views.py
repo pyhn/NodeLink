@@ -34,11 +34,14 @@ from .models import Friends, Follower, AuthorProfile
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from node_link.models import Node, Notification
 from node_link.utils.common import CustomPaginator, has_access, is_approved
+from node_link.utils.communication import send_to_remote_inboxes
+
 from postApp.models import Post
 from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
 from postApp.utils.fetch_github_activity import fetch_github_events
 from authorApp.models import AuthorProfile, Friends, Follower
 from authorApp.serializers import FollowerSerializer
+import requests
 
 
 # Create your views here.
@@ -421,10 +424,19 @@ def follow_author(request, author_id):
                 messages.success(request, "Follow request has been re-sent.")
         else:
             # Create a new follow request
-            Follower.objects.create(
+            new_follow = Follower.objects.create(
                 actor=current_author, object=target_author, created_by=current_author
             )
-            messages.success(request, "Follow request sent successfully.")
+            messages.success(request, "Follow create successfully.")
+
+            if target_author.user.local_node.is_remote:
+                # send follow request to remote
+                follow_request_json = FollowerSerializer(
+                    new_follow, context={"request": request}
+                ).data
+
+                send_to_remote_inboxes(follow_request_json, target_author)
+                messages.success(request, "Follow request sent to remote successfully.")
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
