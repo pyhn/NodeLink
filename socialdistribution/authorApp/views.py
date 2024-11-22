@@ -260,7 +260,7 @@ def accept_follow_request(request, request_id):
 
         messages.success(
             request,
-            f"You have accepted the follow request from {follow_request.actor.user.username}.",
+            f"You have accepted the follow request from {follow_request.actor.user.user_serial}.",
         )
 
         # Check for mutual following
@@ -286,13 +286,13 @@ def accept_follow_request(request, request_id):
                 )
                 messages.success(
                     request,
-                    f"You are now friends with {follow_request.actor.user.username}.",
+                    f"You are now friends with {follow_request.actor.user.user_serial}.",
                 )
             except IntegrityError:
                 # Friendship already exists
                 messages.info(
                     request,
-                    f"You are already friends with {follow_request.actor.user.username}.",
+                    f"You are already friends with {follow_request.actor.user.user_serial}.",
                 )
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -349,7 +349,7 @@ def unfriend(request, friend_id):
             following.delete()
 
             friendship.delete()
-            messages.success(request, f"You have unfriended {friend.user.username}.")
+            messages.success(request, f"You have unfriended {friend.user.user_serial}.")
         else:
             messages.info(request, "Friendship does not exist.")
 
@@ -398,11 +398,12 @@ def follow_author(request, author_id):
                     friendship.delete()
                     messages.success(
                         request,
-                        f"You have unfollowed and unfriended {target_author.user.username}.",
+                        f"You have unfollowed and unfriended {target_author.user.user_serial}.",
                     )
                 else:
                     messages.success(
-                        request, f"You have unfollowed {target_author.user.username}."
+                        request,
+                        f"You have unfollowed {target_author.user.user_serial}.",
                     )
 
                 # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
@@ -807,16 +808,12 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
     def manage_follower(self, request, pk=None, follower_fqid=None):
         # Decode the foreign author FQID
         follower_fqid = unquote(follower_fqid)
-        fqid_parts = follower_fqid.split("/")
-        foreign_username = fqid_parts[len(fqid_parts) - 1]
         # Fetch the local author
         local_author = get_object_or_404(AuthorProfile, user__username=pk)
-
+        print(f"follower fqid {follower_fqid}")
         # Check if the follower is already in the follower list
         try:
-            foreign_author = get_object_or_404(
-                AuthorProfile, user__username=foreign_username
-            )
+            foreign_author = get_object_or_404(AuthorProfile, fqid=follower_fqid)
             follower_relationship = Follower.objects.get(
                 actor=foreign_author, object=local_author
             )
@@ -904,10 +901,8 @@ class SingleAuthorView(APIView):
         GET: Retrieve a single author using its FQID.
         """
         author_fqid = unquote(author_fqid)
-        fqid_parts = author_fqid.split("/")
-        author_username = fqid_parts[len(fqid_parts) - 1]
 
-        author = get_object_or_404(AuthorProfile, user__username=author_username)
+        author = get_object_or_404(AuthorProfile, fqid=author_fqid)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
