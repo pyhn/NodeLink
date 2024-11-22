@@ -464,19 +464,7 @@ def explore_users(request):
     sort_by = request.GET.get("sort", "user__user_serial")  # Sorting parameter
     direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
 
-    current_author = request.user.author_profile
-
-    exclude_id = [
-        a.user2.id if a.user1 == current_author else a.user1.id
-        for a in Friends.objects.filter(
-            Q(user1=current_author) | Q(user2=current_author)
-        )
-    ] + [
-        a.object.id
-        for a in list(
-            Follower.objects.filter(actor=current_author, status__in=["a", "p"])
-        )
-    ]
+    exclude_id = []
     all_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
 
     # Filter by search query
