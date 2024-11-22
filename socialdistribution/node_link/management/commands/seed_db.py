@@ -27,6 +27,7 @@ class Command(BaseCommand):
 
         admin_user = User.objects.create(
             username="admin",
+            user_serial="admin",
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             email=fake.email(),
@@ -42,6 +43,9 @@ class Command(BaseCommand):
             url=host,
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
+            username="https://127.0.0.1:8000/",
+            password="password",
+            raw_password="password",
         )
 
         admin_user.local_node = node
@@ -53,6 +57,7 @@ class Command(BaseCommand):
         for _ in range(10):
             user = User.objects.create(
                 username=fake.user_name(),
+                user_serial=fake.user_name(),
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),

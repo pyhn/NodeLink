@@ -14,6 +14,7 @@ from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 # Rest Framework Imports
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
+from node_link.auth_backends import NodeBasicAuthentication
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -34,6 +35,7 @@ from .models import Friends, Follower, AuthorProfile
 from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
 from node_link.models import Node, Notification
 from node_link.utils.common import CustomPaginator, has_access, is_approved
+from node_link.utils.fetch_remote_authors import fetch_remote_authors
 from postApp.models import Post
 from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
 from postApp.utils.fetch_github_activity import fetch_github_events
@@ -41,8 +43,6 @@ from authorApp.models import AuthorProfile, Friends, Follower
 from authorApp.serializers import FollowerSerializer
 
 
-# Create your views here.
-# sign up
 def signup_view(request):
     if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home", username=request.user.username)
@@ -908,13 +908,16 @@ class SingleAuthorView(APIView):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
+@authentication_classes([NodeBasicAuthentication])
 def author_inbox_view(request, author_serial):
     """
     Handles incoming activities directed to a specific author's inbox
 
     Supported types: "post", "like", "comment", "follow"
     """
+    # do this check if the request info contains a node that is active. if not, then send an access denied JSON
+    # before serializing the data, we fetch to ensure that we have an upadted database of authors
+    fetch_remote_authors()
     # retrieve the author
     print("Incoming data:", request.data)
 
