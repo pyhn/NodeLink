@@ -80,7 +80,7 @@ class PostSerializer(serializers.ModelSerializer):
         host_no_api = remove_api_suffix(host)
         return {
             "type": "likes",
-            "page": f"{host_no_api}/authors/{obj.author.user.username}/posts/{obj.uuid}",
+            "page": f"{host_no_api}/{obj.author.user.username}/posts_list/{obj.uuid}",
             "id": f"{host}authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
             "page_number": 1,
             "size": 5,
