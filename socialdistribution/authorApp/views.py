@@ -463,6 +463,7 @@ def explore_users(request):
     query = request.GET.get("q", "")  # Search query
     sort_by = request.GET.get("sort", "user__user_serial")  # Sorting parameter
     direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
+    fetch_remote_authors()
 
     current_author = request.user.author_profile
     exclude_id = []
