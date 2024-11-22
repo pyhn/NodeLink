@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('node_link', '0002_alter_node_created_by_alter_node_deleted_by'),
+        ("node_link", "0002_alter_node_created_by_alter_node_deleted_by"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='node',
-            name='is_active',
+            model_name="node",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='node',
-            name='password',
+            model_name="node",
+            name="password",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='node',
-            name='username',
+            model_name="node",
+            name="username",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='node',
-            name='created_at',
+            model_name="node",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True),
         ),
         migrations.AlterField(
-            model_name='node',
-            name='deleted_at',
+            model_name="node",
+            name="deleted_at",
             field=models.DateTimeField(auto_now_add=True),
         ),
         migrations.AlterField(
-            model_name='node',
-            name='updated_at',
+            model_name="node",
+            name="updated_at",
             field=models.DateTimeField(auto_now_add=True),
         ),
     ]

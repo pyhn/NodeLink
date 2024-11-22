@@ -48,8 +48,6 @@ class NodeAdminForm(forms.ModelForm):
         if commit:
             node.save()
         return node
-    
-
 
 
 @admin.register(Node)
@@ -80,8 +78,7 @@ class NodeAdmin(admin.ModelAdmin):
         else:
             # by default it is false since it is local
             obj.is_remote = False
-        
-        
+
         # Before saving the node, attempt to connect to its /api/authors/ endpoint
         if obj.is_remote:
             authors_url = obj.url.rstrip("/") + "/api/authors/"
@@ -99,7 +96,7 @@ class NodeAdmin(admin.ModelAdmin):
                         level=messages.ERROR,
                     )
                     return  # Do not save the node
-                
+
         auth = (obj.username, raw_password)
         try:
             response = requests.get(authors_url, auth=auth, timeout=10)
@@ -121,22 +118,19 @@ class NodeAdmin(admin.ModelAdmin):
                 level=messages.ERROR,
             )
             return  # Do not save the node
-        
-         # save the object
+
+        # save the object
         super().save_model(request, obj, form, change)
-        
+
         # fetch remote authors if it is a new remote node
         if not change:
             fetch_remote_authors()
-            
+
         if change and obj.is_active:
             fetch_remote_authors()
-            
-       
-        
-    def message_user(self, request, message, level=messages.INFO, extra_tags='', fail_silently=False):
+
+    def message_user(
+        self, request, message, level=messages.INFO, extra_tags="", fail_silently=False
+    ):
         if level != messages.SUCCESS:
             super().message_user(request, message, level, extra_tags, fail_silently)
-
-        
-        
