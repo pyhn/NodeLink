@@ -51,18 +51,24 @@ class HomeViewTestCase(TestCase):
             created_by=self.user1,
         )
 
+        self.user1.local_node = self.node1
+        self.user1.save()
+
+        self.user2.local_node = self.node1
+        self.user2.save()
+
+        self.user3.local_node = self.node1
+        self.user3.save()
+
         # Create author profiles
         self.author_profile1 = AuthorProfile.objects.create(
             user=self.user1,
-            local_node=self.node1,
         )
         self.author_profile2 = AuthorProfile.objects.create(
             user=self.user2,
-            local_node=self.node1,
         )
         self.author_profile3 = AuthorProfile.objects.create(
             user=self.user3,
-            local_node=self.node1,
         )
 
         # Create friendship between user1 and user2
@@ -220,9 +226,12 @@ class HomeViewTestCase(TestCase):
             email="user4@example.com",
             is_approved=True,
         )
+
+        user4.local_node = self.node1
+        user4.save()
+
         author_profile4 = AuthorProfile.objects.create(
             user=user4,
-            local_node=self.node1,
         )
 
         # Create a public post by user4
