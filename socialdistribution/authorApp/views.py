@@ -483,7 +483,7 @@ def explore_users(request):
         ]
         + [current_author.user.id]
     )
-    all_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
+    all_authors = AuthorProfile.objects.exclude(user__id__in=exclude_id)
 
     # Filter by search query
     if query:
