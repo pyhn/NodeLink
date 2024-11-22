@@ -66,7 +66,7 @@ class PostSerializer(serializers.ModelSerializer):
         host_no_api = remove_api_suffix(host)
         return {
             "type": "comments",
-            "page": f"{host_no_api}/authors/{obj.author.user.username}/post_list/{obj.uuid}",
+            "page": f"{host_no_api}/{obj.author.user.username}/posts_list/{obj.uuid}",
             "id": f"{obj.node.url.rstrip('/')}/authors/{obj.author.user.user_serial}/posts/{obj.post_serial}/comments",
             "page_number": 1,
             "size": 5,
@@ -343,7 +343,7 @@ class CommentSerializer(serializers.ModelSerializer):
         return {
             "type": "likes",
             "id": f"{comment_id}/likes",
-            "page": f"{host_no_api}/{post_author.user.username}/post_list/{post.uuid}",
+            "page": f"{host_no_api}/{post_author.user.username}/posts_list/{post.uuid}",
             "page_number": 1,
             "size": 5,
             "count": 0,
