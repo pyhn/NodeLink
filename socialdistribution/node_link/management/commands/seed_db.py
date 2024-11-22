@@ -54,9 +54,10 @@ class Command(BaseCommand):
         authors = []
         logger.info("Creating fake authors...")
         for _ in range(10):
+            author_serial = fake.user_name()
             user = User.objects.create(
-                username=fake.user_name(),
-                user_serial=fake.user_name(),
+                username=author_serial,
+                user_serial=author_serial,
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),

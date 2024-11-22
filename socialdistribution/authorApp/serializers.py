@@ -158,13 +158,28 @@ class FollowerSerializer(serializers.ModelSerializer):
         fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
 
     def get_id(self, obj):
-        return f"{obj.actor.user.local_node.url}/api/authors/{obj.actor.user.username}"
+        return (
+            f"{obj.actor.user.local_node.url}/api/authors/{obj.actor.user.user_serial}"
+        )
 
     def get_host(self, obj):
         return obj.actor.user.local_node.url
 
     def get_page(self, obj):
         return f"{obj.actor.user.local_node.url}/authors/{obj.actor.user.username}"
+
+    def create(self, validated_data):
+        f_actor = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["actor"]["id"]
+        )
+        f_object = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["object"]["id"]
+        )
+        # Create or update follow request
+        followRequest, _ = Follower.objects.update_or_create(
+            actor=f_actor, object=f_object, status="p", created_by=f_actor
+        )
+        return followRequest
 
 
 # Serializer for friendships

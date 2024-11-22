@@ -477,7 +477,7 @@ def explore_users(request):
             Follower.objects.filter(actor=current_author, status__in=["a", "p"])
         )
     ]
-    exclude_id.append(current_author.user.id)
+    exclude_id = exclude_id.append(current_author.user.id)
     all_authors = AuthorProfile.objects.exclude(id__in=exclude_id)
 
     # Filter by search query
@@ -878,6 +878,8 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
             )
         except (AuthorProfile.DoesNotExist, Follower.DoesNotExist):
             follower_relationship = None
+        except IndexError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "GET":
             # Check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL
@@ -892,11 +894,12 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
                 Follower.objects.create(
                     actor=foreign_author,
                     object=local_author,
-                    status="a",
+                    status="p",
                     created_by=foreign_author,
                 )
                 return Response(
-                    {"detail": "Follower added."}, status=status.HTTP_201_CREATED
+                    {"detail": "Follower request added."},
+                    status=status.HTTP_201_CREATED,
                 )
             return Response(
                 {"detail": "Follower already exists."},
@@ -979,7 +982,7 @@ def author_inbox_view(request, author_serial):
     """
     # do this check if the request info contains a node that is active. if not, then send an access denied JSON
     # before serializing the data, we fetch to ensure that we have an upadted database of authors
-    fetch_remote_authors()
+    # fetch_remote_authors()
     # retrieve the author
     print("Incoming data:", request.data)
 
@@ -1003,8 +1006,9 @@ def author_inbox_view(request, author_serial):
         serializer = LikeSerializer(data=data, context={"author": author})
     elif object_type == "comment":
         serializer = CommentSerializer(data=data, context={"author": author})
-    elif object_type == " follow":
+    elif object_type == "follow":
         serializer = FollowerSerializer(data=data, context={"author": author})
+
     else:
         return Response(
             {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
