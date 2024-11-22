@@ -2031,7 +2031,7 @@ class PostLikesAPIView(APIView):
         response_data = {
             "type": "likes",
             "id": f"{host}/authors/{author_serial}/posts/{post_uuid}/likes",
-            "page": f"{host_no_api}/authors/{author_serial}/posts/{post_uuid}",
+            "page": f"{host_no_api}/{author_serial}/posts_list/{post_uuid}",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
