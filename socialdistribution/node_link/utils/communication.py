@@ -34,7 +34,7 @@ def send_to_remote_inboxes(json, author):
         response = requests.post(
             inbox_url,
             json=json,
-            auth=(author.user.local_node.username, author.user.local_node.password),
+            auth=(author.user.local_node.username, author.user.local_node.raw_password),
             timeout=10,
         )
         response.raise_for_status()  # Raise an exception for HTTP errors
