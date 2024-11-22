@@ -29,7 +29,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
     host = serializers.CharField(required=False)
     type = serializers.CharField(default="author", required=False)
     displayName = serializers.CharField(required=False)
-    github = serializers.CharField(required=False, allow_blank=True)
+    github = serializers.CharField(allow_null=True, required=False)
     profileImage = serializers.CharField(required=False)
     page = serializers.CharField(required=False)
 
@@ -42,7 +42,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         representation = {}
         representation[
             "id"
-        ] = f"{instance.user.local_node.url}api/authors/{instance.user.username}"
+        ] = f"{instance.user.local_node.url}api/authors/{instance.user.user_serial}"
         representation["host"] = instance.user.local_node.url
         representation["type"] = "author"
 
@@ -75,6 +75,67 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         # Save changes on the AuthorProfile instance itself
         instance.save()
         return instance
+
+    def create(self, validated_data):
+        # extract data for the User model (since the author profile model has a user object)
+        id_url = validated_data.get("id")
+        host = validated_data.get("host")
+        display_name = validated_data.get("displayName")
+        github = validated_data.get("github")
+        profile_image = validated_data.get("profileImage", "")
+        # page = validated_data.get("page", "")
+
+        # parse the FQID to get the serial
+        fqid_parts = id_url.rstrip("/").split("/")
+        serial = fqid_parts[-1]
+
+        # retrieve the local node
+        try:
+            local_node = Node.objects.get(is_remote=False)
+        except Node.DoesNotExist as exc:
+            raise serializers.ValidationError("Local node not found.") from exc
+
+        # determine if the user is a remote or local
+        if host and host.rstrip("/") != local_node.url.rstrip("/"):
+            # remote user
+            parsed_host = urlparse(host)
+            domain = parsed_host.netloc.replace(".", "_")
+            username = f"{domain}__{serial}"
+
+            # get the corresponding node
+            node = get_object_or_404(Node, url=host, is_remote=True, is_active=True)
+        else:
+            # local user
+            username = serial
+            node = local_node
+
+        # create or update teh user instance
+        user, _ = User.objects.update_or_create(
+            username=username,
+            defaults={
+                "display_name": display_name,
+                "github_user": github,
+                "profileImage": profile_image,
+                "local_node": node,
+                "user_serial": serial,
+            },
+        )
+
+        # create the author profile instance
+        author_profile, _ = AuthorProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                "github": github,
+                "fqid": id_url,
+            },
+        )
+
+        return author_profile
+
+    def validate(self, attrs):
+        if attrs.get("type") != "author":
+            raise serializers.ValidationError("Invalid type. Expected 'author'.")
+        return attrs
 
 
 class FollowerSerializer(serializers.ModelSerializer):
