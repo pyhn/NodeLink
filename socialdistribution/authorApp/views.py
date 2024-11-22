@@ -1001,16 +1001,18 @@ def author_inbox_view(request, author_serial):
         author = AuthorProfile.objects.get(user__username=author_serial)
     except AuthorProfile.DoesNotExist:
         return Response({"error": "Author not found"}, status=404)
-
-    # retrieve the activity
+        # retrieve the activity
     data = request.data
     object_type = data.get("type")
+    try:
+        remote_author = get_object_or_404(AuthorProfile, fqid=data["author"]["id"])
+    except AuthorProfile.DoesNotExist:
+        return Response({"error": "Remote Author not found"}, status=404)
 
     # filter base on type
     if object_type == "post":
         # check if a remote author(object) sends a post; update follow status to Accepted
         try:
-            remote_author = get_object_or_404(AuthorProfile, fqid=data["author"]["id"])
             if (
                 Follower.objects.filter(object=remote_author, actor=author).exists()
                 and remote_author.user.local_node.is_remote
