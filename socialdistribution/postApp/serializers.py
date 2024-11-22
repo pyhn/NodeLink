@@ -95,7 +95,7 @@ class PostSerializer(serializers.ModelSerializer):
         host = remove_api_suffix(obj.node.url)
         author_id = obj.author.user.username
         post_id = obj.uuid
-        return f"{host}/authors/{author_id}/post_list/{post_id}"
+        return f"{host}/{author_id}/posts_list/{post_id}"
 
     def validate_author(self, value):
         """
