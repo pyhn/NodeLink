@@ -1034,7 +1034,7 @@ class CommentedView(APIView):
 
             host_with_api = author.user.local_node.url
             host_no_api = remove_api_suffix(host_with_api)
-            author_page = f"{host_no_api}authors/{author.user.username}"
+            author_page = f"{host_no_api}/{author.user.username}/profile"
             api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
@@ -1275,7 +1275,7 @@ class CommentedFQIDView(APIView):
 
             host_with_api = author.user.local_node.url
             host_no_api = remove_api_suffix(host_with_api)
-            author_page = f"{host_no_api}authors/{author.user.username}"
+            author_page = f"{host_no_api}/{author.user.username}/profile"
             api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
@@ -1690,9 +1690,7 @@ class PostCommentsView(APIView):
 
         host_with_api = author.user.local_node.url
         host_no_api = remove_api_suffix(host_with_api)
-        post_page = (
-            f"{host_no_api}/authors/{author.user.username}/post_list/{post.uuid}"
-        )
+        post_page = f"{host_no_api}/{author.user.username}/posts_list/{post.uuid}"
         api_page = f"{host_with_api}authors/{author.user.user_serial}/posts/{post.post_serial}/comments"
 
         # Prepare response data
@@ -1829,9 +1827,7 @@ class PostCommentsViewFQID(APIView):
 
         host_with_api = post.author.user.local_node.url
         host_no_api = remove_api_suffix(host_with_api)
-        post_page = (
-            f"{host_no_api}/authors/{post.author.user.username}/post_list/{post.uuid}"
-        )
+        post_page = f"{host_no_api}/{post.author.user.username}/posts_list/{post.uuid}"
         api_page = f"{host_with_api}authors/{post.author.user.user_serial}/posts/{post.post_serial}/comments"
 
         # Prepare response data

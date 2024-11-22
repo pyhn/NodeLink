@@ -50,13 +50,15 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.get_contentType_display()
 
     def get_author(self, obj):
+        host = obj.node.url
+        host_no_api = remove_api_suffix(host)
         return {
             "type": "author",
             "id": f"{obj.author.user.local_node.url.rstrip('/')}/authors/{obj.author.user.user_serial}",
             "host": obj.author.user.local_node.url.rstrip("/") + "/",
             "displayName": obj.author.user.display_name,
             "github": obj.author.github,
-            "page": f"{obj.author.user.local_node.url.rstrip('/')}/{obj.author.user.username}/profile",
+            "page": f"{host_no_api}/{obj.author.user.username}/profile",
             "profileImage": obj.author.user.profileImage.url,
         }
 
