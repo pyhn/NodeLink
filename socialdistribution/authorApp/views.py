@@ -431,9 +431,10 @@ def follow_author(request, author_id):
 
             if target_author.user.local_node.is_remote:
                 # send follow request to remote
-                follow_request_json = FollowerSerializer(
+                follow_request = FollowerSerializer(
                     new_follow, context={"request": request}
-                ).data
+                )
+                follow_request_json = follow_request.to_representation()
 
                 send_to_remote_inboxes(follow_request_json, target_author)
                 messages.success(request, "Follow request sent to remote successfully.")
@@ -986,7 +987,7 @@ def author_inbox_view(request, author_serial):
     """
     # do this check if the request info contains a node that is active. if not, then send an access denied JSON
     # before serializing the data, we fetch to ensure that we have an upadted database of authors
-    # fetch_remote_authors()
+    fetch_remote_authors()
     # retrieve the author
     print("Incoming data:", request.data)
 

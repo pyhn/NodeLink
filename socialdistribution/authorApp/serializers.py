@@ -181,6 +181,21 @@ class FollowerSerializer(serializers.ModelSerializer):
         )
         return followRequest
 
+    def to_representation(self):
+        """Custom representation for dynamically computed fields."""
+
+        f_actor_dict = AuthorProfileSerializer(self.instance.actor)
+        f_object_dict = AuthorProfileSerializer(self.instance.object)
+
+        representation = {
+            "type": "follow",
+            "summary": f"{self.instance.actor.user.display_name} wants to follow {self.instance.object.user.display_name}",
+            "actor": f_actor_dict.to_representation(self.instance.actor),
+            "object": f_object_dict.to_representation(self.instance.object),
+        }
+
+        return representation
+
 
 # Serializer for friendships
 class FriendSerializer(serializers.ModelSerializer):
