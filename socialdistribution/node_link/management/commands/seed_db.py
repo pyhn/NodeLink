@@ -39,10 +39,10 @@ class Command(BaseCommand):
 
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            url=fake.url(),
+            url="https://127.0.0.1:8000/",
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
-            username="https://127.0.0.1:8000/",
+            username="local",
             password="password",
             raw_password="password",
         )
