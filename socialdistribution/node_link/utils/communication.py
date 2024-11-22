@@ -27,7 +27,7 @@ def send_to_remote_inboxes(json, author):
     # Extract the remote author's username
 
     # Construct the inbox URL
-    inbox_url = f"{author.fqid}inbox/"
+    inbox_url = f"{author.fqid}/inbox/"
 
     # Send the POST request to the inbox
     try:
