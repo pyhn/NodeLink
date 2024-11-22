@@ -5,7 +5,6 @@ import requests  # Third-party library
 from django.contrib import admin, messages  # Django imports
 from django import forms
 from django.contrib.auth.hashers import make_password
-from django.contrib import messages
 
 from node_link.utils.fetch_remote_authors import fetch_remote_authors
 
