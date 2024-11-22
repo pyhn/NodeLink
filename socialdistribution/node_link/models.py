@@ -59,7 +59,7 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
     # notifications can be a follow_request, new post, etc.
-    notification_type = models.CharField(max_length=20)
+    notification_type = models.CharField(max_length=255)
     # id of the related object
     related_object_id = models.CharField(max_length=255, null=True, blank=True)
     # url to the author's profile picture

@@ -42,7 +42,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         representation = {}
         representation[
             "id"
-        ] = f"{instance.user.local_node.url}api/authors/{instance.user.username}"
+        ] = f"{instance.user.local_node.url}api/authors/{instance.user.user_serial}"
         representation["host"] = instance.user.local_node.url
         representation["type"] = "author"
 
