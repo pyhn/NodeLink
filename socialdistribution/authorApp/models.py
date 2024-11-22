@@ -127,7 +127,7 @@ class Follower(MixinApp):
     # 5. Ask for Followers API for user1
     # 6. If user1 approves then make Friends obj (FIND OUT THROUGH Local query API for local users)
     def clean(self):
-        if self.user1 == self.user2:
+        if self.actor == self.object:
             raise ValidationError("Users cannot follow themselves.")
 
     class Meta:

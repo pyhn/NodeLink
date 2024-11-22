@@ -36,9 +36,11 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project imports
-from authorApp.models import AuthorProfile, User
+from authorApp.models import AuthorProfile, User, Follower
 from node_link.models import Notification
 from node_link.utils.common import has_access, is_approved
+from node_link.utils.communication import send_to_remote_inboxes
+
 from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
 from authorApp.serializers import AuthorProfileSerializer
@@ -102,7 +104,13 @@ def submit_post(request, username):
 
         post_json = PostSerializer(post, context={"request": request}).data
 
-        send_post_to_remote_inboxes(post_json)
+        remote_followers = Follower.objects.filter(
+            object=author, actor__user__local_node__is_remote=True
+        ).values_list("actor__id", flat=True)
+
+        for a in AuthorProfile.objects.filter(id__in=remote_followers):
+
+            send_to_remote_inboxes(post_json, a)
 
         # Redirect to the post list page
         return redirect("node_link:home", username=username)

@@ -995,6 +995,8 @@ def author_inbox_view(request, author_serial):
     # check the request for the id of the node and check if it is active
     # if not active return resposne to them saying they don't have access
 
+    # check if a remote author(object) sends a post; update follow status to Accepted
+
     try:
         author = AuthorProfile.objects.get(user__username=author_serial)
     except AuthorProfile.DoesNotExist:
@@ -1006,6 +1008,21 @@ def author_inbox_view(request, author_serial):
 
     # filter base on type
     if object_type == "post":
+        # check if a remote author(object) sends a post; update follow status to Accepted
+        try:
+            remote_author = get_object_or_404(AuthorProfile, fqid=data["author"]["id"])
+            if (
+                Follower.objects.filter(object=remote_author, actor=author).exists()
+                and remote_author.user.local_node.is_remote
+            ):
+                to_update = Follower.objects.filter(
+                    object=remote_author, actor=author
+                ).first()
+                to_update.status = "a"
+                to_update.save()
+        except AuthorProfile.DoesNotExist:
+            return Response({"error": "Author not found"}, status=404)
+
         serializer = PostSerializer(data=data, context={"author": author})
     elif object_type == "like":
         serializer = LikeSerializer(data=data, context={"author": author})
