@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("node_link", "0004_node_is_remote"),
+        ("node_link", "0005_node_raw_password"),
     ]
 
     operations = [
