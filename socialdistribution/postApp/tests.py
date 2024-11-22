@@ -28,10 +28,11 @@ class PostAppViewsTestCase(TestCase):
 
         # Step 2: Create a test node, setting created_by to self.user
         self.node = Node.objects.create(url="http://testnode.com", created_by=self.user)
-
+        self.user.local_node = self.node
+        self.user.save()
         # Step 3: Create a test author profile, setting local_node to self.node
         self.author_profile = AuthorProfile.objects.create(
-            user=self.user, local_node=self.node
+            user=self.user,
         )
 
         # Initialize the test client and log in
@@ -208,7 +209,11 @@ class PostAppViewsTestCase(TestCase):
             is_approved=False,  # Ensure your User model supports this field
             display_name="Unapproved User",  # Ensure your User model supports this field
         )
-        AuthorProfile.objects.create(user=unapproved_user, local_node=self.node)
+
+        unapproved_user.local_node = self.node
+        unapproved_user.save()
+
+        AuthorProfile.objects.create(user=unapproved_user)
         self.client.login(username="unapproveduser", password="testpassword")
 
         # Generate the URL for 'create_post' with the required 'username' argument
@@ -375,9 +380,11 @@ class PostAppViewsTestCase(TestCase):
             is_approved=True,  # Ensure your User model supports this field
             display_name="Other User",  # Ensure your User model supports this field
         )
-        other_author_profile = AuthorProfile.objects.create(
-            user=other_user, local_node=self.node
-        )
+
+        other_user.local_node = self.node
+        other_user.save()
+
+        other_author_profile = AuthorProfile.objects.create(user=other_user)
         # Create a post by the other user
         post = Post.objects.create(
             title="Other User Post",
@@ -421,7 +428,12 @@ class PostAppViewsTestCase(TestCase):
             created_by=self.author_profile,
             updated_by=self.author_profile,
         )
-        response = self.client.get(reverse("postApp:edit_post", args=[post.uuid]))
+        response = self.client.get(
+            reverse(
+                "postApp:edit_post",
+                kwargs={"username": self.user.username, "post_uuid": post.uuid},
+            )
+        )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "edit_post.html")
         self.assertContains(response, post.title)
@@ -437,9 +449,11 @@ class PostAppViewsTestCase(TestCase):
             is_approved=True,
             display_name="Other User",
         )
-        other_author_profile = AuthorProfile.objects.create(
-            user=other_user, local_node=self.node
-        )
+
+        other_user.local_node = self.node
+        other_user.save()
+
+        other_author_profile = AuthorProfile.objects.create(user=other_user)
         # Create a post by the other user
         post = Post.objects.create(
             title="Other User Post",
@@ -452,7 +466,12 @@ class PostAppViewsTestCase(TestCase):
             created_by=other_author_profile,
             updated_by=other_author_profile,
         )
-        response = self.client.get(reverse("postApp:edit_post", args=[post.uuid]))
+        response = self.client.get(
+            reverse(
+                "postApp:edit_post",
+                kwargs={"username": other_user.username, "post_uuid": post.uuid},
+            )
+        )
         self.assertEqual(response.status_code, 403)  # Forbidden
 
     def test_submit_edit_post_view_post(self):
@@ -480,9 +499,13 @@ class PostAppViewsTestCase(TestCase):
             "submit_type": "plain",  # From updated form
         }
         response = self.client.post(
-            reverse("postApp:submit_edit_post", kwargs={"post_uuid": post.uuid}),
+            reverse(
+                "postApp:submit_edit_post",
+                kwargs={"username": self.user.username, "post_uuid": post.uuid},
+            ),
             data=edit_data,
         )
+
         # Should redirect to post detail page
         self.assertRedirects(
             response,
@@ -534,12 +557,11 @@ class PostAppViewsTestCase(TestCase):
 
         # Generate the URL for 'submit_edit_post' with the required 'username' and 'post_uuid' arguments
         submit_edit_post_url = reverse(
-            "postApp:submit_edit_post", kwargs={"post_uuid": post.uuid}
+            "postApp:submit_edit_post",
+            kwargs={"username": self.user.username, "post_uuid": post.uuid},
         )
-
         response = self.client.post(submit_edit_post_url, data=edit_data)
 
-        # Generate the URL for 'post_detail' with the required 'username' and 'post_uuid' arguments
         post_detail_url = reverse(
             "postApp:post_detail",
             kwargs={"username": self.user.username, "post_uuid": post.uuid},
@@ -592,9 +614,11 @@ class PostAppViewsTestCase(TestCase):
             is_approved=True,
             display_name="Other User",
         )
-        other_author_profile = AuthorProfile.objects.create(
-            user=other_user, local_node=self.node
-        )
+
+        other_user.local_node = self.node
+        other_user.save()
+
+        other_author_profile = AuthorProfile.objects.create(user=other_user)
         post = Post.objects.create(
             title="Private Post",
             description="Test Description",
@@ -722,9 +746,11 @@ class PostAppViewsTestCase(TestCase):
             is_approved=True,
             display_name="Other User",
         )
-        other_author_profile = AuthorProfile.objects.create(
-            user=other_user, local_node=self.node
-        )
+
+        other_user.local_node = self.node
+        other_user.save()
+
+        other_author_profile = AuthorProfile.objects.create(user=other_user)
         share_data = {"recipients": [other_author_profile.id]}
         response = self.client.post(
             reverse("postApp:handle_share_post", args=[self.user.username, post.uuid]),
