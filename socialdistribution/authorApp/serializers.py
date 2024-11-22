@@ -160,7 +160,7 @@ class FollowerSerializer(serializers.ModelSerializer):
         fields = ["type", "id", "page", "host", "displayName", "github", "profileImage"]
 
     def get_id(self, obj):
-        return f"{obj.actor.user.local_node.url}authors/{obj.actor.user.username}"
+        return f"{obj.actor.user.local_node.url}authors/{obj.actor.user.user_serial}"
 
     def get_host(self, obj):
         return obj.actor.user.local_node.url

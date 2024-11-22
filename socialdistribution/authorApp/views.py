@@ -260,7 +260,7 @@ def accept_follow_request(request, request_id):
 
         messages.success(
             request,
-            f"You have accepted the follow request from {follow_request.actor.user.username}.",
+            f"You have accepted the follow request from {follow_request.actor.user.user_serial}.",
         )
 
         # Check for mutual following
@@ -286,13 +286,13 @@ def accept_follow_request(request, request_id):
                 )
                 messages.success(
                     request,
-                    f"You are now friends with {follow_request.actor.user.username}.",
+                    f"You are now friends with {follow_request.actor.user.user_serial}.",
                 )
             except IntegrityError:
                 # Friendship already exists
                 messages.info(
                     request,
-                    f"You are already friends with {follow_request.actor.user.username}.",
+                    f"You are already friends with {follow_request.actor.user.user_serial}.",
                 )
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -349,7 +349,7 @@ def unfriend(request, friend_id):
             following.delete()
 
             friendship.delete()
-            messages.success(request, f"You have unfriended {friend.user.username}.")
+            messages.success(request, f"You have unfriended {friend.user.user_serial}.")
         else:
             messages.info(request, "Friendship does not exist.")
 
@@ -398,11 +398,12 @@ def follow_author(request, author_id):
                     friendship.delete()
                     messages.success(
                         request,
-                        f"You have unfollowed and unfriended {target_author.user.username}.",
+                        f"You have unfollowed and unfriended {target_author.user.user_serial}.",
                     )
                 else:
                     messages.success(
-                        request, f"You have unfollowed {target_author.user.username}."
+                        request,
+                        f"You have unfollowed {target_author.user.user_serial}.",
                     )
 
                 # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
