@@ -46,6 +46,7 @@ from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
 from authorApp.serializers import AuthorProfileSerializer
 from postApp.serializers import CommentSerializer
+from node_link.utils.common import remove_api_suffix
 
 # Package imports
 import commonmark
@@ -1007,12 +1008,10 @@ class CommentedView(APIView):
             # Total comment count
             total_count = comments.count()
 
-            # Construct response metadata
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-            author_page = urljoin(base_url, f"authors/{author.user.username}")
-            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+            host_with_api = author.user.local_node.url
+            host_no_api = remove_api_suffix(host_with_api)
+            author_page = f"{host_no_api}/{author.user.username}/profile"
+            api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
             response_data = {
@@ -1231,12 +1230,10 @@ class CommentedFQIDView(APIView):
         GET: Fetch comments by an author or a specific comment
         """
         author_fqid = unquote(author_fqid)
-        fqid_parts = author_fqid.split("/")
-        author_serial = fqid_parts[len(fqid_parts) - 1]
 
-        if author_serial:
+        if author_fqid:
             # List all comments by the author
-            author = get_object_or_404(AuthorProfile, user__username=author_serial)
+            author = get_object_or_404(AuthorProfile, fqid=author_fqid)
             comments = Comment.objects.filter(author=author)
             if request.get_host() != author.user.local_node.url:
                 comments = comments.filter(post__visibility__in=["p", "u"])
@@ -1252,12 +1249,10 @@ class CommentedFQIDView(APIView):
             # Total comment count
             total_count = comments.count()
 
-            # Construct response metadata
-            base_url = (
-                request.build_absolute_uri("/") if request else "http://localhost/"
-            )
-            author_page = urljoin(base_url, f"authors/{author.user.username}")
-            api_page = urljoin(base_url, f"api/authors/{author.user.username}/comments")
+            host_with_api = author.user.local_node.url
+            host_no_api = remove_api_suffix(host_with_api)
+            author_page = f"{host_no_api}/{author.user.username}/profile"
+            api_page = f"{host_with_api}authors/{author.user.username}/comments"
 
             # Prepare response data
             response_data = {
@@ -1341,10 +1336,8 @@ class SingleCommentedView(APIView):
         GET: Retrieve a single comment using its FQID.
         """
         comment_fqid = unquote(comment_fqid)
-        fqid_parts = comment_fqid.split("/")
-        comment_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        comment = get_object_or_404(Comment, uuid=comment_uuid)
+        comment = get_object_or_404(Comment, fqid=comment_fqid)
         serializer = CommentSerializer(comment)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1394,10 +1387,8 @@ class SinglePostView(APIView):
         GET: Retrieve a single post using its FQID.
         """
         post_fqid = unquote(post_fqid)
-        fqid_parts = post_fqid.split("/")
-        post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        post = get_object_or_404(Post, fqid=post_fqid)
 
         if post.visibility != "p":
             return Response(
@@ -1451,10 +1442,8 @@ class PostImageViewFQID(APIView):
     def get(self, request, post_fqid):
         # Step 1: Retrieve the post
         post_fqid = unquote(post_fqid)
-        fqid_parts = post_fqid.split("/")
-        post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        post = get_object_or_404(Post, fqid=post_fqid)
 
         # Step 2: Check if the post is public
         if post.visibility != "p":
@@ -1675,15 +1664,10 @@ class PostCommentsView(APIView):
         # Total comment count
         total_count = comments.count()
 
-        # Construct response metadata
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_page = urljoin(
-            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
-        )
-        api_page = urljoin(
-            base_url,
-            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
-        )
+        host_with_api = author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        post_page = f"{host_no_api}/{author.user.username}/posts_list/{post.uuid}"
+        api_page = f"{host_with_api}authors/{author.user.user_serial}/posts/{post.post_serial}/comments"
 
         # Prepare response data
         response_data = {
@@ -1797,11 +1781,9 @@ class PostCommentsViewFQID(APIView):
     def get(self, request, post_fqid):
         # Decode and extract the UUID from the FQID
         post_fqid = unquote(post_fqid)
-        fqid_parts = post_fqid.split("/")
-        post_uuid = fqid_parts[-1]
 
         # Retrieve the post using the UUID
-        post = get_object_or_404(Post, uuid=post_uuid)
+        post = get_object_or_404(Post, fqid=post_fqid)
 
         # Filter comments associated with the post, ordered by newest to oldest
         comments = Comment.objects.filter(post=post).order_by("-created_at")
@@ -1818,14 +1800,11 @@ class PostCommentsViewFQID(APIView):
         total_count = comments.count()
 
         # Construct response metadata
-        base_url = request.build_absolute_uri("/") if request else "http://localhost/"
-        post_page = urljoin(
-            base_url, f"authors/{post.author.user.username}/posts/{post.uuid}"
-        )
-        api_page = urljoin(
-            base_url,
-            f"api/authors/{post.author.user.username}/posts/{post.uuid}/comments",
-        )
+
+        host_with_api = post.author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        post_page = f"{host_no_api}/{post.author.user.username}/posts_list/{post.uuid}"
+        api_page = f"{host_with_api}authors/{post.author.user.user_serial}/posts/{post.post_serial}/comments"
 
         # Prepare response data
         response_data = {
@@ -1924,16 +1903,8 @@ class RemoteCommentView(APIView):
 
         # Decode the remote_comment_fqid
         remote_comment_fqid = unquote(remote_comment_fqid)
-        fqid_parts = remote_comment_fqid.split("/")
-        comment_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        # Retrieve the author to ensure they exist
-        author = get_object_or_404(AuthorProfile, user__username=author_serial)
-
-        # Retrieve the post associated with the author
-        post = get_object_or_404(Post, uuid=post_serial, author=author)
-
-        comment = get_object_or_404(Comment, uuid=comment_uuid, post=post)
+        comment = get_object_or_404(Comment, fqid=remote_comment_fqid)
 
         serializer = CommentSerializer(comment)
 
@@ -2026,12 +1997,13 @@ class PostLikesAPIView(APIView):
 
         # Serialize the results
         serializer = LikeSerializer(page.object_list, many=True)
-
+        host = post.node.url
+        host_no_api = remove_api_suffix(host)
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            "id": f"{host}authors/{author_serial}/posts/{post_uuid}/likes",
+            "page": f"{host_no_api}/{author_serial}/posts_list/{post_uuid}",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
@@ -2132,14 +2104,12 @@ class PostLikesFQIDAPIView(APIView):
         GET: Retrieve all likes for a specific post based on fqid
         """
         post_fqid = unquote(post_fqid)
-        fqid_parts = post_fqid.split("/")
-        post_uuid = fqid_parts[len(fqid_parts) - 1]
 
-        post = get_object_or_404(Post, uuid=post_uuid)
+        post = get_object_or_404(Post, fqid=post_fqid)
 
         likes = Like.objects.filter(post=post).order_by("-created_at")
 
-        author_serial = post.author.user.username
+        author_serial = post.author.user.user_serial
         # Paginate the results (5 likes per page)
         paginator = Paginator(likes, 5)
         page_number = request.query_params.get("page", 1)
@@ -2147,12 +2117,14 @@ class PostLikesFQIDAPIView(APIView):
 
         # Serialize the results
         serializer = LikeSerializer(page.object_list, many=True)
-
+        host = post.node.url
+        host_no_api = remove_api_suffix(host)
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_uuid}/likes",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_uuid}",
+            # http://www.tran.com/api/authors/smartguy/liked/ed58935c-8795-4a3a-83ab-f706fadf7e38
+            "id": f"{host}authors/{author_serial}/posts/{post.post_serial}/likes",
+            "page": f"{host_no_api}/authors/{post.author.user.username}/posts/{post.uuid}",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
@@ -2239,22 +2211,26 @@ class CommentLikesView(APIView):
         try:
             # Verify the comment exists
             comment_fqid = unquote(comment_fqid)
-            fqid_parts = comment_fqid.split("/")
-            comment_uuid = fqid_parts[len(fqid_parts) - 1]
 
             post = get_object_or_404(Post, uuid=post_serial)
 
-            Comment.objects.get(uuid=comment_uuid, post=post)
+            Comment.objects.get(fqid=comment_fqid)
         except Comment.DoesNotExist:
             return Response(
                 {"detail": "Comment not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
+        host_with_api = post.author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        remote_author_serial = post.author.user.user_serial
+        website_author_serial = post.author.user.username
+        remote_post_serial = post.post_serial
+        website_uuid = post.uuid
         # Response data with count always zero
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/posts/{post_serial}/comments/{comment_fqid}/likes",
+            "id": f"{host_with_api}authors/{remote_author_serial}/posts/{remote_post_serial}/comments/{comment_fqid}/likes",
+            "page": f"{host_no_api}/authors/{website_author_serial}/posts_list/{website_uuid}",
             "page_number": 1,
             "size": 5,
             "count": 0,
@@ -2474,6 +2450,7 @@ class ThingsLikedByAuthorView(APIView):
     )
     def get(self, request, author_serial):
         # Retrieve the author by serial
+        print(author_serial)
         author = get_object_or_404(AuthorProfile, user__username=author_serial)
 
         # Fetch all likes made by the author
@@ -2487,11 +2464,16 @@ class ThingsLikedByAuthorView(APIView):
         # Serialize the likes in the current page
         serializer = LikeSerializer(page.object_list, many=True)
 
+        host_with_api = author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        remote_author_serial = author.user.user_serial
+        website_author_serial = author.user.username
+
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/liked",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/liked",
+            "id": f"{host_with_api}authors/{remote_author_serial}/liked",
+            "page": f"{host_no_api}/{website_author_serial}/profile",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,
@@ -2581,11 +2563,9 @@ class SingleLikeFQIDView(APIView):
     def get(self, request, like_fqid):
         # Fetch the author to validate the URL
         like_fqid = unquote(like_fqid)
-        fqid_parts = like_fqid.split("/")
-        like_uuid = fqid_parts[len(fqid_parts) - 1]
 
         # Fetch the Like object by its UUID (like_serial)
-        like = get_object_or_404(Like, uuid=like_uuid)
+        like = get_object_or_404(Like, fqid=like_fqid)
 
         # Serialize the Like object
         serializer = LikeSerializer(like, context={"request": request})
@@ -2708,10 +2688,8 @@ class ThingsLikedByAuthorFQIDView(APIView):
         # Retrieve the author by serial
 
         author_fqid = unquote(author_fqid)
-        fqid_parts = author_fqid.split("/")
-        author_serial = fqid_parts[len(fqid_parts) - 1]
 
-        author = get_object_or_404(AuthorProfile, user__username=author_serial)
+        author = get_object_or_404(AuthorProfile, fqid=author_fqid)
 
         # Fetch all likes made by the author
         likes = Like.objects.filter(author=author).order_by("-created_at")
@@ -2724,11 +2702,16 @@ class ThingsLikedByAuthorFQIDView(APIView):
         # Serialize the likes in the current page
         serializer = LikeSerializer(page.object_list, many=True)
 
+        host_with_api = author.user.local_node.url
+        host_no_api = remove_api_suffix(host_with_api)
+        remote_author_serial = author.user.user_serial
+        website_author_serial = author.user.username
+
         # Construct the response body
         response_data = {
             "type": "likes",
-            "id": f"http://{request.get_host()}/api/authors/{author_serial}/liked",
-            "page": f"http://{request.get_host()}/authors/{author_serial}/liked",
+            "id": f"{host_with_api}authors/{remote_author_serial}/liked",
+            "page": f"{host_no_api}/{website_author_serial}/profile",
             "page_number": page.number,
             "size": paginator.per_page,
             "count": paginator.count,

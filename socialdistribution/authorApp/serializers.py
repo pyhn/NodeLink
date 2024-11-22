@@ -4,6 +4,8 @@ from django.urls import reverse
 from urllib.parse import urlparse
 from django.shortcuts import get_object_or_404
 from node_link.models import Node
+from node_link.utils.common import remove_api_suffix
+
 
 # Serializer for User data
 class UserSerializer(serializers.ModelSerializer):
@@ -39,21 +41,21 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         """Custom representation for dynamically computed fields."""
+        host_no_api = remove_api_suffix(instance.user.local_node.url)
         representation = {}
+        representation["type"] = "author"
         representation[
             "id"
-        ] = f"{instance.user.local_node.url}api/authors/{instance.user.user_serial}"
+        ] = f"{instance.user.local_node.url}authors/{instance.user.user_serial}"
+        representation["page"] = str(
+            host_no_api
+            + reverse("authorApp:profile_display", args=[instance.user.username])
+        )
         representation["host"] = instance.user.local_node.url
-        representation["type"] = "author"
-
         representation["displayName"] = instance.user.display_name
         representation["github"] = instance.github
 
         representation["profileImage"] = str(instance.user.profileImage)
-        representation["page"] = str(
-            instance.user.local_node.url.rstrip("/")
-            + reverse("authorApp:profile_display", args=[instance.user.username])
-        )
         return representation
 
     def update(self, instance, validated_data):
@@ -141,7 +143,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
 class FollowerSerializer(serializers.ModelSerializer):
     """Custom Serializer for followers to match the required output format"""
 
-    type = serializers.CharField(default="follow", read_only=True)
+    type = serializers.CharField(default="author", read_only=True)
     id = serializers.SerializerMethodField()
     host = serializers.SerializerMethodField()
     displayName = serializers.CharField(
@@ -155,18 +157,17 @@ class FollowerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follower
-        fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
+        fields = ["type", "id", "page", "host", "displayName", "github", "profileImage"]
 
     def get_id(self, obj):
-        return (
-            f"{obj.actor.user.local_node.url}/api/authors/{obj.actor.user.user_serial}"
-        )
+        return f"{obj.actor.user.local_node.url}authors/{obj.actor.user.user_serial}"
 
     def get_host(self, obj):
         return obj.actor.user.local_node.url
 
     def get_page(self, obj):
-        return f"{obj.actor.user.local_node.url}/authors/{obj.actor.user.username}"
+        host = remove_api_suffix(obj.actor.user.local_node.url)
+        return f"{host}/{obj.actor.user.username}/profile"
 
     def create(self, validated_data):
         f_actor = get_object_or_404(

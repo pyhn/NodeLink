@@ -57,7 +57,7 @@ class AuthorProfile(models.Model):
         )  # Assuming the `Node` model has a `url` field
         user_serial = self.user.user_serial  # Use the `user_serial` field
 
-        self.fqid = f"{node_url}api/authors/{user_serial}"
+        self.fqid = f"{node_url}authors/{user_serial}"
 
         super().save(*args, **kwargs)
 

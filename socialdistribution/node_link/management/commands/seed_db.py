@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            url="https://127.0.0.1:8000/",
+            url="https://127.0.0.1:8000/api/",
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
             username="local",
@@ -67,6 +67,9 @@ class Command(BaseCommand):
                 local_node=node,
                 is_approved=True,
             )
+            user.user_serial = user.username
+            user.save()
+
             author_profile = AuthorProfile.objects.create(
                 user=user,
                 github=fake.url(),
@@ -154,7 +157,7 @@ class Command(BaseCommand):
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
-        logger.info(f"Sample Username: {authors[1]}")
+        logger.info(f"Sample Username: {authors[1].user.user_serial}")
 
         logger.info("Sample Password: password123")
         logger.info(f"Sample Username: {admin_user.username}")

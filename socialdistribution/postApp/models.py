@@ -17,8 +17,8 @@ class Post(MixinApp):
     ]
     type_choices = [  #!!!API NOTE:
         ("a", "application/base64"),
-        ("png", "image/png"),
-        ("jpeg", "image/jpeg"),
+        ("png", "image/png;base64"),
+        ("jpeg", "image/jpeg;base64"),
         ("p", "text/plain"),
         ("m", "text/markdown"),
     ]
@@ -47,7 +47,7 @@ class Post(MixinApp):
         username = (
             self.author.user.username
         )  # Assuming `AuthorProfile` is linked to a User model with a username
-        self.fqid = f"{node_url}/api/authors/{username}/posts/{self.post_serial}"
+        self.fqid = f"{node_url}authors/{username}/posts/{self.post_serial}"
         super().save(*args, **kwargs)
 
 
@@ -75,7 +75,7 @@ class Comment(MixinApp):
         username = (
             self.author.user.user_serial
         )  # Assuming `AuthorProfile` is linked to a User model with a username
-        self.fqid = f"{node_url}/api/authors/{username}/commented/{self.comment_serial}"
+        self.fqid = f"{node_url}authors/{username}/commented/{self.comment_serial}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -121,7 +121,7 @@ class Like(MixinApp):
         username = (
             self.author.user.user_serial
         )  # Assuming `AuthorProfile` is linked to a User model with a username
-        self.fqid = f"{node_url}/api/authors/{username}/liked/{self.like_serial}"
+        self.fqid = f"{node_url}authors/{username}/liked/{self.like_serial}"
         super().save(*args, **kwargs)
 
     class Meta:
