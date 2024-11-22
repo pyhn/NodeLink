@@ -47,17 +47,20 @@ class HomeViewTestCase(TestCase):
 
         # Create nodes
         self.node1 = Node.objects.create(
-            url="http://testnode1.com",
+            url="http://testnode1.com/api/",
             created_by=self.user1,
         )
 
         self.user1.local_node = self.node1
+        self.user1.user_serial = self.user1.username
         self.user1.save()
 
         self.user2.local_node = self.node1
+        self.user2.user_serial = self.user2.username
         self.user2.save()
 
         self.user3.local_node = self.node1
+        self.user3.user_serial = self.user3.username
         self.user3.save()
 
         # Create author profiles

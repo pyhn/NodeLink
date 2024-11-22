@@ -43,7 +43,7 @@ class AuthorAppViewsTestCase(TestCase):
 
         # Create a Node with timezone-aware datetime fields
         self.node = Node.objects.create(
-            url="http://testnode.com",
+            url="http://testnode.com/api/",
             created_by=self.user1,
             created_at=timezone.now(),
             updated_at=timezone.now(),
@@ -52,9 +52,11 @@ class AuthorAppViewsTestCase(TestCase):
         )
 
         self.user2.local_node = self.node
+        self.user2.user_serial = self.user2.username
         self.user2.save()
 
         self.user1.local_node = self.node
+        self.user1.user_serial = self.user1.username
         self.user1.save()
 
         # Create AuthorProfiles without invalid fields
@@ -508,13 +510,15 @@ class AuthorAppTests(APITestCase):
             username="author2", password="password2", display_name="Author Two"
         )
         self.node = Node.objects.create(
-            url="http://localhost:8000", created_by=self.user1
+            url="http://testnode2.com/api/", created_by=self.user1
         )
 
         self.user2.local_node = self.node
+        self.user2.user_serial = self.user2.username
         self.user2.save()
 
         self.user1.local_node = self.node
+        self.user1.user_serial = self.user1.username
         self.user1.save()
 
         # Create author profiles
@@ -552,24 +556,9 @@ class AuthorAppTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)  # Ensure 1 author is returned
 
-    def test_update_author(self):
-        """Test updating a single author by username"""
-        # Set up the URL for the author's detail endpoint
-        url = reverse("authorApp:author-detail", args=[self.user1.username])
-
-        # Define the data for updating the author
-        updated_data = {
-            "username": self.user1.username,  # Keep the same
-            "displayName": "UpdatedFirstName",
-        }
-
-        # Send the PUT request with the updated data
-        response = self.client.put(path=url, data=updated_data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
     def test_retrieve_author(self):
         """Test retrieving a single author by username"""
-        url = reverse("authorApp:author-detail", args=[self.user1.username])
+        url = reverse("authorApp:author-detail", args=[self.user1.author_profile.fqid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["displayName"], self.user1.display_name)

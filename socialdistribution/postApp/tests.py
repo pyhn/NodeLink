@@ -27,8 +27,11 @@ class PostAppViewsTestCase(TestCase):
         )
 
         # Step 2: Create a test node, setting created_by to self.user
-        self.node = Node.objects.create(url="http://testnode.com", created_by=self.user)
+        self.node = Node.objects.create(
+            url="http://testnode.com/api/", created_by=self.user
+        )
         self.user.local_node = self.node
+        self.user.user_serial = self.user.username
         self.user.save()
         # Step 3: Create a test author profile, setting local_node to self.node
         self.author_profile = AuthorProfile.objects.create(
