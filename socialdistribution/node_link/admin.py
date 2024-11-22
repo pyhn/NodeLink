@@ -2,7 +2,7 @@ from datetime import datetime  # Standard library
 
 import requests  # Third-party library
 
-from django.contrib import admin  # Django imports
+from django.contrib import admin, messages  # Django imports
 from django import forms
 from django.contrib.auth.hashers import make_password
 from django.contrib import messages
@@ -48,6 +48,8 @@ class NodeAdminForm(forms.ModelForm):
         if commit:
             node.save()
         return node
+    
+
 
 
 @admin.register(Node)
@@ -78,10 +80,63 @@ class NodeAdmin(admin.ModelAdmin):
         else:
             # by default it is false since it is local
             obj.is_remote = False
-
-        # save the object
+        
+        
+        # Before saving the node, attempt to connect to its /api/authors/ endpoint
+        if obj.is_remote:
+            authors_url = obj.url.rstrip("/") + "/api/authors/"
+            raw_password = obj.raw_password
+            if not raw_password:
+                # Keep existing raw_password if available
+                if obj.pk:
+                    existing_node = Node.objects.get(pk=obj.pk)
+                    raw_password = existing_node.raw_password
+                else:
+                    # No password provided; cannot authenticate
+                    self.message_user(
+                        request,
+                        "Password is required to authenticate with the remote node.",
+                        level=messages.ERROR,
+                    )
+                    return  # Do not save the node
+                
+        auth = (obj.username, raw_password)
+        try:
+            response = requests.get(authors_url, auth=auth, timeout=10)
+            print(response)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            # Do not save the node, and show a notification
+            self.message_user(
+                request,
+                f"Error connecting to {authors_url}: {e}",
+                level=messages.ERROR,
+            )
+            return  # Do not save the node
+        except ValueError as e:
+            # Do not save the node, and show a notification
+            self.message_user(
+                request,
+                f"Invalid response from {authors_url}: {e}",
+                level=messages.ERROR,
+            )
+            return  # Do not save the node
+        
+         # save the object
         super().save_model(request, obj, form, change)
-
+        
         # fetch remote authors if it is a new remote node
         if not change:
             fetch_remote_authors()
+            
+        if change and obj.is_active:
+            fetch_remote_authors()
+            
+       
+        
+    def message_user(self, request, message, level=messages.INFO, extra_tags='', fail_silently=False):
+        if level != messages.SUCCESS:
+            super().message_user(request, message, level, extra_tags, fail_silently)
+
+        
+        
