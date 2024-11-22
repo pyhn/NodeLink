@@ -46,7 +46,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
         representation["type"] = "author"
         representation[
             "id"
-        ] = f"{instance.user.local_node.url}authors/{instance.user.username}"
+        ] = f"{instance.user.local_node.url}authors/{instance.user.user_serial}"
         representation["page"] = str(
             host_no_api
             + reverse("authorApp:profile_display", args=[instance.user.username])
