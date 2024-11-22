@@ -127,7 +127,7 @@ class PostSerializer(serializers.ModelSerializer):
             user.save()
 
         # Check if the author profile exists, otherwise create it
-        author, _ = AuthorProfile.objects.get_or_create(user=user)
+        author = get_object_or_404(AuthorProfileuser=user)
 
         return author
 

@@ -31,13 +31,17 @@ def send_to_remote_inboxes(json, author):
 
     # Send the POST request to the inbox
     try:
-        response = requests.post(
-            inbox_url,
-            json=json,
-            auth=(author.user.local_node.username, author.user.local_node.raw_password),
-            timeout=10,
-        )
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        print(f"Successfully sent to {inbox_url}. Response: {response.status_code}")
+        if author.user.local_node and author.user.local_node.is_active:
+            response = requests.post(
+                inbox_url,
+                json=json,
+                auth=(
+                    author.user.local_node.username,
+                    author.user.local_node.raw_password,
+                ),
+                timeout=10,
+            )
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            print(f"Successfully sent to {inbox_url}. Response: {response.status_code}")
     except requests.exceptions.RequestException as e:
         print(f"Failed to send to {inbox_url}. Error: {str(e)}")

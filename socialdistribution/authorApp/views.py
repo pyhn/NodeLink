@@ -32,7 +32,12 @@ from drf_yasg import openapi
 # Project Imports
 from .forms import EditProfileForm, SignUpForm, LoginForm
 from .models import Friends, Follower, AuthorProfile
-from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from .serializers import (
+    AuthorProfileSerializer,
+    FollowerRequestSerializer,
+    FollowerSerializer,
+    FriendSerializer,
+)
 from node_link.models import Node, Notification
 from node_link.utils.common import CustomPaginator, has_access, is_approved
 from node_link.utils.communication import send_to_remote_inboxes
@@ -431,7 +436,7 @@ def follow_author(request, author_id):
 
             if target_author.user.local_node.is_remote:
                 # send follow request to remote
-                follow_request = FollowerSerializer(
+                follow_request = FollowerRequestSerializer(
                     new_follow, context={"request": request}
                 )
                 follow_request_json = follow_request.to_representation()
