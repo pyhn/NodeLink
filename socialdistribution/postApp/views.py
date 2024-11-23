@@ -109,6 +109,9 @@ def submit_post(request, username):
 
         # remote handle friends only
         if post.visibility == "fo":
+            for a in Friends.objects.filter(Q(user1=author) | Q(user2=author)):
+                print(f"user1: {a.user1}, user2: {a.user2}, author: {author}")
+
             remote_friends = [
                 a.user2.id if a.user1 == author else a.user1.id
                 for a in Friends.objects.filter(Q(user1=author) | Q(user2=author))
