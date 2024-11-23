@@ -384,6 +384,9 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"author": "Author is required."})
 
+        validated_data["created_by"] = validated_data["author"]
+        validated_data["updated_by"] = validated_data["author"]
+
         # Extract comment_serial from the id field
         comment_id = data.get("id", "")
         if comment_id:
