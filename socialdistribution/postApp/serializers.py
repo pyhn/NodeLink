@@ -353,10 +353,11 @@ class CommentSerializer(serializers.ModelSerializer):
         validated_data = {}
 
         # Extract and validate content
-        if "content" in data:
-            validated_data["content"] = data["content"]
-        else:
-            raise serializers.ValidationError({"content": "Content is required."})
+        validated_data["content"] = data.get("comment", "")
+        if not validated_data["content"]:
+            raise serializers.ValidationError(
+                {"comment": "Comment content is required."}
+            )
 
         # Parse and validate post URL
         post_url = data.get("post", "")
@@ -386,25 +387,14 @@ class CommentSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"author": "Author is required."})
 
-        # Automatically set visibility to default ("p")
-        validated_data["visibility"] = "p"
-
-        # Automatically generate a new UUID
-        validated_data["uuid"] = uuid.uuid4()
-
-        # Automatically set created_by to the authenticated user (if available)
-        request = self.context.get("request")
-        if request and request.user.is_authenticated:
-            try:
-                validated_data["created_by"] = AuthorProfile.objects.get(
-                    user=request.user
-                )
-            except AuthorProfile.DoesNotExist as exc:
-                raise serializers.ValidationError(
-                    {
-                        "created_by": "Authenticated user is not linked to an author profile."
-                    }
-                ) from exc
+        # Extract comment_serial from the id field
+        comment_id = data.get("id", "")
+        if comment_id:
+            comment_serial = comment_id.rstrip("/").split("/")[-1]
+            validated_data["comment_serial"] = comment_serial
+            validated_data["fqid"] = comment_id
+        else:
+            raise serializers.ValidationError({"id": "Comment ID is required."})
 
         return validated_data
 
@@ -428,8 +418,22 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        # Override create to use the validated data without model changes
-        return Comment.objects.create(**validated_data)
+        """
+        Override create to handle saving comment_serial and fqid.
+        """
+        comment_serial = validated_data.pop("comment_serial", None)
+        if not comment_serial:
+            raise serializers.ValidationError(
+                {"comment_serial": "Comment serial is required."}
+            )
+
+        # Create the Comment instance
+        comment = Comment.objects.create(**validated_data)
+        comment.comment_serial = comment_serial
+
+        # Save the instance to trigger the dynamic `fqid` generation in `save()`
+        comment.save()
+        return comment
 
     def update(self, instance, validated_data):
         # Override update to allow updating without model changes
