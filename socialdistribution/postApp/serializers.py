@@ -131,27 +131,11 @@ class PostSerializer(serializers.ModelSerializer):
         print("Incoming visibility:", data.get("visibility"))
         print("Incoming contentType:", data.get("contentType"))
 
-        # Map visibility and contentType to internal representations
-        visibility_map = {v: k for k, v in Post.visibility_choices}
-        content_type_map = {v: k for k, v in Post.type_choices}
-
-        if "visibility" in data:
-            visibility_display = data["visibility"]
-            if visibility_display in visibility_map:
-                data["visibility"] = visibility_map[visibility_display]
-            else:
-                raise serializers.ValidationError(
-                    f"Invalid visibility: {visibility_display}"
-                )
-
-        if "contentType" in data:
-            content_type_display = data["contentType"]
-            if content_type_display in content_type_map:
-                data["contentType"] = content_type_map[content_type_display]
-            else:
-                raise serializers.ValidationError(
-                    f"Invalid contentType: {content_type_display}"
-                )
+        # Map visibility and contentType to internal values
+        if data.get("visibility"):
+            data["visibility"] = self.map_visibility(data["visibility"])
+        if data.get("contentType"):
+            data["contentType"] = self.map_content_type(data["contentType"])
 
         validated_data = super().to_internal_value(data)
 
@@ -215,6 +199,31 @@ class PostSerializer(serializers.ModelSerializer):
         # Save the updated instance
         instance.save()
         return instance
+
+    def map_visibility(self, visibility):
+        """
+        Map external visibility to internal representation.
+        """
+        visibility_mapping = {
+            "PUBLIC": "p",
+            "UNLISTED": "u",
+            "FRIENDS": "fo",
+            "DELETED": "d",
+        }
+        return visibility_mapping.get(visibility.upper(), visibility)
+
+    def map_content_type(self, content_type):
+        """
+        Map external contentType to internal representation.
+        """
+        content_type_mapping = {
+            "text/plain": "p",
+            "text/markdown": "m",
+            "image/png;base64": "png",
+            "image/jpeg;base64": "jpeg",
+            "application/base64": "a",
+        }
+        return content_type_mapping.get(content_type.lower(), content_type)
 
 
 class CommentSerializer(serializers.ModelSerializer):
