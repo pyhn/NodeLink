@@ -32,7 +32,7 @@ def fetch_remote_authors():
     # loop through each one and fetch the authors
     for node in remote_nodes:
         # append authors api endpoint to the node's url
-        authors_url = node.url.rstrip("/") + "/api/authors/"
+        authors_url = node.url.rstrip("/") + "/authors/"
         # Basic Authentication requires the raw password to authenticate with the remote server.
         auth = (node.username, node.raw_password)
         try:
