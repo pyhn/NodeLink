@@ -311,7 +311,7 @@ class CommentSerializer(serializers.ModelSerializer):
             author_data.update(
                 {
                     "type": "author",
-                    "page": f"{host_no_api}/{obj.author.user.username}/profile",
+                    "page": f"{host_no_api}/{obj.author.user.user_serial}/profile",
                     "host": host,
                 }
             )
