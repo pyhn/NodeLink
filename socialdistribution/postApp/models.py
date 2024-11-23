@@ -45,7 +45,7 @@ class Post(MixinApp):
         # Generate fqid dynamically
         node_url = self.node.url  # Assuming the `Node` model has a `url` field
         username = (
-            self.author.user.username
+            self.author.user.user_serial
         )  # Assuming `AuthorProfile` is linked to a User model with a username
         self.fqid = f"{node_url}authors/{username}/posts/{self.post_serial}"
         super().save(*args, **kwargs)
