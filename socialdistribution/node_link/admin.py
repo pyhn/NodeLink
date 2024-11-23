@@ -97,7 +97,7 @@ class NodeAdmin(admin.ModelAdmin):
                     )
                     return  # Do not save the node
 
-        auth = (obj.username, raw_password)
+        auth = (obj.username, obj.raw_password)
         try:
             response = requests.get(authors_url, auth=auth, timeout=10)
             print(response)
