@@ -488,11 +488,11 @@ class LikeSerializer(serializers.ModelSerializer):
 
     def to_internal_value(self, data):
         """
-        Custom logic to parse incoming data and ensure only required fields are processed.
+        Convert incoming data into validated internal values.
         """
         validated_data = {}
 
-        # Validate and parse author
+        # Parse and validate the author
         author_data = data.get("author", {})
         author_id = author_data.get("id", "").strip()
         if author_id:
@@ -505,17 +505,18 @@ class LikeSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError({"author": "Author is required."})
 
-        # Validate and parse object (post)
-        object_url = data.get("object", "").strip()
-        if object_url:
+        # Parse and validate the object (Post)
+        object_fqid = data.get("object", "").strip()
+        if object_fqid:
             try:
-                validated_data["post"] = Post.objects.get(fqid=object_url)
+                # Attempt to resolve the Post using the `fqid`
+                validated_data["post"] = Post.objects.get(fqid=object_fqid)
             except Post.DoesNotExist as exc:
                 raise serializers.ValidationError(
-                    {"object": "Invalid post URL."}
+                    {"object": "Invalid Post fqid."}
                 ) from exc
         else:
-            raise serializers.ValidationError({"object": "Post is required."})
+            raise serializers.ValidationError({"object": "Object (Post) is required."})
 
         # Extract like_serial from the id field
         like_id = data.get("id", "").strip()
