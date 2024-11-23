@@ -511,10 +511,7 @@ class LikeSerializer(serializers.ModelSerializer):
             try:
                 # Resolve the Post using the fqid
                 post = Post.objects.get(fqid=object_fqid)
-                validated_data["post"] = post
-                validated_data[
-                    "object"
-                ] = post.fqid  # Use the fqid for the object field
+                validated_data["post"] = post  # Map the object to the post field
             except Post.DoesNotExist as exc:
                 raise serializers.ValidationError(
                     {"object": "Invalid Post fqid."}
