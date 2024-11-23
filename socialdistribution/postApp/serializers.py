@@ -128,6 +128,7 @@ class PostSerializer(serializers.ModelSerializer):
         """
         Convert incoming JSON into a validated internal Python representation.
         """
+        print("Incoming visibility:", data.get("visibility"))
         print("Incoming contentType:", data.get("contentType"))
 
         # Map visibility and contentType to internal representations
@@ -153,6 +154,10 @@ class PostSerializer(serializers.ModelSerializer):
                 )
 
         validated_data = super().to_internal_value(data)
+
+        print("Validated visibility:", validated_data.get("visibility"))
+        print("Validated contentType:", validated_data.get("contentType"))
+
         author_data = data.get("author")
         validated_data["author"] = self.validate_author(author_data)
         return validated_data
@@ -165,6 +170,14 @@ class PostSerializer(serializers.ModelSerializer):
         author = validated_data.pop("author", None)
         if not author:
             raise serializers.ValidationError("Author is required to create a post.")
+
+        contentType = validated_data.get("contentType")
+        visibility = validated_data.get("visibility")
+
+        if not contentType or not visibility:
+            raise serializers.ValidationError(
+                "ContentType or visibility is missing or invalid."
+            )
 
         # Set the created_by field
         validated_data["created_by"] = author
