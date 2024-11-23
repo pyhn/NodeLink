@@ -71,7 +71,7 @@ class NodeBasicAuthentication(BaseAuthentication):
 
         if not node.is_active:
             raise AuthenticationFailed(
-                f"This node {node.url} has been inactivated temporarily. Contact their admin(s). "
+                f"The node {node.url} has been deactivated temporarily. Contact their admin(s). "
             )
 
         # Return the authenticated node and None as the auth (no token here)
