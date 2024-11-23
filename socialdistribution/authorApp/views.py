@@ -996,77 +996,87 @@ def author_inbox_view(request, author_serial):
     # if not active return resposne to them saying they don't have access
 
     # check if a remote author(object) sends a post; update follow status to Accepted
-
     try:
-        author = AuthorProfile.objects.get(user__username=author_serial)
-    except AuthorProfile.DoesNotExist:
-        return Response({"error": "Author not found"}, status=404)
-        # retrieve the activity
-    data = request.data
-    object_type = data.get("type")
 
-    # filter base on type
-    if object_type == "post":
-        # check if a remote author(object) sends a post; update follow status to Accepted
         try:
-            remote_author = get_object_or_404(AuthorProfile, fqid=data["author"]["id"])
-            if (
-                Follower.objects.filter(object=remote_author, actor=author).exists()
-                and remote_author.user.local_node.is_remote
-            ):
-                # update follow
-                to_update = Follower.objects.filter(
-                    object=remote_author, actor=author
-                ).first()
-                to_update.status = "a"
-                to_update.save()
-                # updtae friends
-                mutual_follow = Follower.objects.filter(
-                    actor=remote_author, object=author, status="a"
-                ).exists()
-
-                if mutual_follow:
-                    # Establish friendship
-                    try:
-                        # Ensure consistent ordering by user ID
-                        user1, user2 = (
-                            (remote_author, author)
-                            if remote_author.id < author.id
-                            else (author, remote_author)
-                        )
-
-                        # Create a single Friends instance
-                        Friends.objects.create(
-                            user1=user1,
-                            user2=user2,
-                            created_by=remote_author,  # Assuming 'created_by' refers to the initiator
-                        )
-                        messages.success(
-                            request,
-                            f"You are now friends with {author.user.user_serial}.",
-                        )
-                    except IntegrityError:
-                        # Friendship already exists
-                        messages.info(
-                            request,
-                            f"You are already friends with {author.user.user_serial}.",
-                        )
-                # only create a remote post if a follow relation exists
-                serializer = PostSerializer(data=data, context={"author": author})
-
+            author = AuthorProfile.objects.get(user__username=author_serial)
         except AuthorProfile.DoesNotExist:
             return Response({"error": "Author not found"}, status=404)
+            # retrieve the activity
+        data = request.data
+        object_type = data.get("type")
 
-    elif object_type == "like":
-        serializer = LikeSerializer(data=data, context={"author": author})
-    elif object_type == "comment":
-        serializer = CommentSerializer(data=data, context={"author": author})
-    elif object_type == "follow":
-        serializer = FollowerSerializer(data=data, context={"author": author})
+        # filter base on type
+        if object_type == "post":
+            # check if a remote author(object) sends a post; update follow status to Accepted
+            try:
+                remote_author = get_object_or_404(
+                    AuthorProfile, fqid=data["author"]["id"]
+                )
+                if (
+                    Follower.objects.filter(object=remote_author, actor=author).exists()
+                    and remote_author.user.local_node.is_remote
+                ):
+                    # update follow
+                    to_update = Follower.objects.filter(
+                        object=remote_author, actor=author
+                    ).first()
+                    to_update.status = "a"
+                    to_update.save()
+                    # updtae friends
+                    mutual_follow = Follower.objects.filter(
+                        actor=remote_author, object=author, status="a"
+                    ).exists()
 
-    else:
+                    if mutual_follow:
+                        # Establish friendship
+                        try:
+                            # Ensure consistent ordering by user ID
+                            user1, user2 = (
+                                (remote_author, author)
+                                if remote_author.id < author.id
+                                else (author, remote_author)
+                            )
+
+                            # Create a single Friends instance
+                            Friends.objects.create(
+                                user1=user1,
+                                user2=user2,
+                                created_by=remote_author,  # Assuming 'created_by' refers to the initiator
+                            )
+                            messages.success(
+                                request,
+                                f"You are now friends with {author.user.user_serial}.",
+                            )
+                        except IntegrityError:
+                            # Friendship already exists
+                            messages.info(
+                                request,
+                                f"You are already friends with {author.user.user_serial}.",
+                            )
+                    # only create a remote post if a follow relation exists
+                    serializer = PostSerializer(data=data, context={"author": author})
+
+            except AuthorProfile.DoesNotExist:
+                return Response({"error": "Author not found"}, status=404)
+
+        elif object_type == "like":
+            serializer = LikeSerializer(data=data, context={"author": author})
+        elif object_type == "comment":
+            serializer = CommentSerializer(data=data, context={"author": author})
+        elif object_type == "follow":
+            serializer = FollowerSerializer(data=data, context={"author": author})
+
+        else:
+            return Response(
+                {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+            )
+    except Exception as e:
+        # Catch-all for unexpected errors
+        print(f"Unexpected error: {e}")
         return Response(
-            {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "An unexpected error occurred", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     # save the object to our database

@@ -336,11 +336,11 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_post(self, obj):
         # Construct the full URL for the post the comment is on
-        host = obj.author.user.local_node.url
+        host = obj.post.author.user.local_node.url
         return f"{host}authors/{obj.post.author.user.user_serial}/posts/{obj.post.post_serial}"
 
     def get_page(self, obj):
-        host = obj.author.user.local_node.url
+        host = obj.post.author.user.local_node.url
         host_no_api = remove_api_suffix(host)
         return (
             f"{host_no_api}/{obj.post.author.user.username}/posts_list/{obj.post.uuid}"
