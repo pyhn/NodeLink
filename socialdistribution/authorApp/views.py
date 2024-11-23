@@ -440,7 +440,7 @@ def follow_author(request, author_id):
                 follow_request = FollowerRequestSerializer(
                     new_follow, context={"request": request}
                 )
-                follow_request_json = follow_request.to_representation()
+                follow_request_json = follow_request.data
 
                 send_to_remote_inboxes(follow_request_json, target_author)
                 messages.success(request, "Follow request sent to remote successfully.")
