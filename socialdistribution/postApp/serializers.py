@@ -158,8 +158,13 @@ class PostSerializer(serializers.ModelSerializer):
         """
         Convert incoming JSON into a validated internal Python representation.
         """
-        print("Incoming visibility:", data.get("visibility"))
-        print("Incoming contentType:", data.get("contentType"))
+        print("Incoming ID:", data.get("id"))
+        if "id" in data:
+            # Extract the `post_serial` from the incoming `id`
+            post_serial = data["id"].rstrip("/").split("/")[-1]
+            data[
+                "post_serial"
+            ] = post_serial  # Add post_serial to data for further processing
 
         # Map visibility and contentType to internal values
         if data.get("visibility"):
@@ -168,9 +173,6 @@ class PostSerializer(serializers.ModelSerializer):
             data["contentType"] = self.map_content_type(data["contentType"])
 
         validated_data = super().to_internal_value(data)
-
-        print("Validated visibility:", validated_data.get("visibility"))
-        print("Validated contentType:", validated_data.get("contentType"))
 
         author_data = data.get("author")
         validated_data["author"] = self.validate_author(author_data)
@@ -187,9 +189,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         contentType = validated_data.get("contentType")
         visibility = validated_data.get("visibility")
-
-        print("Validated visibility 2:", validated_data.get("visibility"))
-        print("Validated contentType 2:", validated_data.get("contentType"))
 
         if not contentType or not visibility:
             raise serializers.ValidationError(
@@ -213,7 +212,9 @@ class PostSerializer(serializers.ModelSerializer):
             ) from exc
 
         # Extract or construct the post_serial
-        incoming_id = validated_data.get("id", None)
+        incoming_id = self.initial_data.get(
+            "id", None
+        )  # Use `initial_data` to capture the incoming data
         if incoming_id:
             # Extract `post_serial` from the incoming `id`
             post_serial = incoming_id.rstrip("/").split("/")[-1]
