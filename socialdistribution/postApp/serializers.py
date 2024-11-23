@@ -83,7 +83,7 @@ class PostSerializer(serializers.ModelSerializer):
         return {
             "type": "likes",
             "page": f"{host_no_api}/{obj.author.user.username}/posts_list/{obj.uuid}",
-            "id": f"{host}authors/{obj.author.user.username}/posts/{obj.uuid}/likes",
+            "id": f"{host}authors/{obj.author.user.user_serial}/posts/{obj.post_serial}/likes",
             "page_number": 1,
             "size": 5,
             "count": obj.postliked.count(),
@@ -123,6 +123,36 @@ class PostSerializer(serializers.ModelSerializer):
         author = get_object_or_404(AuthorProfile, fqid=author_id)
 
         return author
+
+    def to_representation(self, instance):
+        """
+        Custom representation to map internal values to external human-readable values.
+        """
+        representation = super().to_representation(instance)
+
+        # Map visibility and contentType to their human-readable forms
+        visibility_mapping = {
+            "p": "PUBLIC",
+            "u": "UNLISTED",
+            "fo": "FRIENDS",
+            "d": "DELETED",
+        }
+        content_type_mapping = {
+            "p": "text/plain",
+            "m": "text/markdown",
+            "png": "image/png;base64",
+            "jpeg": "image/jpeg;base64",
+            "a": "application/base64",
+        }
+
+        representation["visibility"] = visibility_mapping.get(
+            instance.visibility, instance.visibility
+        )
+        representation["contentType"] = content_type_mapping.get(
+            instance.contentType, instance.contentType
+        )
+
+        return representation
 
     def to_internal_value(self, data):
         """
@@ -181,6 +211,19 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 f"No Node found for host: {host}"
             ) from exc
+
+        # Extract or construct the post_serial
+        incoming_id = validated_data.get("id", None)
+        if incoming_id:
+            # Extract `post_serial` from the incoming `id`
+            post_serial = incoming_id.rstrip("/").split("/")[-1]
+            validated_data["post_serial"] = post_serial
+
+        # Construct the `fqid` using `node`, `author`, and `post_serial`
+        if "post_serial" in validated_data:
+            validated_data[
+                "fqid"
+            ] = f"{node.url.rstrip('/')}authors/{author.user.user_serial}/posts/{validated_data['post_serial']}"
 
         # Create the Post instance
         return Post.objects.create(**validated_data)
