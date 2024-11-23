@@ -161,6 +161,11 @@ def create_comment(request, username, post_uuid):
         comment.comment_serial = comment.uuid
         comment.save()
 
+        comment_json = CommentSerializer(comment, context={"request": request}).data
+
+        if post.author.user.local_node.is_remote:
+            send_to_remote_inboxes(comment_json, post.author)
+
         return render(request, "create_comment_card.html", {"success": True})
 
     return render(request, "create_comment_card.html", {"post": post})
