@@ -108,9 +108,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         author_id = value.get("id")
         host = value.get("host")
-        display_name = value.get("displayName", "Unknown Author")
-        github = value.get("github", "")
-        profile_image = value.get("profileImage", "")
 
         # Extract username from the author ID
         try:
@@ -123,23 +120,7 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Invalid author ID or host: {e}")
 
         # Check if the user exists, otherwise create it
-        user, _ = User.objects.get_or_create(
-            username=username,
-            defaults={
-                "display_name": display_name,
-                "github_user": github,
-                "profileImage": profile_image,
-            },
-        )
-
-        # Ensure the user is associated with the correct node
-        if not user.local_node:
-            node = get_object_or_404(Node, url=host)
-            user.local_node = node
-            user.save()
-
-        # Check if the author profile exists, otherwise create it
-        author = get_object_or_404(AuthorProfileuser=user)
+        author = get_object_or_404(AuthorProfile, fqid=author_id)
 
         return author
 
