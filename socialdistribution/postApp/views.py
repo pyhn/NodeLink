@@ -195,6 +195,18 @@ def like_post(request, username, post_uuid):
     like.like_serial = like.uuid
     like.save()
 
+    like_json = CommentSerializer(like, context={"request": request}).data
+
+    if post.author.user.local_node.is_remote:
+        send_to_remote_inboxes(like_json, post.author)
+    else:
+        remote_followers = Follower.objects.filter(
+            object=author, actor__user__local_node__is_remote=True
+        ).values_list("actor__id", flat=True)
+
+        for a in AuthorProfile.objects.filter(id__in=remote_followers):
+            send_to_remote_inboxes(like_json, a)
+
     return redirect("postApp:post_detail", username, post_uuid)
 
 

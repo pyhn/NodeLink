@@ -485,3 +485,73 @@ class LikeSerializer(serializers.ModelSerializer):
 
     def get_id(self, obj):
         return obj.fqid
+
+    def to_internal_value(self, data):
+        """
+        Custom logic to parse incoming data and ensure only required fields are processed.
+        """
+        validated_data = {}
+
+        # Validate and parse author
+        author_data = data.get("author", {})
+        author_id = author_data.get("id", "").strip()
+        if author_id:
+            try:
+                validated_data["author"] = AuthorProfile.objects.get(fqid=author_id)
+            except AuthorProfile.DoesNotExist as exc:
+                raise serializers.ValidationError(
+                    {"author": "Invalid author ID."}
+                ) from exc
+        else:
+            raise serializers.ValidationError({"author": "Author is required."})
+
+        # Validate and parse object (post)
+        object_url = data.get("object", "").strip()
+        if object_url:
+            try:
+                validated_data["post"] = Post.objects.get(fqid=object_url)
+            except Post.DoesNotExist as exc:
+                raise serializers.ValidationError(
+                    {"object": "Invalid post URL."}
+                ) from exc
+        else:
+            raise serializers.ValidationError({"object": "Post is required."})
+
+        # Extract like_serial from the id field
+        like_id = data.get("id", "").strip()
+        if like_id:
+            like_serial = like_id.rstrip("/").split("/")[-1]
+            validated_data["like_serial"] = like_serial
+            validated_data["fqid"] = like_id
+        else:
+            raise serializers.ValidationError({"id": "Like ID is required."})
+
+        # Automatically set created_by and updated_by
+        validated_data["created_by"] = validated_data["author"]
+        validated_data["updated_by"] = validated_data["author"]
+
+        return validated_data
+
+    def create(self, validated_data):
+        """
+        Override create to handle saving like_serial and fqid.
+        """
+        like_serial = validated_data.pop("like_serial", None)
+        if not like_serial:
+            raise serializers.ValidationError(
+                {"like_serial": "Like serial is required."}
+            )
+
+        # Create the Like instance
+        like = Like.objects.create(**validated_data)
+        like.like_serial = like_serial
+
+        # Save the instance to trigger the dynamic `fqid` generation in `save()`
+        like.save()
+        return like
+
+    def update(self, instance, validated_data):
+        # Override update to allow updating without model changes
+        instance.post = validated_data.get("post", instance.post)
+        instance.save()
+        return instance
