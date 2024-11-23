@@ -363,8 +363,8 @@ class CommentSerializer(serializers.ModelSerializer):
         post_url = data.get("post", "")
         if post_url:
             try:
-                post_uuid = post_url.rstrip("/").split("/")[-1]
-                validated_data["post"] = Post.objects.get(uuid=post_uuid)
+
+                validated_data["post"] = Post.objects.get(fqid=post_url)
             except Post.DoesNotExist as exc:
                 raise serializers.ValidationError(
                     {"post": "Invalid post URL or UUID."}
@@ -376,10 +376,7 @@ class CommentSerializer(serializers.ModelSerializer):
         author_id = data.get("author", {}).get("id", "")
         if author_id:
             try:
-                author_username = author_id.rstrip("/").split("/")[-1]
-                validated_data["author"] = AuthorProfile.objects.get(
-                    user__username=author_username
-                )
+                validated_data["author"] = AuthorProfile.objects.get(fqid=author_id)
             except AuthorProfile.DoesNotExist as exc:
                 raise serializers.ValidationError(
                     {"author": "Invalid author ID."}
@@ -395,7 +392,7 @@ class CommentSerializer(serializers.ModelSerializer):
             validated_data["fqid"] = comment_id
         else:
             raise serializers.ValidationError({"id": "Comment ID is required."})
-
+        print(f"validated data: {validated_data}")
         return validated_data
 
     def get_likes(self, obj):
