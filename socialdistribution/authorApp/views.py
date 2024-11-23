@@ -1019,10 +1019,12 @@ def author_inbox_view(request, author_serial):
                 ).first()
                 to_update.status = "a"
                 to_update.save()
+                # only create a remote post if a follow relation exists
+                serializer = PostSerializer(data=data, context={"author": author})
+
         except AuthorProfile.DoesNotExist:
             return Response({"error": "Author not found"}, status=404)
 
-        serializer = PostSerializer(data=data, context={"author": author})
     elif object_type == "like":
         serializer = LikeSerializer(data=data, context={"author": author})
     elif object_type == "comment":
