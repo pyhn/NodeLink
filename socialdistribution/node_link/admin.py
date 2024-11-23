@@ -95,28 +95,28 @@ class NodeAdmin(admin.ModelAdmin):
                         level=messages.ERROR,
                     )
                     return  # Do not save the node
+            auth = (obj.username, obj.raw_password)
 
-        auth = (obj.username, obj.raw_password)
-        try:
-            response = requests.get(authors_url, auth=auth, timeout=10)
-            print(response)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            # Do not save the node, and show a notification
-            self.message_user(
-                request,
-                f"Error connecting to {authors_url}: {e}",
-                level=messages.ERROR,
-            )
-            return  # Do not save the node
-        except ValueError as e:
-            # Do not save the node, and show a notification
-            self.message_user(
-                request,
-                f"Invalid response from {authors_url}: {e}",
-                level=messages.ERROR,
-            )
-            return  # Do not save the node
+            try:
+                response = requests.get(authors_url, auth=auth, timeout=10)
+                print(response)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                # Do not save the node, and show a notification
+                self.message_user(
+                    request,
+                    f"Error connecting to {authors_url}: {e}",
+                    level=messages.ERROR,
+                )
+                return  # Do not save the node
+            except ValueError as e:
+                # Do not save the node, and show a notification
+                self.message_user(
+                    request,
+                    f"Invalid response from {authors_url}: {e}",
+                    level=messages.ERROR,
+                )
+                return  # Do not save the node
 
         # save the object
         super().save_model(request, obj, form, change)
