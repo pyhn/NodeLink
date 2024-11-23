@@ -70,7 +70,7 @@ class NodeAdmin(admin.ModelAdmin):
 
         # get the current local url
         current_site_url = request.scheme + "://" + request.get_host()
-        print(current_site_url)
+        current_site_url += "/api/"
 
         # set "is_remote" attribute based on URL comparison
         if obj.url.rstrip("/") != current_site_url.rstrip("/"):
