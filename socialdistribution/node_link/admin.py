@@ -64,6 +64,7 @@ class NodeAdmin(admin.ModelAdmin):
     readonly_fields = ("is_remote", "created_by", "created_at", "updated_at")
 
     def save_model(self, request, obj, form, change):
+        authors_url = ""
         if not obj.pk:
             obj.created_by = request.user
 
