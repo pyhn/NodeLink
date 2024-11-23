@@ -64,7 +64,7 @@ class NodeAdmin(admin.ModelAdmin):
     readonly_fields = ("is_remote", "created_by", "created_at", "updated_at")
 
     def save_model(self, request, obj, form, change):
-        authors_url = ""
+        authors_url = obj.url.rstrip("/") + "/authors/"
         if not obj.pk:
             obj.created_by = request.user
 
@@ -81,7 +81,6 @@ class NodeAdmin(admin.ModelAdmin):
 
         # Before saving the node, attempt to connect to its authors/ endpoint
         if obj.is_remote:
-            authors_url = obj.url.rstrip("/") + "/authors/"
             raw_password = obj.raw_password
             if not raw_password:
                 # Keep existing raw_password if available
@@ -96,28 +95,28 @@ class NodeAdmin(admin.ModelAdmin):
                         level=messages.ERROR,
                     )
                     return  # Do not save the node
+            auth = (obj.username, obj.raw_password)
 
-        auth = (obj.username, raw_password)
-        try:
-            response = requests.get(authors_url, auth=auth, timeout=10)
-            print(response)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            # Do not save the node, and show a notification
-            self.message_user(
-                request,
-                f"Error connecting to {authors_url}: {e}",
-                level=messages.ERROR,
-            )
-            return  # Do not save the node
-        except ValueError as e:
-            # Do not save the node, and show a notification
-            self.message_user(
-                request,
-                f"Invalid response from {authors_url}: {e}",
-                level=messages.ERROR,
-            )
-            return  # Do not save the node
+            try:
+                response = requests.get(authors_url, auth=auth, timeout=10)
+                print(response)
+                response.raise_for_status()
+            except requests.RequestException as e:
+                # Do not save the node, and show a notification
+                self.message_user(
+                    request,
+                    f"Error connecting to {authors_url}: {e}",
+                    level=messages.ERROR,
+                )
+                return  # Do not save the node
+            except ValueError as e:
+                # Do not save the node, and show a notification
+                self.message_user(
+                    request,
+                    f"Invalid response from {authors_url}: {e}",
+                    level=messages.ERROR,
+                )
+                return  # Do not save the node
 
         # save the object
         super().save_model(request, obj, form, change)

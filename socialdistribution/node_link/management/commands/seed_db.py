@@ -38,12 +38,11 @@ class Command(BaseCommand):
         )
 
         # Create a Node first (as Authors require it)
-        host = fake.url() + "api/"
         node = Node.objects.create(
-            url=host,
+            url="https://127.0.0.1:8000/api/",
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
-            username="https://127.0.0.1:8000/",
+            username="local",
             password="password",
             raw_password="password",
         )
@@ -55,9 +54,10 @@ class Command(BaseCommand):
         authors = []
         logger.info("Creating fake authors...")
         for _ in range(10):
+            author_serial = fake.user_name()
             user = User.objects.create(
-                username=fake.user_name(),
-                user_serial=fake.user_name(),
+                username=author_serial,
+                user_serial=author_serial,
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),

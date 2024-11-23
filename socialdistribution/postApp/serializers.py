@@ -20,8 +20,8 @@ class PostSerializer(serializers.ModelSerializer):
     published = serializers.DateTimeField(
         source="created_at", format="iso-8601", read_only=True
     )
-    visibility = serializers.SerializerMethodField()
-    contentType = serializers.SerializerMethodField()
+    visibility = serializers.CharField()  # Make this writable
+    contentType = serializers.CharField()  # Make this writable
 
     class Meta:
         model = Post
@@ -108,9 +108,6 @@ class PostSerializer(serializers.ModelSerializer):
 
         author_id = value.get("id")
         host = value.get("host")
-        display_name = value.get("displayName", "Unknown Author")
-        github = value.get("github", "")
-        profile_image = value.get("profileImage", "")
 
         # Extract username from the author ID
         try:
@@ -123,23 +120,7 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Invalid author ID or host: {e}")
 
         # Check if the user exists, otherwise create it
-        user, _ = User.objects.get_or_create(
-            username=username,
-            defaults={
-                "display_name": display_name,
-                "github_user": github,
-                "profileImage": profile_image,
-            },
-        )
-
-        # Ensure the user is associated with the correct node
-        if not user.local_node:
-            node = get_object_or_404(Node, url=host)
-            user.local_node = node
-            user.save()
-
-        # Check if the author profile exists, otherwise create it
-        author, _ = AuthorProfile.objects.get_or_create(user=user)
+        author = get_object_or_404(AuthorProfile, fqid=author_id)
 
         return author
 
@@ -147,7 +128,20 @@ class PostSerializer(serializers.ModelSerializer):
         """
         Convert incoming JSON into a validated internal Python representation.
         """
+        print("Incoming visibility:", data.get("visibility"))
+        print("Incoming contentType:", data.get("contentType"))
+
+        # Map visibility and contentType to internal values
+        if data.get("visibility"):
+            data["visibility"] = self.map_visibility(data["visibility"])
+        if data.get("contentType"):
+            data["contentType"] = self.map_content_type(data["contentType"])
+
         validated_data = super().to_internal_value(data)
+
+        print("Validated visibility:", validated_data.get("visibility"))
+        print("Validated contentType:", validated_data.get("contentType"))
+
         author_data = data.get("author")
         validated_data["author"] = self.validate_author(author_data)
         return validated_data
@@ -160,6 +154,17 @@ class PostSerializer(serializers.ModelSerializer):
         author = validated_data.pop("author", None)
         if not author:
             raise serializers.ValidationError("Author is required to create a post.")
+
+        contentType = validated_data.get("contentType")
+        visibility = validated_data.get("visibility")
+
+        print("Validated visibility 2:", validated_data.get("visibility"))
+        print("Validated contentType 2:", validated_data.get("contentType"))
+
+        if not contentType or not visibility:
+            raise serializers.ValidationError(
+                "ContentType or visibility is missing or invalid."
+            )
 
         # Set the created_by field
         validated_data["created_by"] = author
@@ -197,6 +202,31 @@ class PostSerializer(serializers.ModelSerializer):
         # Save the updated instance
         instance.save()
         return instance
+
+    def map_visibility(self, visibility):
+        """
+        Map external visibility to internal representation.
+        """
+        visibility_mapping = {
+            "PUBLIC": "p",
+            "UNLISTED": "u",
+            "FRIENDS": "fo",
+            "DELETED": "d",
+        }
+        return visibility_mapping.get(visibility.upper(), visibility)
+
+    def map_content_type(self, content_type):
+        """
+        Map external contentType to internal representation.
+        """
+        content_type_mapping = {
+            "text/plain": "p",
+            "text/markdown": "m",
+            "image/png;base64": "png",
+            "image/jpeg;base64": "jpeg",
+            "application/base64": "a",
+        }
+        return content_type_mapping.get(content_type.lower(), content_type)
 
 
 class CommentSerializer(serializers.ModelSerializer):

@@ -22,6 +22,7 @@ from .serializers import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from django.db.models import Q
 
 
 # Third-party imports
@@ -36,9 +37,11 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project imports
-from authorApp.models import AuthorProfile, User
+from authorApp.models import AuthorProfile, User, Follower, Friends
 from node_link.models import Notification
 from node_link.utils.common import has_access, is_approved
+from node_link.utils.communication import send_to_remote_inboxes
+
 from postApp.models import Comment, Like, Post
 from postApp.utils.image_check import check_image
 from authorApp.serializers import AuthorProfileSerializer
@@ -102,56 +105,36 @@ def submit_post(request, username):
         post.save()
 
         post_json = PostSerializer(post, context={"request": request}).data
+        # remote handle following(public and unlisted)
 
-        send_post_to_remote_inboxes(post_json)
+        # remote handle friends only
+        if post.visibility == "fo":
+            for a in Friends.objects.filter(Q(user1=author) | Q(user2=author)):
+                print(f"user1: {a.user1}, user2: {a.user2}, author: {author}")
+
+            remote_friends = [
+                a.user2.fqid if a.user1 == author else a.user1.fqid
+                for a in Friends.objects.filter(Q(user1=author) | Q(user2=author))
+            ]
+
+            print(f"remote friends here {remote_friends}")
+
+            for a in AuthorProfile.objects.filter(fqid__in=remote_friends):
+                print(f"author: {a.fqid}")
+                send_to_remote_inboxes(post_json, a)
+
+        else:
+            remote_followers = Follower.objects.filter(
+                object=author, actor__user__local_node__is_remote=True
+            ).values_list("actor__id", flat=True)
+
+            for a in AuthorProfile.objects.filter(id__in=remote_followers):
+
+                send_to_remote_inboxes(post_json, a)
 
         # Redirect to the post list page
         return redirect("node_link:home", username=username)
     return redirect("node_link:home", username=username)
-
-
-def send_post_to_remote_inboxes(post_json):
-    """
-    Send the post JSON object to the inbox of all remote users.
-
-    Args:
-        post_json (dict): The post JSON object to send.
-    """
-    # Find all remote users (usernames containing '__')
-    remote_users = User.objects.filter(username__contains="__")
-
-    for user in remote_users:
-        # Extract the remote node's URL and credentials
-        try:
-            node = user.local_node  # Assume `local_node` points to the Node model
-        except AttributeError:
-            print(f"User {user.username} does not have an associated node.")
-            continue
-
-        if not node.url or not node.username or not node.password:
-            print(f"Node for user {user.username} is missing credentials or URL.")
-            continue
-
-        # Extract the remote author's username
-        remote_author_serial = user.username.split("__")[1]
-
-        # Construct the inbox URL
-        inbox_url = f"{node.url.rstrip('/')}/api/authors/{remote_author_serial}/inbox/"
-
-        # Send the POST request to the inbox
-        try:
-            response = requests.post(
-                inbox_url,
-                json=post_json,
-                auth=(node.username, "testing"),
-                timeout=10,
-            )
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            print(
-                f"Successfully sent post to {inbox_url}. Response: {response.status_code}"
-            )
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to send post to {inbox_url}. Error: {str(e)}")
 
 
 @is_approved

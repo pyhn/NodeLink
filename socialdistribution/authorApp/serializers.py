@@ -169,6 +169,69 @@ class FollowerSerializer(serializers.ModelSerializer):
         host = remove_api_suffix(obj.actor.user.local_node.url)
         return f"{host}/{obj.actor.user.username}/profile"
 
+    def create(self, validated_data):
+        f_actor = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["actor"]["id"]
+        )
+        f_object = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["object"]["id"]
+        )
+        # Create or update follow request
+        followRequest, _ = Follower.objects.update_or_create(
+            actor=f_actor, object=f_object, status="p", created_by=f_actor
+        )
+        return followRequest
+
+
+class FollowerRequestSerializer(serializers.ModelSerializer):
+    """Custom Serializer for followers to match the required output format"""
+
+    type = serializers.CharField(default="follow", read_only=True)
+    summary = serializers.SerializerMethodField()
+    host = serializers.SerializerMethodField()
+    displayName = serializers.CharField(
+        source="actor.user.display_name", read_only=True
+    )
+    page = serializers.SerializerMethodField()
+    github = serializers.CharField(source="actor.github", read_only=True)
+    profileImage = serializers.CharField(
+        source="actor.user.profileImage.url", read_only=True
+    )
+
+    class Meta:
+        model = Follower
+        fields = ["type", "id", "host", "displayName", "page", "github", "profileImage"]
+
+    def get_summary(self, obj):
+        return f"{obj.actor.user.display_name} wants to follow {obj.object.user.display_name}"
+
+    def create(self, validated_data):
+        f_actor = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["actor"]["id"]
+        )
+        f_object = get_object_or_404(
+            AuthorProfile, fqid=self.initial_data["object"]["id"]
+        )
+        # Create or update follow request
+        followRequest, _ = Follower.objects.update_or_create(
+            actor=f_actor, object=f_object, status="p", created_by=f_actor
+        )
+        return followRequest
+
+    def to_representation(self, instance):
+        """Custom representation for dynamically computed fields."""
+
+        f_actor_dict = AuthorProfileSerializer(instance.actor)
+        f_object_dict = AuthorProfileSerializer(instance.object)
+
+        representation = {
+            "type": "follow",
+            "summary": f"{instance.actor.user.display_name} wants to follow {instance.object.user.display_name}",
+            "actor": f_actor_dict.to_representation(instance.actor),
+            "object": f_object_dict.to_representation(instance.object),
+        }
+        return representation
+
 
 # Serializer for friendships
 class FriendSerializer(serializers.ModelSerializer):
