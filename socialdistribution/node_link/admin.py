@@ -78,9 +78,9 @@ class NodeAdmin(admin.ModelAdmin):
             # by default it is false since it is local
             obj.is_remote = False
 
-        # Before saving the node, attempt to connect to its /api/authors/ endpoint
+        # Before saving the node, attempt to connect to its authors/ endpoint
         if obj.is_remote:
-            authors_url = obj.url.rstrip("/") + "/api/authors/"
+            authors_url = obj.url.rstrip("/") + "/authors/"
             raw_password = obj.raw_password
             if not raw_password:
                 # Keep existing raw_password if available
