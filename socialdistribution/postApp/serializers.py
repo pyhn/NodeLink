@@ -219,6 +219,7 @@ class PostSerializer(serializers.ModelSerializer):
             # Extract `post_serial` from the incoming `id`
             post_serial = incoming_id.rstrip("/").split("/")[-1]
             validated_data["post_serial"] = post_serial
+            validated_data["fqid"] = incoming_id
 
         # Construct the `fqid` using `node`, `author`, and `post_serial`
         if "post_serial" in validated_data:
