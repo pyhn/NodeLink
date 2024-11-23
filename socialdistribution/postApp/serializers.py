@@ -129,6 +129,29 @@ class PostSerializer(serializers.ModelSerializer):
         Convert incoming JSON into a validated internal Python representation.
         """
         print("Incoming contentType:", data.get("contentType"))
+
+        # Map visibility and contentType to internal representations
+        visibility_map = {v: k for k, v in Post.visibility_choices}
+        content_type_map = {v: k for k, v in Post.type_choices}
+
+        if "visibility" in data:
+            visibility_display = data["visibility"]
+            if visibility_display in visibility_map:
+                data["visibility"] = visibility_map[visibility_display]
+            else:
+                raise serializers.ValidationError(
+                    f"Invalid visibility: {visibility_display}"
+                )
+
+        if "contentType" in data:
+            content_type_display = data["contentType"]
+            if content_type_display in content_type_map:
+                data["contentType"] = content_type_map[content_type_display]
+            else:
+                raise serializers.ValidationError(
+                    f"Invalid contentType: {content_type_display}"
+                )
+
         validated_data = super().to_internal_value(data)
         author_data = data.get("author")
         validated_data["author"] = self.validate_author(author_data)
