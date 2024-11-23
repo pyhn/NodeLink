@@ -106,13 +106,6 @@ def submit_post(request, username):
 
         post_json = PostSerializer(post, context={"request": request}).data
         # remote handle following(public and unlisted)
-        remote_followers = Follower.objects.filter(
-            object=author, actor__user__local_node__is_remote=True
-        ).values_list("actor__id", flat=True)
-
-        for a in AuthorProfile.objects.filter(id__in=remote_followers):
-
-            send_to_remote_inboxes(post_json, a)
 
         # remote handle friends only
         if post.visibility == "fo":
@@ -122,6 +115,14 @@ def submit_post(request, username):
             ]
 
             for a in AuthorProfile.objects.filter(user__id__in=remote_friends):
+
+                send_to_remote_inboxes(post_json, a)
+        else:
+            remote_followers = Follower.objects.filter(
+                object=author, actor__user__local_node__is_remote=True
+            ).values_list("actor__id", flat=True)
+
+            for a in AuthorProfile.objects.filter(id__in=remote_followers):
 
                 send_to_remote_inboxes(post_json, a)
 
