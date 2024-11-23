@@ -1049,7 +1049,7 @@ def author_inbox_view(request, author_serial):
                         # Friendship already exists
                         messages.info(
                             request,
-                            f"You are already friends with {author.user.user_serial.user.user_serial}.",
+                            f"You are already friends with {author.user.user_serial}.",
                         )
                 # only create a remote post if a follow relation exists
                 serializer = PostSerializer(data=data, context={"author": author})
