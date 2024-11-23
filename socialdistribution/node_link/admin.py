@@ -64,7 +64,7 @@ class NodeAdmin(admin.ModelAdmin):
     readonly_fields = ("is_remote", "created_by", "created_at", "updated_at")
 
     def save_model(self, request, obj, form, change):
-        authors_url = ""
+        authors_url = obj.url.rstrip("/") + "/authors/"
         if not obj.pk:
             obj.created_by = request.user
 
@@ -81,7 +81,6 @@ class NodeAdmin(admin.ModelAdmin):
 
         # Before saving the node, attempt to connect to its authors/ endpoint
         if obj.is_remote:
-            authors_url = obj.url.rstrip("/") + "/authors/"
             raw_password = obj.raw_password
             if not raw_password:
                 # Keep existing raw_password if available
