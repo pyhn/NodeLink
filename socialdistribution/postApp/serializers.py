@@ -20,8 +20,8 @@ class PostSerializer(serializers.ModelSerializer):
     published = serializers.DateTimeField(
         source="created_at", format="iso-8601", read_only=True
     )
-    visibility = serializers.SerializerMethodField()
-    contentType = serializers.SerializerMethodField()
+    visibility = serializers.CharField()  # Make this writable
+    contentType = serializers.CharField()  # Make this writable
 
     class Meta:
         model = Post
@@ -157,6 +157,9 @@ class PostSerializer(serializers.ModelSerializer):
 
         contentType = validated_data.get("contentType")
         visibility = validated_data.get("visibility")
+
+        print("Validated visibility 2:", validated_data.get("visibility"))
+        print("Validated contentType 2:", validated_data.get("contentType"))
 
         if not contentType or not visibility:
             raise serializers.ValidationError(
