@@ -128,6 +128,7 @@ class PostSerializer(serializers.ModelSerializer):
         """
         Convert incoming JSON into a validated internal Python representation.
         """
+        print("Incoming contentType:", data.get("contentType"))
         validated_data = super().to_internal_value(data)
         author_data = data.get("author")
         validated_data["author"] = self.validate_author(author_data)
