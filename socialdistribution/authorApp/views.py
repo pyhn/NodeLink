@@ -1014,11 +1014,43 @@ def author_inbox_view(request, author_serial):
                 Follower.objects.filter(object=remote_author, actor=author).exists()
                 and remote_author.user.local_node.is_remote
             ):
+                # update follow
                 to_update = Follower.objects.filter(
                     object=remote_author, actor=author
                 ).first()
                 to_update.status = "a"
                 to_update.save()
+                # updtae friends
+                mutual_follow = Follower.objects.filter(
+                    actor=remote_author, object=author, status="a"
+                ).exists()
+
+                if mutual_follow:
+                    # Establish friendship
+                    try:
+                        # Ensure consistent ordering by user ID
+                        user1, user2 = (
+                            (remote_author, author)
+                            if remote_author.id < author.id
+                            else (author, remote_author)
+                        )
+
+                        # Create a single Friends instance
+                        Friends.objects.create(
+                            user1=user1,
+                            user2=user2,
+                            created_by=remote_author,  # Assuming 'created_by' refers to the initiator
+                        )
+                        messages.success(
+                            request,
+                            f"You are now friends with {author.user.user_serial}.",
+                        )
+                    except IntegrityError:
+                        # Friendship already exists
+                        messages.info(
+                            request,
+                            f"You are already friends with {author.user.user_serial.user.user_serial}.",
+                        )
                 # only create a remote post if a follow relation exists
                 serializer = PostSerializer(data=data, context={"author": author})
 
