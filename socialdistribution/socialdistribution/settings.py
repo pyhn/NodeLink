@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "corsheaders",
+    "drf_yasg",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -59,6 +62,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "node_link.middleware.ClearNodeAuthMiddleware",
 ]
 
 ROOT_URLCONF = "socialdistribution.urls"
@@ -85,21 +90,18 @@ WSGI_APPLICATION = "socialdistribution.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-if os.environ.get("DATABASE_URL") != None:
-    # Running on Heroku
-    DATABASES = {
-        "default": dj_database_url.config(
-            conn_max_age=600, conn_health_checks=True, ssl_require=True
-        )
+# Default to SQLite
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    # Running locally.
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
+
+# Configure from DATABASE_URL environment variable if it exists
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
+    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -154,10 +156,37 @@ LOGGING = {
         "level": "INFO",
     },
     "loggers": {
-        "yourapp": {  # Use your actual app name
+        "authorApp": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "node_link": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
     },
+}
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "node_link.auth_backends.RemoteNodeAuthBackend",
+]
+
+# enforce authentication when accessed via HTTP requests
+# if an unauthenticated user tries to access the /api/posts/ endpoint, they will receive a 401
+# curl -i http://localhost:8000/api/posts/ will give 401 Unauthorized
+# curl -i -u your_username:your_password http://localhost:8000/api/posts/ will give 200 OK
+# from rest_framework.permissions import IsAuthenticated will be added in views.py to enforce authentication
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "node_link.auth_backends.NodeBasicAuthentication",  # Custom Node authentication
+        "rest_framework.authentication.BasicAuthentication",  # Default User basic auth
+        "rest_framework.authentication.SessionAuthentication",  # Default User session auth
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
 }
