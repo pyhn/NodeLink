@@ -161,6 +161,18 @@ def create_comment(request, username, post_uuid):
         comment.comment_serial = comment.uuid
         comment.save()
 
+        comment_json = CommentSerializer(comment, context={"request": request}).data
+
+        if post.author.user.local_node.is_remote:
+            send_to_remote_inboxes(comment_json, post.author)
+        else:
+            remote_followers = Follower.objects.filter(
+                object=author, actor__user__local_node__is_remote=True
+            ).values_list("actor__id", flat=True)
+
+            for a in AuthorProfile.objects.filter(id__in=remote_followers):
+                send_to_remote_inboxes(comment_json, a)
+
         return render(request, "create_comment_card.html", {"success": True})
 
     return render(request, "create_comment_card.html", {"post": post})
@@ -182,6 +194,18 @@ def like_post(request, username, post_uuid):
 
     like.like_serial = like.uuid
     like.save()
+
+    like_json = LikeSerializer(like, context={"request": request}).data
+
+    if post.author.user.local_node.is_remote:
+        send_to_remote_inboxes(like_json, post.author)
+    else:
+        remote_followers = Follower.objects.filter(
+            object=author, actor__user__local_node__is_remote=True
+        ).values_list("actor__id", flat=True)
+
+        for a in AuthorProfile.objects.filter(id__in=remote_followers):
+            send_to_remote_inboxes(like_json, a)
 
     return redirect("postApp:post_detail", username, post_uuid)
 
