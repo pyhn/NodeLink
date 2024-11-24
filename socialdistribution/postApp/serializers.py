@@ -255,8 +255,7 @@ class PostSerializer(serializers.ModelSerializer):
                 setattr(post, field, validated_data[field])
 
         # Update timestamps and updated_by
-        user = self.context["request"].user.author_profile
-        post.updated_by = user
+        post.updated_by = post.author
         post.updated_at = datetime.now()
 
         # Save the updated post

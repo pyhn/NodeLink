@@ -1066,21 +1066,12 @@ def author_inbox_view(request, author_serial):
                     if post_instance:
                         # If the post exists, pass it to the serializer for updating
                         serializer = PostSerializer(
-                            post_instance,
-                            data=data,
-                            context={
-                                "author": author,
-                                "request": request,
-                            },  # Add request to context
+                            post_instance, data=data, context={"author": author}
                         )
                     else:
                         # If the post doesn't exist, initialize the serializer for creating a new post
                         serializer = PostSerializer(
-                            data=data,
-                            context={
-                                "author": author,
-                                "request": request,
-                            },  # Add request to context
+                            data=data, context={"author": author}
                         )
 
             except AuthorProfile.DoesNotExist:
