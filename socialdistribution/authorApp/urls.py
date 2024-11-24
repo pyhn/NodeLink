@@ -33,7 +33,7 @@ urlpatterns = [
     path("api/", include(router.urls)),
     # Retrieve a specific comment using its FQID (local)
     path(
-        "api/authors/<str:author_serial>/inbox/",
+        "api/authors/<str:author_serial>/inbox",
         views.author_inbox_view,
         name="author-inbox",
     ),
