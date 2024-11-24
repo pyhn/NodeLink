@@ -1009,6 +1009,14 @@ def author_inbox_view(request, author_serial):
         # filter base on type
         if object_type == "post":
             # check if a remote author(object) sends a post; update follow status to Accepted
+            post_id = data.get("id")  # Retrieve the ID of the post
+            if not post_id:
+                # If no post ID is provided, return an error response
+                return Response({"error": "Post ID is required."}, status=400)
+
+            # Query the database to check if the post exists
+            post_instance = Post.objects.filter(fqid=post_id).first()
+
             try:
                 remote_author = get_object_or_404(
                     AuthorProfile, fqid=data["author"]["id"]
@@ -1054,8 +1062,17 @@ def author_inbox_view(request, author_serial):
                                 request,
                                 f"You are already friends with {author.user.user_serial}.",
                             )
-                    # only create a remote post if a follow relation exists
-                    serializer = PostSerializer(data=data, context={"author": author})
+
+                    if post_instance:
+                        # If the post exists, pass it to the serializer for updating
+                        serializer = PostSerializer(
+                            post_instance, data=data, context={"author": author}
+                        )
+                    else:
+                        # If the post doesn't exist, initialize the serializer for creating a new post
+                        serializer = PostSerializer(
+                            data=data, context={"author": author}
+                        )
 
             except AuthorProfile.DoesNotExist:
                 return Response({"error": "Author not found"}, status=404)
