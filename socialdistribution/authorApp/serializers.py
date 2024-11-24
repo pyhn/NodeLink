@@ -31,7 +31,7 @@ class AuthorProfileSerializer(serializers.ModelSerializer):
     host = serializers.CharField(required=False)
     type = serializers.CharField(default="author", required=False)
     displayName = serializers.CharField(required=False)
-    github = serializers.CharField(allow_null=True, required=False)
+    github = serializers.CharField(allow_null=True, required=False, allow_blank=True)
     profileImage = serializers.CharField(required=False)
     page = serializers.CharField(required=False)
 
