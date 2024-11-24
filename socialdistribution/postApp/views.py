@@ -216,8 +216,37 @@ def delete_post(request, username, post_uuid):
     post = get_object_or_404(Post, uuid=post_uuid)
     # check if they are allow to delete
     if post.author.user == request.user:
+        author = post.author
         post.visibility = "d"
         post.save()
+
+        post_json = PostSerializer(post, context={"request": request}).data
+
+        # remote handle friends only
+        if post.visibility == "fo":
+            for a in Friends.objects.filter(Q(user1=author) | Q(user2=author)):
+                print(f"user1: {a.user1}, user2: {a.user2}, author: {author}")
+
+            remote_friends = [
+                a.user2.fqid if a.user1 == author else a.user1.fqid
+                for a in Friends.objects.filter(Q(user1=author) | Q(user2=author))
+            ]
+
+            print(f"remote friends here {remote_friends}")
+
+            for a in AuthorProfile.objects.filter(fqid__in=remote_friends):
+                print(f"author: {a.fqid}")
+                send_to_remote_inboxes(post_json, a)
+
+        else:
+            remote_followers = Follower.objects.filter(
+                object=author, actor__user__local_node__is_remote=True
+            ).values_list("actor__id", flat=True)
+
+            for a in AuthorProfile.objects.filter(id__in=remote_followers):
+
+                send_to_remote_inboxes(post_json, a)
+
     return redirect("node_link:home", username=username)
 
 
@@ -312,6 +341,35 @@ def submit_edit_post(request, username, post_uuid):
     post.updated_by = request.user.author_profile
     post.updated_at = datetime.now()
     post.save()
+
+    author = post.author
+
+    post_json = PostSerializer(post, context={"request": request}).data
+
+    # remote handle friends only
+    if post.visibility == "fo":
+        for a in Friends.objects.filter(Q(user1=author) | Q(user2=author)):
+            print(f"user1: {a.user1}, user2: {a.user2}, author: {author}")
+
+        remote_friends = [
+            a.user2.fqid if a.user1 == author else a.user1.fqid
+            for a in Friends.objects.filter(Q(user1=author) | Q(user2=author))
+        ]
+
+        print(f"remote friends here {remote_friends}")
+
+        for a in AuthorProfile.objects.filter(fqid__in=remote_friends):
+            print(f"author: {a.fqid}")
+            send_to_remote_inboxes(post_json, a)
+
+    else:
+        remote_followers = Follower.objects.filter(
+            object=author, actor__user__local_node__is_remote=True
+        ).values_list("actor__id", flat=True)
+
+        for a in AuthorProfile.objects.filter(id__in=remote_followers):
+
+            send_to_remote_inboxes(post_json, a)
 
     return redirect(
         "postApp:post_detail", username=request.user.username, post_uuid=post_uuid
