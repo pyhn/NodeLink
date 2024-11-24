@@ -75,7 +75,6 @@
 }
 .post.body img{
     height: 70%;
-    width: 70%;
     overflow: hidden;
 
 }
@@ -226,6 +225,7 @@ div#user_info{
     justify-content: space-between;
     padding: 1vw 1vh;
     overflow:hidden;
+    width:15%
 }
 #user_stats{
    display:flex;
