@@ -232,21 +232,37 @@ class PostSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """
-        Update a Post instance while handling fields from MixinApp.
+        Update an existing Post instance by matching the incoming `id` with the `fqid`.
         """
-        # Update modifiable fields
+        # Retrieve the ID from the incoming data
+        incoming_id = self.initial_data.get("id")
+        if not incoming_id:
+            raise serializers.ValidationError(
+                "The 'id' field is required to update a post."
+            )
+
+        # Find the existing post using `fqid`
+        try:
+            post = Post.objects.get(fqid=incoming_id)
+        except Post.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                f"No post found with id: {incoming_id}"
+            ) from exc
+
+        # Update the fields from `validated_data`
         for field in ["title", "description", "content", "contentType", "visibility"]:
             if field in validated_data:
-                setattr(instance, field, validated_data[field])
+                setattr(post, field, validated_data[field])
 
-        # Update updated_by field
+        # Update timestamps and updated_by
         user = self.context["request"].user.author_profile
-        instance.updated_by = user
-        instance.updated_at = datetime.now()
+        post.updated_by = user
+        post.updated_at = datetime.now()
 
-        # Save the updated instance
-        instance.save()
-        return instance
+        # Save the updated post
+        post.save()
+
+        return post
 
     def map_visibility(self, visibility):
         """
