@@ -8,7 +8,7 @@
             <input type="checkbox" id="author-{{ author.id }}" name="recipients" value="{{ author.id }}" style="display: none;" onchange="updateShareButton()">
             <label for="author-{{ author.id }}" class="author-label">
                 <img src="{{ author.user.profileImage }}" alt="{{ author.user.username }}" class="author-img">
-                {{ author.user.username }}
+                {{ author.user.display_name }}
             </label>
         </div>
     {% endfor %}
