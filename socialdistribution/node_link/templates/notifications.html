@@ -11,13 +11,14 @@
     <ul class="list-group">
         {% for notification in notifications %}
             <li class="list-group-item {% if not notification.is_read %}list-group-item-info{% endif %}">
+                {% if notification.author_picture_url %}
+                    <img src="{{ notification.author_picture_url }}" alt="Author Picture" class="notification-author-picture" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"/>
+                {% endif %}
                 {% if notification.link_url %}
                     <a href="{{ notification.link_url }}">
-                        <img src="{{notification.author_picture_url}}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
                         {{ notification.message }}
                     </a>
                 {% else %}
-                    <img src="{{notification.author_picture_url}}" alt="Author Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
                     {{ notification.message }}
                 {% endif %}
             </li>

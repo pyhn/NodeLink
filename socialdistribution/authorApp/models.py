@@ -10,11 +10,9 @@ from node_link.utils.mixin import MixinApp
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)  # Track approval status
-    profileImage = models.ImageField(  #!!!IMAGE NOTE: change to a url
-        upload_to="profile_images/",
-        null=True,
-        blank=True,
-        default="/static/icons/user_icon.svg",
+    profileImage = models.URLField(
+    null=True,
+    blank=True,
     )
 
     display_name = models.CharField(max_length=50, null=False, blank=False)
@@ -23,6 +21,9 @@ class User(AbstractUser):
     local_node = models.ForeignKey(
         "node_link.Node", null=True, on_delete=models.CASCADE
     )
+    def get_profile_image(self):
+        default = "https://s3.amazonaws.com/37assets/svn/765-default-avatar.png"
+        return self.profileImage or default
 
     # save the serial from response object here
     # example: "id":"http://nodeaaaa/api/authors/111" this is a remote example

@@ -399,7 +399,12 @@ def post_card(
         user_has_liked = post.postliked.filter(
             author=request.user.author_profile
         ).exists()
-        user_img = post.author.user.profileImage
+        author = post.author
+        user_img = (
+            author.user.profileImage
+            if author.user.profileImage
+            else "https://s3.amazonaws.com/37assets/svn/765-default-avatar.png"
+        )
 
         if post.contentType == "m":
             # Convert Markdown to HTML

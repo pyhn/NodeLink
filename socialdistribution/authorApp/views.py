@@ -1,6 +1,8 @@
 # Standard Library Imports
 from datetime import datetime
 from urllib.parse import unquote
+import base64
+import os
 
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,6 +12,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.conf import settings
 
 # Rest Framework Imports
 from rest_framework.permissions import IsAuthenticated
@@ -451,18 +454,53 @@ def follow_author(request, author_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@is_approved
+@login_required
 def edit_profile(request):
     if request.method == "POST":
         form = EditProfileForm(request.POST, instance=request.user)
+
         if form.is_valid():
+            # Save user profile fields
             form.save()
+
+            # Handle profile image from dataURL
+            profile_dataurl = request.POST.get("profile_image_dataurl")
+            if profile_dataurl:
+                try:
+                    # Extract format and image string
+                    format_value, imgstr = profile_dataurl.split(';base64,')
+                    ext = format_value.split('/')[-1].lower()  # Extract the file extension
+
+                    # Validate file extension
+                    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif']
+                    if ext not in allowed_extensions:
+                        raise ValueError(f"Unsupported file extension: {ext}")
+
+                    # Decode the image
+                    img_data = base64.b64decode(imgstr)
+
+                    # Save the image to a static directory
+                    filename = f"profile_image_{request.user.username}.{ext}"
+                    filepath = os.path.join(settings.MEDIA_ROOT, "profile_images", filename)
+
+                    # Ensure the directory exists
+                    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+                    with open(filepath, "wb") as f:
+                        f.write(img_data)
+
+                    # Update the user's profileImage field with the URL
+                    current_user = request.user
+                    current_user.profileImage = f"{settings.MEDIA_URL}profile_images/{filename}"
+                    current_user.save()
+
+                except Exception as e:
+                    print(f"Error saving profile image: {e}")
+            
             return redirect(
                 "authorApp:profile_display", author_un=request.user.username
             )
-    else:
-        form = EditProfileForm(instance=request.user)
-    return render(request, "authorApp/edit_profile.html", {"form": form})
+
 
 
 @is_approved
