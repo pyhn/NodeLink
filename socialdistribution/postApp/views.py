@@ -362,14 +362,13 @@ def submit_edit_post(request, username, post_uuid):
             print(f"author: {a.fqid}")
             send_to_remote_inboxes(post_json, a)
 
-    else:
-        remote_followers = Follower.objects.filter(
-            object=author, actor__user__local_node__is_remote=True
-        ).values_list("actor__id", flat=True)
+    remote_followers = Follower.objects.filter(
+        object=author, actor__user__local_node__is_remote=True
+    ).values_list("actor__id", flat=True)
 
-        for a in AuthorProfile.objects.filter(id__in=remote_followers):
+    for a in AuthorProfile.objects.filter(id__in=remote_followers):
 
-            send_to_remote_inboxes(post_json, a)
+        send_to_remote_inboxes(post_json, a)
 
     return redirect(
         "postApp:post_detail", username=request.user.username, post_uuid=post_uuid
