@@ -233,11 +233,11 @@ class PostSerializer(serializers.ModelSerializer):
         # create comments
         try:
             for comment in self.initial_data["comments"]["src"]:
-                cs = CommentSerializer(data=comment, context={"author": author})
+                cs = CommentSerializer(data=comment)
                 if cs.is_valid():
                     cs.save()
             for like in self.initial_data["likes"]["src"]:
-                ls = LikeSerializer(data=like, context={"author": author})
+                ls = LikeSerializer(data=like)
                 if ls.is_valid():
                     ls.save()
         except Exception as e:
@@ -274,6 +274,21 @@ class PostSerializer(serializers.ModelSerializer):
 
         # Save the updated post
         post.save()
+        try:
+            for comment in self.initial_data["comments"]["src"]:
+                if not Comment.objects.filter(fqid=comment["id"]):
+
+                    cs = CommentSerializer(data=comment)
+                    if cs.is_valid():
+                        cs.save()
+            for like in self.initial_data["likes"]["src"]:
+                if not Like.objects.filter(fqid=like["id"]):
+
+                    ls = LikeSerializer(data=like)
+                    if ls.is_valid():
+                        ls.save()
+        except Exception as e:
+            print(f"Post Serializer Error:{e}")
 
         return post
 
