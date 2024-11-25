@@ -13,18 +13,18 @@
     <body>
         <div class="personal_profile">
             <div id="user_info">
-                <span class="user_icon large"><img src="{{ author.user.get_profile_image }}" alt="Profile Image" /></span>
+                <span class="user_icon large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
                 <h1>{{ author.user.display_name }}</h1>
                 <h4>@{{ author.user.username }}</h4>
                 <h4>Github: {{ author.user.github_user }}</h4>
                 <h5>Description: {{ author.user.description }}</h5>
-                
+
                 <span id="user_stats">
                     <h2>{{ num_friends }} friends</h2>
                     <h2>{{ num_followers }} followers</h2>
                     <h2>{{ num_following }} following</h2>
                 </span>
-                
+
 
                 {% if request.user == author.user %}
                 <!-- Edit Profile Button -->
@@ -152,16 +152,15 @@
                     </div>
                     <div class="form-group">
                         <label for="profile_image">Profile Image</label>
-                        <input type="file" class="form-control" id="profile_image" accept="image/*" />
-                        <input type="hidden" id="profile_image_dataurl" name="profile_image_dataurl" />
+                        <input type="text" class="form-control" id="profile_image"   name="profile_image"/>
                         <img
                             id="preview_image"
-                            src="{{ author.user.get_profile_image }}"
+                            src="{{ author.user.profileImage }}"
                             alt="Profile Preview"
                             style="max-width: 100%; margin-top: 10px;"
                         />
                     </div>
-                    
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -172,20 +171,7 @@
     </div>
 </div>
 
-<script>
-    document.getElementById("profile_image").addEventListener("change", function (event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const dataURL = e.target.result;
-                document.getElementById("profile_image_dataurl").value = dataURL;
-                document.getElementById("preview_image").src = dataURL;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-</script>
+
 
     </body>
     {% endblock %}

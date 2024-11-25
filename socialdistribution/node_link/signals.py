@@ -24,7 +24,7 @@ def notify_followers_on_new_post(sender, instance, created, **kwargs):
                 message=message,
                 notification_type="new_post",
                 related_object_id=str(instance.id),
-                author_picture_url=author.user.get_profile_image(),
+                author_picture_url=author.user.profileImage,
                 link_url=link_url,
             )
 
@@ -42,7 +42,7 @@ def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
             message=message,
             notification_type="pending_follow_request",
             related_object_id=str(instance.id),
-            author_picture_url=author.user.get_profile_image(),
+            author_picture_url=author.user.profileImage,
             link_url=reverse("authorApp:profile_display", args=[author.user.username]),
         )
         print("notification created")
@@ -58,7 +58,7 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
         ).update(
             message=f"{instance.actor.user.username} is now following you.",
             notification_type="accepted_follow_request",
-            author_picture_url=instance.actor.user.get_profile_image(),
+            author_picture_url=instance.actor.user.profileImage,
         )
     elif instance.status == "d":
         Notification.objects.filter(
@@ -68,7 +68,7 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
         ).update(
             message=f"You have denied the follow request from {instance.actor.user.username}.",
             notification_type="denied_follow_request",
-            author_picture_url=instance.actor.user.get_profile_image(),
+            author_picture_url=instance.actor.user.profileImage,
         )
 
 
@@ -138,7 +138,7 @@ def notify_author_on_new_like(sender, instance, created, **kwargs):
                 message=message,
                 notification_type="like",
                 related_object_id=str(instance.id),
-                author_picture_url=author.user.get_profile_image(),
+                author_picture_url=author.user.profileImage,
                 link_url=link_url,
             )
 

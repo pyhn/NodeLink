@@ -86,7 +86,7 @@
         <!-- Post Title -->
         <a href="{% url 'authorApp:profile_display' post.author.user.username %}">
             <div class="user_img">
-                <img src="{{ profileImg }}" alt="{{ post.author.user.username }}'s profile image" />
+                <img src="{{ post.author.user.profileImage }}" alt="{{ post.author.user.username }}'s profile image" />
             </div>
         </a>
         <div class="user_info">

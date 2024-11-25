@@ -54,7 +54,7 @@
                     <div class="comment">
                         <span class="comment-author">
                             <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">
-                                <div class="user_img small"><img src="{{ comment.author.user.get_profile_image }}" alt="Profile Image">
+                                <div class="user_img small"><img src="{{ comment.author.user.profileImage }}" alt="Profile Image">
                                 </div>
                             </a>
                             <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">{{ comment.author.user.username }}</a>

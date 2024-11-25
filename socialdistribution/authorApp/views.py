@@ -33,7 +33,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project Imports
-from .forms import EditProfileForm, SignUpForm, LoginForm
+from .forms import SignUpForm, LoginForm
 from .models import Friends, Follower, AuthorProfile
 from .serializers import (
     AuthorProfileSerializer,
@@ -457,50 +457,21 @@ def follow_author(request, author_id):
 @login_required
 def edit_profile(request):
     if request.method == "POST":
-        form = EditProfileForm(request.POST, instance=request.user)
 
-        if form.is_valid():
-            # Save user profile fields
-            form.save()
+        try:
 
-            # Handle profile image from dataURL
-            profile_dataurl = request.POST.get("profile_image_dataurl")
-            if profile_dataurl:
-                try:
-                    # Extract format and image string
-                    format_value, imgstr = profile_dataurl.split(';base64,')
-                    ext = format_value.split('/')[-1].lower()  # Extract the file extension
+            this_user = request.user
+            this_user.display_name = request.POST["display_name"]
+            this_user.github_user = request.POST["github_user"]
+            this_user.description = request.POST["description"]
+            this_user.profileImage = request.POST["profile_image"]
 
-                    # Validate file extension
-                    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif']
-                    if ext not in allowed_extensions:
-                        raise ValueError(f"Unsupported file extension: {ext}")
+            this_user.save()
 
-                    # Decode the image
-                    img_data = base64.b64decode(imgstr)
+        except Exception as e:
+            print(f"Error saving profile image: {e}")
 
-                    # Save the image to a static directory
-                    filename = f"profile_image_{request.user.username}.{ext}"
-                    filepath = os.path.join(settings.MEDIA_ROOT, "profile_images", filename)
-
-                    # Ensure the directory exists
-                    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-                    with open(filepath, "wb") as f:
-                        f.write(img_data)
-
-                    # Update the user's profileImage field with the URL
-                    current_user = request.user
-                    current_user.profileImage = f"{settings.MEDIA_URL}profile_images/{filename}"
-                    current_user.save()
-
-                except Exception as e:
-                    print(f"Error saving profile image: {e}")
-            
-            return redirect(
-                "authorApp:profile_display", author_un=request.user.username
-            )
-
+    return redirect("authorApp:profile_display", author_un=request.user.username)
 
 
 @is_approved
