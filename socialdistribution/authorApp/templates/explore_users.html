@@ -35,7 +35,7 @@
             <tr>
                 <td><img src="{{ author.user.profileImage }}"
                     alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                    style="width:40px; height:40px;"><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.user_serial }}</a></td>
+                    style="width:40px; height:40px;"><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.display_name }}</a></td>
                 <td>{{ author.user.local_node }}</td>
                 <td>
                     <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
