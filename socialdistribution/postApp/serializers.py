@@ -59,7 +59,7 @@ class PostSerializer(serializers.ModelSerializer):
             "displayName": obj.author.user.display_name,
             "github": obj.author.github,
             "page": f"{host_no_api}/{obj.author.user.username}/profile",
-            "profileImage": obj.author.user.profileImage.url,
+            "profileImage": obj.author.user.profileImage,
         }
 
     def get_comments(self, obj):

@@ -9,7 +9,7 @@ def fetch_remote_authors():
     """
     # get all ACTIVE and REMOTE nodes
     remote_nodes = Node.objects.filter(is_remote=True, is_active=True)
-
+    local_node = Node.objects.filter(is_remote=False).first()
     # check if there are no remote nodes
     if not remote_nodes:
         print("No remote nodes found.")
@@ -36,8 +36,9 @@ def fetch_remote_authors():
         # Basic Authentication requires the raw password to authenticate with the remote server.
         auth = (node.username, node.raw_password)
         try:
+            headers = {"X-original-host": local_node.url}
             # now, try to send a request.get to the endpoint
-            response = requests.get(authors_url, auth=auth, timeout=10)
+            response = requests.get(authors_url, auth=auth, timeout=10, headers=headers)
             # check if the response is successful
             response.raise_for_status()
             # get the authors data from the response
