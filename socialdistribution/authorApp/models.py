@@ -10,12 +10,7 @@ from node_link.utils.mixin import MixinApp
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)  # Track approval status
-    profileImage = models.ImageField(  #!!!IMAGE NOTE: change to a url
-        upload_to="profile_images/",
-        null=True,
-        blank=True,
-        default="/static/icons/user_icon.svg",
-    )
+    profileImage = models.URLField()
 
     display_name = models.CharField(max_length=50, null=False, blank=False)
     github_user = models.CharField(max_length=255, null=True, blank=True)
