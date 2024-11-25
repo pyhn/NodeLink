@@ -28,10 +28,12 @@ def send_to_remote_inboxes(json, author):
 
     # Construct the inbox URL
     inbox_url = f"{author.fqid}/inbox"
-
+    local_node = Node.objects.filter(is_remote=False).first()
     # Send the POST request to the inbox
     try:
         if author.user.local_node and author.user.local_node.is_active:
+
+            headers = {"X-original-host": local_node.url}
             response = requests.post(
                 inbox_url,
                 json=json,
@@ -40,6 +42,7 @@ def send_to_remote_inboxes(json, author):
                     author.user.local_node.raw_password,
                 ),
                 timeout=10,
+                headers=headers,
             )
             response.raise_for_status()  # Raise an exception for HTTP errors
             print(f"Successfully sent to {inbox_url}. Response: {response.status_code}")
