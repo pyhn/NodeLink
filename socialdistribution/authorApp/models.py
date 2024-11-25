@@ -10,8 +10,9 @@ from node_link.utils.mixin import MixinApp
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)  # Track approval status
-    profileImage = models.URLField()
-
+    profileImage = models.URLField(
+        default="https://s3.amazonaws.com/37assets/svn/765-default-avatar.png"
+    )
     display_name = models.CharField(max_length=50, null=False, blank=False)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
