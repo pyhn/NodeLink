@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Friends - SocialDistribution{% endblock %}
+
+{% block content %}
+<div class=" navbar" >
+<ul class="nav nav-pills  mr-auto">
+    <li class="nav-item pill "> <a class="nav-link"  href="{% url 'authorApp:friends_page' %}">Your Friends</a></li>
+    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Explore People</a></li>
+
+</ul>
+ <form method="get" class="form-inline my-2 my-lg-0" >
+        <input class="form-control mr-sm-2"  type="text" name="q" placeholder="Search users..." value="{{ search_query }}" />
+        <button class="btn btn-outline-success my-2 my-sm-0"  type="submit">Search</button>
+    </form>
+</div>
+<div class="container">
+
+    <div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    <a href="?sort=user__display_name&direction={{direction}}&q={{ search_query }}">Name</a>
+                </th>
+                <th>
+                    <a href="?sort=user__local_node&direction={{direction}}&q={{ search_query }}">Node</a>
+                </th>
+                <th>Follow</th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td><img src="{{ author.user.profileImage }}"
+                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                    style="width:40px; height:40px;"><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.display_name }}</a></td>
+                <td>{{ author.user.local_node }}</td>
+                <td>
+                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">Follow</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock%}

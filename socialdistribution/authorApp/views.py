@@ -1,6 +1,8 @@
 # Standard Library Imports
 from datetime import datetime
 from urllib.parse import unquote
+import base64
+import os
 
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,10 +12,12 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.conf import settings
 
 # Rest Framework Imports
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import BasicAuthentication
+from node_link.auth_backends import NodeBasicAuthentication
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
@@ -29,20 +33,27 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project Imports
-from .forms import EditProfileForm, SignUpForm, LoginForm
+from .forms import SignUpForm, LoginForm
 from .models import Friends, Follower, AuthorProfile
-from .serializers import AuthorProfileSerializer, FollowerSerializer, FriendSerializer
+from .serializers import (
+    AuthorProfileSerializer,
+    FollowerRequestSerializer,
+    FollowerSerializer,
+    FriendSerializer,
+)
 from node_link.models import Node, Notification
 from node_link.utils.common import CustomPaginator, has_access, is_approved
+from node_link.utils.communication import send_to_remote_inboxes
+
+from node_link.utils.fetch_remote_authors import fetch_remote_authors
 from postApp.models import Post
 from postApp.serializers import PostSerializer, LikeSerializer, CommentSerializer
 from postApp.utils.fetch_github_activity import fetch_github_events
 from authorApp.models import AuthorProfile, Friends, Follower
 from authorApp.serializers import FollowerSerializer
+import requests
 
 
-# Create your views here.
-# sign up
 def signup_view(request):
     if request.user.is_authenticated and request.user.is_approved:
         return redirect("node_link:home", username=request.user.username)
@@ -63,6 +74,7 @@ def signup_view(request):
                 messages.error(request, "No nodes are available to assign.")
                 return redirect("authorApp:signup")
             user.local_node = first_node
+            user.user_serial = user.username
 
             user.save()
 
@@ -259,7 +271,7 @@ def accept_follow_request(request, request_id):
 
         messages.success(
             request,
-            f"You have accepted the follow request from {follow_request.actor.user.username}.",
+            f"You have accepted the follow request from {follow_request.actor.user.user_serial}.",
         )
 
         # Check for mutual following
@@ -285,13 +297,13 @@ def accept_follow_request(request, request_id):
                 )
                 messages.success(
                     request,
-                    f"You are now friends with {follow_request.actor.user.username}.",
+                    f"You are now friends with {follow_request.actor.user.user_serial}.",
                 )
             except IntegrityError:
                 # Friendship already exists
                 messages.info(
                     request,
-                    f"You are already friends with {follow_request.actor.user.username}.",
+                    f"You are already friends with {follow_request.actor.user.user_serial}.",
                 )
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -348,7 +360,7 @@ def unfriend(request, friend_id):
             following.delete()
 
             friendship.delete()
-            messages.success(request, f"You have unfriended {friend.user.username}.")
+            messages.success(request, f"You have unfriended {friend.user.user_serial}.")
         else:
             messages.info(request, "Friendship does not exist.")
 
@@ -397,11 +409,12 @@ def follow_author(request, author_id):
                     friendship.delete()
                     messages.success(
                         request,
-                        f"You have unfollowed and unfriended {target_author.user.username}.",
+                        f"You have unfollowed and unfriended {target_author.user.user_serial}.",
                     )
                 else:
                     messages.success(
-                        request, f"You have unfollowed {target_author.user.username}."
+                        request,
+                        f"You have unfollowed {target_author.user.user_serial}.",
                     )
 
                 # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
@@ -420,10 +433,20 @@ def follow_author(request, author_id):
                 messages.success(request, "Follow request has been re-sent.")
         else:
             # Create a new follow request
-            Follower.objects.create(
+            new_follow = Follower.objects.create(
                 actor=current_author, object=target_author, created_by=current_author
             )
-            messages.success(request, "Follow request sent successfully.")
+            messages.success(request, "Follow create successfully.")
+
+            if target_author.user.local_node.is_remote:
+                # send follow request to remote
+                follow_request = FollowerRequestSerializer(
+                    new_follow, context={"request": request}
+                )
+                follow_request_json = follow_request.data
+
+                send_to_remote_inboxes(follow_request_json, target_author)
+                messages.success(request, "Follow request sent to remote successfully.")
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -434,15 +457,69 @@ def follow_author(request, author_id):
 @login_required
 def edit_profile(request):
     if request.method == "POST":
-        form = EditProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect(
-                "authorApp:profile_display", author_un=request.user.username
+
+        try:
+
+            this_user = request.user
+            this_user.display_name = request.POST["display_name"]
+            this_user.github_user = request.POST["github_user"]
+            this_user.description = request.POST["description"]
+            this_user.profileImage = request.POST["profile_image"]
+
+            this_user.save()
+
+        except Exception as e:
+            print(f"Error saving profile image: {e}")
+
+    return redirect("authorApp:profile_display", author_un=request.user.username)
+
+
+@is_approved
+def explore_users(request):
+    query = request.GET.get("q", "")  # Search query
+    sort_by = request.GET.get("sort", "user__user_serial")  # Sorting parameter
+    direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
+    fetch_remote_authors()
+
+    current_author = request.user.author_profile
+    exclude_id = []
+    exclude_id = (
+        [
+            a.user2.id if a.user1 == current_author else a.user1.id
+            for a in Friends.objects.filter(
+                Q(user1=current_author) | Q(user2=current_author)
             )
+        ]
+        + [
+            a.object.id
+            for a in list(
+                Follower.objects.filter(actor=current_author, status__in=["a", "p"])
+            )
+        ]
+        + [current_author.user.id]
+    )
+    all_authors = AuthorProfile.objects.exclude(user__id__in=exclude_id)
+
+    # Filter by search query
+    if query:
+        all_authors = all_authors.filter(user__user_serial__icontains=query)
+
+    # Sorting logic
+
+    if direction == "desc":
+        sort_by = f"-{sort_by}"
+        direction = "asc"
     else:
-        form = EditProfileForm(instance=request.user)
-    return render(request, "authorApp/edit_profile.html", {"form": form})
+        direction = "desc"
+    all_authors = all_authors.order_by(sort_by)
+
+    context = {
+        "authors": all_authors,
+        "search_query": query,
+        "sort_by": sort_by.lstrip("-"),
+        "direction": direction,
+    }
+    return render(request, "explore_users.html", context)
 
 
 # ViewSet for AuthorProfile API
@@ -806,21 +883,19 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
     def manage_follower(self, request, pk=None, follower_fqid=None):
         # Decode the foreign author FQID
         follower_fqid = unquote(follower_fqid)
-        fqid_parts = follower_fqid.split("/")
-        foreign_username = fqid_parts[len(fqid_parts) - 1]
         # Fetch the local author
         local_author = get_object_or_404(AuthorProfile, user__username=pk)
-
+        print(f"follower fqid {follower_fqid}")
         # Check if the follower is already in the follower list
         try:
-            foreign_author = get_object_or_404(
-                AuthorProfile, user__username=foreign_username
-            )
+            foreign_author = get_object_or_404(AuthorProfile, fqid=follower_fqid)
             follower_relationship = Follower.objects.get(
                 actor=foreign_author, object=local_author
             )
         except (AuthorProfile.DoesNotExist, Follower.DoesNotExist):
             follower_relationship = None
+        except IndexError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "GET":
             # Check if FOREIGN_AUTHOR_FQID is a follower of AUTHOR_SERIAL
@@ -835,11 +910,12 @@ class FollowersFQIDViewSet(viewsets.ViewSet):
                 Follower.objects.create(
                     actor=foreign_author,
                     object=local_author,
-                    status="a",
+                    status="p",
                     created_by=foreign_author,
                 )
                 return Response(
-                    {"detail": "Follower added."}, status=status.HTTP_201_CREATED
+                    {"detail": "Follower request added."},
+                    status=status.HTTP_201_CREATED,
                 )
             return Response(
                 {"detail": "Follower already exists."},
@@ -903,47 +979,130 @@ class SingleAuthorView(APIView):
         GET: Retrieve a single author using its FQID.
         """
         author_fqid = unquote(author_fqid)
-        fqid_parts = author_fqid.split("/")
-        author_username = fqid_parts[len(fqid_parts) - 1]
 
-        author = get_object_or_404(AuthorProfile, user__username=author_username)
+        author = get_object_or_404(AuthorProfile, fqid=author_fqid)
         serializer = AuthorProfileSerializer(author)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-@authentication_classes([BasicAuthentication])
+@authentication_classes([NodeBasicAuthentication])
 def author_inbox_view(request, author_serial):
     """
     Handles incoming activities directed to a specific author's inbox
 
     Supported types: "post", "like", "comment", "follow"
     """
+    # do this check if the request info contains a node that is active. if not, then send an access denied JSON
+    # before serializing the data, we fetch to ensure that we have an upadted database of authors
+    fetch_remote_authors()
     # retrieve the author
     print("Incoming data:", request.data)
 
+    # get the nodes that we have locally
+    # check the request for the id of the node and check if it is active
+    # if not active return resposne to them saying they don't have access
+
+    # check if a remote author(object) sends a post; update follow status to Accepted
     try:
-        author = AuthorProfile.objects.get(user__username=author_serial)
-    except AuthorProfile.DoesNotExist:
-        return Response({"error": "Author not found"}, status=404)
 
-    # retrieve the activity
-    data = request.data
-    object_type = data.get("type")
+        try:
+            author = AuthorProfile.objects.get(user__username=author_serial)
+        except AuthorProfile.DoesNotExist:
+            return Response({"error": "Author not found"}, status=404)
+            # retrieve the activity
+        data = request.data
+        object_type = data.get("type")
 
-    # filter base on type
-    if object_type == "post":
-        serializer = PostSerializer(data=data, context={"author": author})
-    elif object_type == "like":
-        serializer = LikeSerializer(data=data, context={"author": author})
-    elif object_type == "comment":
-        serializer = CommentSerializer(data=data, context={"author": author})
-    elif object_type == " follow":
-        serializer = FollowerSerializer(data=data, context={"author": author})
-    else:
+        # filter base on type
+        if object_type == "post":
+            # check if a remote author(object) sends a post; update follow status to Accepted
+            post_id = data.get("id")  # Retrieve the ID of the post
+            if not post_id:
+                # If no post ID is provided, return an error response
+                return Response({"error": "Post ID is required."}, status=400)
+
+            # Query the database to check if the post exists
+            post_instance = Post.objects.filter(fqid=post_id).first()
+
+            try:
+                remote_author = get_object_or_404(
+                    AuthorProfile, fqid=data["author"]["id"]
+                )
+                if (
+                    Follower.objects.filter(object=remote_author, actor=author).exists()
+                    and remote_author.user.local_node.is_remote
+                ):
+                    # update follow
+                    to_update = Follower.objects.filter(
+                        object=remote_author, actor=author
+                    ).first()
+                    to_update.status = "a"
+                    to_update.save()
+                    # updtae friends
+                    mutual_follow = Follower.objects.filter(
+                        actor=remote_author, object=author, status="a"
+                    ).exists()
+
+                    if mutual_follow:
+                        # Establish friendship
+                        try:
+                            # Ensure consistent ordering by user ID
+                            user1, user2 = (
+                                (remote_author, author)
+                                if remote_author.id < author.id
+                                else (author, remote_author)
+                            )
+
+                            # Create a single Friends instance
+                            Friends.objects.create(
+                                user1=user1,
+                                user2=user2,
+                                created_by=remote_author,  # Assuming 'created_by' refers to the initiator
+                            )
+                            messages.success(
+                                request,
+                                f"You are now friends with {author.user.user_serial}.",
+                            )
+                        except IntegrityError:
+                            # Friendship already exists
+                            messages.info(
+                                request,
+                                f"You are already friends with {author.user.user_serial}.",
+                            )
+
+                    if post_instance:
+                        # If the post exists, pass it to the serializer for updating
+                        serializer = PostSerializer(
+                            post_instance, data=data, context={"author": author}
+                        )
+                    else:
+                        # If the post doesn't exist, initialize the serializer for creating a new post
+                        serializer = PostSerializer(
+                            data=data, context={"author": author}
+                        )
+
+            except AuthorProfile.DoesNotExist:
+                return Response({"error": "Author not found"}, status=404)
+
+        elif object_type == "like":
+            serializer = LikeSerializer(data=data, context={"author": author})
+        elif object_type == "comment":
+            serializer = CommentSerializer(data=data, context={"author": author})
+        elif object_type == "follow":
+            serializer = FollowerSerializer(data=data, context={"author": author})
+
+        else:
+            return Response(
+                {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+            )
+    except Exception as e:
+        # Catch-all for unexpected errors
+        print(f"Unexpected error: {e}")
         return Response(
-            {"error": "Unsupported object type"}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "An unexpected error occurred", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     # save the object to our database

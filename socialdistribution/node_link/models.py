@@ -1,6 +1,8 @@
 from django.db import models
 from datetime import datetime
 from django.contrib.auth.hashers import make_password, check_password
+
+# from encrypted_model_fields.fields import EncryptedCharField  # for encrypted raw password
 from django.utils import timezone
 from authorApp.models import AuthorProfile, User
 
@@ -10,6 +12,9 @@ class Node(models.Model):
     url = models.TextField(null=False)
     username = models.CharField(max_length=255, null=True, blank=True)
     password = models.CharField(max_length=255, null=True, blank=True)
+    # Basic Authentication requires the raw password to authenticate with the remote server.
+    # raw_password = EncryptedCharField(max_length=255, null=True, blank=True)
+    raw_password = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(
@@ -25,9 +30,12 @@ class Node(models.Model):
         related_name="deleted_nodes",
     )
 
+    is_remote = models.BooleanField(default=False)
+
     def set_password(self, raw_password):
+        self.raw_password = raw_password
         self.password = make_password(raw_password)
-        self.save(update_fields=["password"])
+        self.save(update_fields=["password", "raw_password"])
 
     def check_password(self, raw_password):
         return check_password(raw_password, self.password)
@@ -57,9 +65,9 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
     # notifications can be a follow_request, new post, etc.
-    notification_type = models.CharField(max_length=20)
+    notification_type = models.CharField(max_length=255)
     # id of the related object
-    related_object_id = models.CharField(max_length=255, null=True, blank=True)
+    related_object_id = models.TextField(max_length=10, null=True, blank=True)
     # url to the author's profile picture
     author_picture_url = models.URLField(null=True, blank=True)
     # message for follow request notifications

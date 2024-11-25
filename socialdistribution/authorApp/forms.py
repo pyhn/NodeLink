@@ -28,8 +28,8 @@ class SignUpForm(UserCreationForm):
     display_name = forms.CharField(
         max_length=20,
         widget=forms.TextInput(
-        attrs={"class": "form-control", "placeholder": "Display Name"}
-    ),
+            attrs={"class": "form-control", "placeholder": "Display Name"}
+        ),
     )
     description = forms.CharField(
         widget=forms.Textarea(
@@ -67,12 +67,3 @@ class LoginForm(AuthenticationForm):
     class Meta:
         model = User
         fields = ("username", "password")
-
-class EditProfileForm(forms.ModelForm):
-    display_name = forms.CharField(max_length=150, required=True, label="Display Name")
-    github_user = forms.CharField(max_length=100, required=False, label="GitHub Username")
-    description = forms.CharField(widget=forms.Textarea, required=False, label="Description")
-
-    class Meta:
-        model = User
-        fields = ['display_name', 'github_user', 'description']

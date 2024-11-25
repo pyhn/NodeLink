@@ -3,216 +3,234 @@
 {% block title %}Friends - SocialDistribution{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Explore Authors</h1>
 
-<!-- All Three Tables Side by Side -->
-<div class="row">
 
-    <!-- REQUESTS-->
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body p-2">
-                <h2 class="card-title text-center">Requests</h2>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" style="width: 50px;">Image</th>
-                                <th scope="col">Username</th>
-                                <th scope="col" style="width: 90px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for author in requested_authors %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if author.0.user.profile_image %}
-                                    <img src="{{ author.0.user.profile_image }}"
-                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td><a  href="{% url 'authorApp:profile_display' author.0.user.username%}">{{ author.0.user.username }}</a></td>
-                                <td class="text-center">
+<ul class="nav nav-pills">
+    <li class="nav-item pill "> <a class="nav-link active" aria-current="page"  href="#">Your Friends</a></li>
+    <li class="nav-item"><a class="nav-link" href="{% url 'authorApp:user_list' %}">Explore People</a></li>
 
-                                    <form method="post" action="{% url 'authorApp:accept_follow_request' author.1 %}" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                                    </form>
-                                    <form method="post" action="{% url 'authorApp:deny_follow_request' author.1 %}" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm">Deny</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">No authors requested to follow you</td>
-                            </tr>
-                            {% endfor %}
-                            {% for author in pending_authors %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if author.user.profile_image %}
-                                    <img src="{{ author.user.profile_image }}"
-                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
-                                <td class="text-center">
+</ul>
 
-                                    <div type="submit" class="btn btn-primary btn-sm disabled">Pending</div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">You have not request to follow anyone</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+<ul class="nav nav-tabs" id="friendsTabs" role="tablist">
+    <li class="nav-item ">
+        <a class="nav-link active" id="requests-tab" data-toggle="tab" href="#Requests" role="tab"
+            aria-controls="Requests" aria-selected="true">Requests</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="followers-tab" data-toggle="tab" href="#Followers" role="tab" aria-controls="Followers"
+            aria-selected="false">Followers</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="following-tab" data-toggle="tab" href="#Following" role="tab" aria-controls="Following"
+            aria-selected="false">Following</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="friends-tab" data-toggle="tab" href="#Friends" role="tab" aria-controls="Friends"
+            aria-selected="false">Friends</a>
+    </li>
+</ul>
+<div class="tab-content" id="nav-tabContent">
+
+    <div class="tab-pane fade  active show" id="Requests" role="tabpanel" aria-labelledby="requests-tab">
+        <!-- REQUESTS-->
+        <div>
+            <h2 class="card-title text-center">Requests</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 50px;">Image</th>
+                            <th scope="col">Username</th>
+                            <th scope="col">Node</th>
+                            <th scope="col" style="width: 90px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for author in requested_authors %}
+                        <tr>
+                            <td class="text-center">
+                                <img src="{{ author.0.user.profileImage }}"
+                                alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                style="width:40px; height:40px;">
+                            </td>
+                            <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.display_name }}</a></td>
+                            <td>{{ author.0.user.local_node }}</td>
+
+                            <td class="text-center">
+
+                                <form method="post" action="{% url 'authorApp:accept_follow_request' author.1 %}"
+                                    style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'authorApp:deny_follow_request' author.1 %}"
+                                    style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">Deny</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No authors requested to follow you</td>
+                        </tr>
+                        {% endfor %}
+                        {% for author in pending_authors %}
+                        <tr>
+                            <td class="text-center">
+
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    style="width:40px; height:40px;">
+
+                            </td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
+                            <td>{{ author.user.local_node }}</td>
+
+                            <td class="text-center">
+
+                                <div type="submit" class="btn btn-primary btn-sm disabled">Pending</div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">You have not request to follow anyone</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    <!-- Authors Following You -->
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body p-2">
-                <h2 class="card-title text-center">Followers</h2>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" style="width: 50px;">Image</th>
-                                <th scope="col">Username</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for author in followers %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if author.user.profile_image %}
-                                    <img src="{{ author.user.profile_image }}"
-                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">You do not have any followers yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Authors You Are Following -->
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body p-2">
-                <h2 class="card-title text-center">Following</h2>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" style="width: 50px;">Image</th>
-                                <th scope="col">Username</th>
-                                <th scope="col" style="width: 90px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for author in already_following_authors %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if author.user.profile_image %}
-                                    <img src="{{ author.user.profile_image }}"
-                                        alt="{{ author.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td><a  href="{% url 'authorApp:profile_display' author.user.username%}">{{ author.user.username }}</a></td>
-                                <td class="text-center">
-                                    <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm">Unfollow</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">You are not following any authors yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="tab-pane fade" id="Followers" role="tabpanel" aria-labelledby="followers-tab">
+
+        <!-- Authors Following You -->
+        <div>
+            <h2 class="card-title text-center">Followers</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 50px;">Image</th>
+                            <th scope="col">Username</th>
+                            <th>Node</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for author in followers %}
+                        <tr>
+                            <td class="text-center">
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    style="width:40px; height:40px;">
+                            </td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
+                            <td>{{ author.user.local_node }}</td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">You do not have any followers yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Your Friends -->
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
-            <div class="card-body p-2">
-                <h2 class="card-title text-center">Friends</h2>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm table-bordered">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col" style="width: 50px;">Image</th>
-                                <th scope="col">Username</th>
-                                <th scope="col" style="width: 90px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for friend in friends %}
-                            <tr>
-                                <td class="text-center">
-                                    {% if friend.user.profile_image %}
-                                    <img src="{{ friend.user.profile_image }}"
-                                        alt="{{ friend.user.username }}'s profile image" class="rounded-circle"
-                                        style="width:40px; height:40px;">
-                                    {% else %}
-                                    <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                        class="rounded-circle" style="width:40px; height:40px;">
-                                    {% endif %}
-                                </td>
-                                <td><a  href="{% url 'authorApp:profile_display' friend.user.username%}">{{ friend.user.username }}</a></td>
-                                <td class="text-center">
-                                    <form action="{% url 'authorApp:unfriend' friend.id %}" method="post">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-warning btn-sm">Unfriend</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="text-center">You have no friends yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="tab-pane fade" id="Following" role="tabpanel" aria-labelledby="following-tab">
+
+        <!-- Authors You Are Following -->
+        <div class="card-body p-2">
+            <h2 class="card-title text-center">Following</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 50px;">Image</th>
+                            <th scope="col">Username</th>
+                            <th>Node</th>
+
+                            <th scope="col" style="width: 90px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for author in already_following_authors %}
+                        <tr>
+                            <td class="text-center">
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    style="width:40px; height:40px;">
+                            </td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
+                            <td>{{ author.user.local_node }}</td>
+
+                            <td class="text-center">
+                                <form action="{% url 'authorApp:follow_author' author.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm">Unfollow</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">You are not following any authors yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
+
+    <div class="tab-pane fade" id="Friends" role="tabpanel" aria-labelledby="friends-tab">
+
+        <!-- Your Friends -->
+        <div class="card-body p-2">
+            <h2 class="card-title text-center">Friends</h2>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" style="width: 50px;">Image</th>
+                            <th scope="col">Username</th>
+                            <th>Node</th>
+
+                            <th scope="col" style="width: 90px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for friend in friends %}
+                        <tr>
+                            <td class="text-center">
+                                <img src="{{ friend.user.profileImage }}"
+                                    alt="{{ friend.user.username }}'s profile image" class="rounded-circle"
+                                    style="width:40px; height:40px;">
+                            </td>
+                            <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.display_name }}</a></td>
+                            <td>{{friend.user.local_node }}</td>
+
+                            <td class="text-center">
+                                <form action="{% url 'authorApp:unfriend' friend.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning btn-sm">Unfriend</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">You have no friends yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
+
+
 {% endblock %}

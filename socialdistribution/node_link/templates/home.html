@@ -15,7 +15,7 @@
                 {%for p in all_ids%}
                 <div  hx-get="{%url 'postApp:one_post' request.user.username p %}" hx-trigger="load" hx-target="#number-{{p}}" hx-swap="innerHTML">
                     <div  class = "post-container">
-                        <p id = 'number-{{ p }}'>Loading</p>
+                        <div class = "single_post"id = 'number-{{ p }}'>Loading</div>
                     <div class="post bottom_bar comment_append">
                         <a  href="{%url 'postApp:post_detail' request.user.username p%}" target="_blank">
                             Comments...

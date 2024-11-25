@@ -11,6 +11,8 @@ from rest_framework.pagination import PageNumberPagination
 from authorApp.models import Friends, User
 from postApp.models import Post
 
+import re
+
 
 def has_access(request, post_uuid, username):
 
@@ -49,3 +51,18 @@ def is_approved(view_func):
 class CustomPaginator(PageNumberPagination):
     page_query_param = "page"
     page_size_query_param = "size"
+
+
+def remove_api_suffix(url):
+    """
+    Removes the 'api/' suffix from a URL if it ends with it.
+
+    Args:
+        url (str): The URL to process.
+
+    Returns:
+        str: The URL without the 'api/' suffix, or the original URL if the suffix is not present.
+    """
+    if url.endswith("api/"):
+        return re.sub(r"/api/$", "", url)  # Remove the trailing 'api/' if present
+    return url

@@ -27,6 +27,7 @@ class Command(BaseCommand):
 
         admin_user = User.objects.create(
             username="admin",
+            user_serial="admin",
             first_name=fake.first_name(),
             last_name=fake.last_name(),
             email=fake.email(),
@@ -38,9 +39,12 @@ class Command(BaseCommand):
 
         # Create a Node first (as Authors require it)
         node = Node.objects.create(
-            url=fake.url(),
+            url="https://127.0.0.1:8000/api/",
             created_by=admin_user,
             deleted_by=None,  # Can be None if not deleted
+            username="local",
+            password="password",
+            raw_password="password",
         )
 
         admin_user.local_node = node
@@ -50,8 +54,10 @@ class Command(BaseCommand):
         authors = []
         logger.info("Creating fake authors...")
         for _ in range(10):
+            author_serial = fake.user_name()
             user = User.objects.create(
-                username=fake.user_name(),
+                username=author_serial,
+                user_serial=author_serial,
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),
@@ -61,6 +67,9 @@ class Command(BaseCommand):
                 local_node=node,
                 is_approved=True,
             )
+            user.user_serial = user.username
+            user.save()
+
             author_profile = AuthorProfile.objects.create(
                 user=user,
                 github=fake.url(),
@@ -148,7 +157,7 @@ class Command(BaseCommand):
         logger.info("Followers created for Authors.")
 
         logger.info("Fake data generation completed successfully.")
-        logger.info(f"Sample Username: {authors[1]}")
+        logger.info(f"Sample Username: {authors[1].user.user_serial}")
 
         logger.info("Sample Password: password123")
         logger.info(f"Sample Username: {admin_user.username}")
