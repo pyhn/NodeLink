@@ -195,7 +195,7 @@ class FollowerRequestSerializer(serializers.ModelSerializer):
     page = serializers.SerializerMethodField()
     github = serializers.CharField(source="actor.github", read_only=True)
     profileImage = serializers.CharField(
-        source="actor.user.profileImage", read_only=True
+        source="actor.user.profileImage.url", read_only=True
     )
 
     class Meta:
