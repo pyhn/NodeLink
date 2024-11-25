@@ -13,7 +13,7 @@ class User(AbstractUser):
     profileImage = models.URLField(
         default="https://s3.amazonaws.com/37assets/svn/765-default-avatar.png"
     )
-    display_name = models.CharField(max_length=50, null=False, blank=False)
+    display_name = models.CharField(max_length=150, null=False, blank=False)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
     local_node = models.ForeignKey(
