@@ -233,6 +233,7 @@ class PostSerializer(serializers.ModelSerializer):
         # create comments
         try:
             for comment in self.initial_data["comments"]["src"]:
+                print(comment)
                 cs = CommentSerializer(data=comment)
                 if cs.is_valid():
                     cs.save()
