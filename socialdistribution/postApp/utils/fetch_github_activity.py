@@ -7,7 +7,11 @@ from authorApp.models import AuthorProfile
 def fetch_github_events(request):
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
     # If user doesn't have github just return
-    if author.user.github_user == None:
+    if (
+        author.user.github_user == None
+        or author.user.github_user == "None"
+        or author.user.github_user == ""
+    ):
         return []
 
     url = f"https://api.github.com/users/{author.user.github_user}/events"
