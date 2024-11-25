@@ -25,6 +25,8 @@ def send_to_remote_inboxes(json, author):
     # Find all remote users (usernames containing '__')
 
     # Extract the remote author's username
+    if not author.user.local_node.is_active:
+        return
 
     # Construct the inbox URL
     inbox_url = f"{author.fqid}/inbox"
