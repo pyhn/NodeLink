@@ -6,7 +6,8 @@ from django.urls import reverse
 from node_link.models import Notification
 from authorApp.models import Follower, User, AuthorProfile
 from postApp.models import Post, Like
-from django.db.models import Q
+from django.db.models import Q, CharField
+from django.db.models.functions import Cast
 
 
 @receiver(post_save, sender=Post)
@@ -75,7 +76,6 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
 @receiver(pre_save, sender=User)
 def update_notifications_on_profile_image_change(sender, instance, **kwargs):
     if not instance.pk:
-        # Skip signal for new users
         return
 
     try:
@@ -87,37 +87,31 @@ def update_notifications_on_profile_image_change(sender, instance, **kwargs):
     new_image = instance.profileImage
 
     if old_image != new_image:
-        # Retrieve the corresponding AuthorProfile
-        try:
-            author_profile = instance.author_profile
-        except AuthorProfile.DoesNotExist:
-            return
+        author_profile = instance.author_profile
 
-        # Update Notifications for 'new_post'
-        new_post_ids = Post.objects.filter(author=author_profile).values_list(
-            "id", flat=True
+        # Update the author's own notifications
+        Notification.objects.filter(user__user=instance).update(
+            author_picture_url=new_image
         )
-        Notification.objects.filter(
-            notification_type="new_post", related_object_id__in=new_post_ids
-        ).update(author_picture_url=new_image)
 
-        # Update Notifications for 'like'
-        like_ids = Like.objects.filter(author=author_profile).values_list(
-            "id", flat=True
-        )
-        Notification.objects.filter(
-            notification_type="like", related_object_id__in=like_ids
-        ).update(author_picture_url=new_image)
+        # # Get follower IDs and cast them to strings in the database query
+        # follower_ids = Follower.objects.filter(actor=author_profile).values_list(
+        #     "id", flat=True
+        # )
 
-        # Update Notifications for 'pending_follow_request', 'accepted_follow_request', 'denied_follow_request'
-        follower_ids = Follower.objects.filter(actor=author_profile).values_list(
-            "id", flat=True
+        # Cast the Follower IDs to CharField to match the TextField type
+        follower_ids_str = (
+            Follower.objects.filter(actor=author_profile)
+            .annotate(id_str=Cast("id", output_field=CharField()))
+            .values_list("id_str", flat=True)
         )
+
+        # Update Notifications
         Notification.objects.filter(
             Q(notification_type="pending_follow_request")
             | Q(notification_type="accepted_follow_request")
             | Q(notification_type="denied_follow_request"),
-            related_object_id__in=follower_ids,
+            related_object_id__in=follower_ids_str,
         ).update(author_picture_url=new_image)
 
 
