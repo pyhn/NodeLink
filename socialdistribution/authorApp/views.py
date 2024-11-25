@@ -1,6 +1,8 @@
 # Standard Library Imports
 from datetime import datetime
 from urllib.parse import unquote
+import base64
+import os
 
 # Django Imports
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,6 +12,7 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.conf import settings
 
 # Rest Framework Imports
 from rest_framework.permissions import IsAuthenticated
@@ -30,7 +33,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 # Project Imports
-from .forms import EditProfileForm, SignUpForm, LoginForm
+from .forms import SignUpForm, LoginForm
 from .models import Friends, Follower, AuthorProfile
 from .serializers import (
     AuthorProfileSerializer,
@@ -451,18 +454,24 @@ def follow_author(request, author_id):
         return HttpResponseNotAllowed(["POST"], "Invalid request method.")
 
 
-@is_approved
+@login_required
 def edit_profile(request):
     if request.method == "POST":
-        form = EditProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect(
-                "authorApp:profile_display", author_un=request.user.username
-            )
-    else:
-        form = EditProfileForm(instance=request.user)
-    return render(request, "authorApp/edit_profile.html", {"form": form})
+
+        try:
+
+            this_user = request.user
+            this_user.display_name = request.POST["display_name"]
+            this_user.github_user = request.POST["github_user"]
+            this_user.description = request.POST["description"]
+            this_user.profileImage = request.POST["profile_image"]
+
+            this_user.save()
+
+        except Exception as e:
+            print(f"Error saving profile image: {e}")
+
+    return redirect("authorApp:profile_display", author_un=request.user.username)
 
 
 @is_approved

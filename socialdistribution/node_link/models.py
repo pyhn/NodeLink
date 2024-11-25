@@ -67,7 +67,7 @@ class Notification(models.Model):
     # notifications can be a follow_request, new post, etc.
     notification_type = models.CharField(max_length=255)
     # id of the related object
-    related_object_id = models.CharField(max_length=255, null=True, blank=True)
+    related_object_id = models.TextField(max_length=10, null=True, blank=True)
     # url to the author's profile picture
     author_picture_url = models.URLField(null=True, blank=True)
     # message for follow request notifications

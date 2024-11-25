@@ -16,6 +16,7 @@
     display: flex;
     flex-direction: column;
     margin: 2.5vh;
+    width: 100%;
 }
 .post{
     padding: 2vh 1vw 1vh 1vw;
@@ -33,8 +34,17 @@
 .post.info h1{
     font-size:1.25rem ;
 }
+.post.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding:1vh 1vw;
+    border-bottom: 1px solid var(--border);
+}
 .user_info{
     padding: 0vh 1vw 0vh 1vw;
+    display: flex;
+    width: 100%;
 
 }
 .user_img{
@@ -60,10 +70,9 @@
 
 .post-meta{
     font-size : 1rem;
-    color:var(--subcolor)
-
+    color:var(--subcolor);
+    padding: 0vh 1vw 0vh 1vw;
 }
-
 .post.body {
     display: flex;
     flex-direction: row;
@@ -210,7 +219,7 @@ div.personal_profile{
     display:flex;
     flex-direction: row;
     justify-content: space-between;
-    width: max-content;
+    width: 100%;
 
 }
 div#user_info{
@@ -224,8 +233,6 @@ div#user_info{
     flex-direction: column;
     justify-content: space-between;
     padding: 1vw 1vh;
-    overflow:hidden;
-    width:15%
 }
 #user_stats{
    display:flex;

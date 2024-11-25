@@ -1,5 +1,4 @@
 import requests
-from django.utils import timezone
 from postApp.models import Post
 from authorApp.models import AuthorProfile
 
@@ -16,8 +15,23 @@ def fetch_github_events(request):
 
     url = f"https://api.github.com/users/{author.user.github_user}/events"
     response = requests.get(url)
+
+    # Ensure we got a successful response
+    if response.status_code != 200:
+        print(f"Error fetching GitHub events: {response.status_code}")
+        return []
+
+    # Load the JSON data from the response
     events = response.json()
-    events.reverse()  # reverse so that most recent is posted first
+
+    # If the response doesn't contain the expected list of events, return an empty list
+    if not isinstance(events, list):
+        print(f"Unexpected response format: {events}")
+        return []
+
+    # Reverse the events to prioritize the most recent events
+    events.reverse()
+
     new_posts = []
     latest_event_id = None
 

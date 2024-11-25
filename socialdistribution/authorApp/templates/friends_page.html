@@ -49,14 +49,9 @@
                         {% for author in requested_authors %}
                         <tr>
                             <td class="text-center">
-                                {% if author.0.user.profile_image %}
-                                <img src="{{ author.0.user.profile_image }}"
-                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
-                                    style="width:40px; height:40px;">
-                                {% else %}
-                                <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                    class="rounded-circle" style="width:40px; height:40px;">
-                                {% endif %}
+                                <img src="{{ author.0.user.profileImage }}"
+                                alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                style="width:40px; height:40px;">
                             </td>
                             <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.display_name }}</a></td>
                             <td>{{ author.0.user.local_node }}</td>
@@ -83,14 +78,11 @@
                         {% for author in pending_authors %}
                         <tr>
                             <td class="text-center">
-                                {% if author.user.profile_image %}
-                                <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
+
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
-                                {% else %}
-                                <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                    class="rounded-circle" style="width:40px; height:40px;">
-                                {% endif %}
+
                             </td>
                             <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
@@ -129,14 +121,9 @@
                         {% for author in followers %}
                         <tr>
                             <td class="text-center">
-                                {% if author.user.profile_image %}
-                                <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
-                                {% else %}
-                                <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                    class="rounded-circle" style="width:40px; height:40px;">
-                                {% endif %}
                             </td>
                             <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
@@ -173,14 +160,9 @@
                         {% for author in already_following_authors %}
                         <tr>
                             <td class="text-center">
-                                {% if author.user.profile_image %}
-                                <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
+                                <img src="{{ author.user.profileImage }}"
+                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
-                                {% else %}
-                                <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                    class="rounded-circle" style="width:40px; height:40px;">
-                                {% endif %}
                             </td>
                             <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
@@ -223,14 +205,9 @@
                         {% for friend in friends %}
                         <tr>
                             <td class="text-center">
-                                {% if friend.user.profile_image %}
-                                <img src="{{ friend.user.profile_image }}"
-                                    alt="{{ friend.user.display_name }}'s profile image" class="rounded-circle"
+                                <img src="{{ friend.user.profileImage }}"
+                                    alt="{{ friend.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
-                                {% else %}
-                                <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
-                                    class="rounded-circle" style="width:40px; height:40px;">
-                                {% endif %}
                             </td>
                             <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.display_name }}</a></td>
                             <td>{{friend.user.local_node }}</td>

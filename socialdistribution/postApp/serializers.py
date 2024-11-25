@@ -364,7 +364,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_contentType(self, obj):
         # Return a default content type
-        return "text/markdown"  # or any other default value you prefer
+        return "text/plain"  # or any other default value you prefer
 
     def get_published(self, obj):
         # Provide ISO 8601 format for published field
