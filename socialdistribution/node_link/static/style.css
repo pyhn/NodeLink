@@ -28,8 +28,7 @@
     height: 15vh;
     padding:1vh 1vw;
     border-bottom: 1px solid var(--border);
-
-
+    flex-basis: fit-content;
 }
 .post.info h1{
     font-size:1.25rem ;
@@ -76,7 +75,6 @@
 }
 .post.body img{
     height: 70%;
-    width: 70%;
     overflow: hidden;
 
 }
@@ -227,6 +225,7 @@ div#user_info{
     justify-content: space-between;
     padding: 1vw 1vh;
     overflow:hidden;
+    width:15%
 }
 #user_stats{
    display:flex;
@@ -240,6 +239,10 @@ div#user_info{
 }
 span.user_icon img {
     height: 20vh;
+}
+.single_post{
+    display:flex;
+    flex-direction: column;
 }
 /* CSS for Modal */
 .modal {

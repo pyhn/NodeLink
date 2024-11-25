@@ -16,7 +16,7 @@ the Modal Strucutre in post_card.html (via htmx target) which will show a list o
         {% for author in authors %}
             <div>
                 <input type="checkbox" name="recipients" value="{{ author.id }}">
-                <label>{{ author.user.username }}</label>
+                <label>{{ author.user.display_name }}</label>
             </div>
         {% endfor %}
         <button type="submit">Share Post</button>

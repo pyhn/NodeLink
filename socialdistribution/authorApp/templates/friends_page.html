@@ -51,14 +51,14 @@
                             <td class="text-center">
                                 {% if author.0.user.profile_image %}
                                 <img src="{{ author.0.user.profile_image }}"
-                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                                 {% else %}
                                 <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
                                     class="rounded-circle" style="width:40px; height:40px;">
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.display_name }}</a></td>
                             <td>{{ author.0.user.local_node }}</td>
 
                             <td class="text-center">
@@ -85,14 +85,14 @@
                             <td class="text-center">
                                 {% if author.user.profile_image %}
                                 <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                                 {% else %}
                                 <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
                                     class="rounded-circle" style="width:40px; height:40px;">
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                             <td class="text-center">
@@ -131,14 +131,14 @@
                             <td class="text-center">
                                 {% if author.user.profile_image %}
                                 <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                                 {% else %}
                                 <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
                                     class="rounded-circle" style="width:40px; height:40px;">
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                         </tr>
@@ -175,14 +175,14 @@
                             <td class="text-center">
                                 {% if author.user.profile_image %}
                                 <img src="{{ author.user.profile_image }}"
-                                    alt="{{ author.user.username }}'s profile image" class="rounded-circle"
+                                    alt="{{ author.user.display_name }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                                 {% else %}
                                 <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
                                     class="rounded-circle" style="width:40px; height:40px;">
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.username }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                             <td class="text-center">
@@ -225,14 +225,14 @@
                             <td class="text-center">
                                 {% if friend.user.profile_image %}
                                 <img src="{{ friend.user.profile_image }}"
-                                    alt="{{ friend.user.username }}'s profile image" class="rounded-circle"
+                                    alt="{{ friend.user.display_name }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                                 {% else %}
                                 <img src="{% static 'icons/user_icon.svg' %}" alt="Default profile image"
                                     class="rounded-circle" style="width:40px; height:40px;">
                                 {% endif %}
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.display_name }}</a></td>
                             <td>{{friend.user.local_node }}</td>
 
                             <td class="text-center">
