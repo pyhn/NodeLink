@@ -228,7 +228,21 @@ class PostSerializer(serializers.ModelSerializer):
             ] = f"{node.url.rstrip('/')}authors/{author.user.user_serial}/posts/{validated_data['post_serial']}"
 
         # Create the Post instance
-        return Post.objects.create(**validated_data)
+        post = Post.objects.create(**validated_data)
+
+        # create comments
+        try:
+            for comment in self.initial_data["comments"]["src"]:
+                cs = CommentSerializer(data=comment, context={"author": author})
+                if cs.is_valid():
+                    cs.save()
+            for like in self.initial_data["likes"]["src"]:
+                ls = LikeSerializer(data=like, context={"author": author})
+                if ls.is_valid():
+                    ls.save()
+        except Exception as e:
+            print(f"Post Serializer Error:{e}")
+        return post
 
     def update(self, instance, validated_data):
         """
