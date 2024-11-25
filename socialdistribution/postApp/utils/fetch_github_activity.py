@@ -5,19 +5,22 @@ from authorApp.models import AuthorProfile
 
 def fetch_github_events(request):
     author = AuthorProfile.objects.get(pk=request.user.author_profile.pk)
-    
-    # If user doesn't have GitHub username, just return
-    if author.user.github_user is None:
+    # If user doesn't have github just return
+    if (
+        author.user.github_user == None
+        or author.user.github_user == "None"
+        or author.user.github_user == ""
+    ):
         return []
 
     url = f"https://api.github.com/users/{author.user.github_user}/events"
     response = requests.get(url)
-    
+
     # Ensure we got a successful response
     if response.status_code != 200:
         print(f"Error fetching GitHub events: {response.status_code}")
         return []
-    
+
     # Load the JSON data from the response
     events = response.json()
 
@@ -28,7 +31,7 @@ def fetch_github_events(request):
 
     # Reverse the events to prioritize the most recent events
     events.reverse()
-    
+
     new_posts = []
     latest_event_id = None
 
