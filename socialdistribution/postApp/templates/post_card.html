@@ -97,8 +97,7 @@
                 <!--!!!add link to user profile-->
                 By
                 <a href="{% url 'authorApp:profile_display' post.author.user.username %}"
-                    >{{post.author.user.username }}</a
-                >
+                    >{{post.author.user.display_name }} </a> Node: {{post.author.user.local_node}}
                 on {{ post.created_at|date:"F j, Y, g:i a" }} | Visibility: {{ post.get_visibility_display }}
             </div>
         </div>

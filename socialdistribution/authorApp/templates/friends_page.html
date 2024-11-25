@@ -53,7 +53,7 @@
                                 alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                 style="width:40px; height:40px;">
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.0.user.username%}">{{author.0.user.display_name }}</a></td>
                             <td>{{ author.0.user.local_node }}</td>
 
                             <td class="text-center">
@@ -84,7 +84,7 @@
                                     style="width:40px; height:40px;">
 
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                             <td class="text-center">
@@ -125,7 +125,7 @@
                                     alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                         </tr>
@@ -164,7 +164,7 @@
                                     alt="{{ author.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.username }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' author.user.username%}">{{author.user.display_name }}</a></td>
                             <td>{{ author.user.local_node }}</td>
 
                             <td class="text-center">
@@ -209,7 +209,7 @@
                                     alt="{{ friend.user.username }}'s profile image" class="rounded-circle"
                                     style="width:40px; height:40px;">
                             </td>
-                            <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.user_serial }}</a></td>
+                            <td><a href="{% url 'authorApp:profile_display' friend.user.username%}">{{friend.user.display_name }}</a></td>
                             <td>{{friend.user.local_node }}</td>
 
                             <td class="text-center">

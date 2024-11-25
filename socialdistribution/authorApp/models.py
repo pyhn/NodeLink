@@ -10,13 +10,14 @@ from node_link.utils.mixin import MixinApp
 class User(AbstractUser):
     date_ob = models.DateField(null=True, blank=True)
     is_approved = models.BooleanField(default=False)  # Track approval status
+
     profileImage = models.URLField(
         null=True,
         blank=True,
         default="https://s3.amazonaws.com/37assets/svn/765-default-avatar.png",
+        max_length=255,
     )
-
-    display_name = models.CharField(max_length=50, null=False, blank=False)
+    display_name = models.CharField(max_length=150, null=False, blank=False)
     github_user = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)  # profile bio
     local_node = models.ForeignKey(
@@ -44,7 +45,7 @@ class AuthorProfile(models.Model):
     github = models.CharField(max_length=255, null=True, blank=True)
     github_token = models.CharField(max_length=255, null=True, blank=True)
     github_user = models.CharField(max_length=255, null=True, blank=True)
-    last_github_event_id = models.CharField(max_length=50, null=True, blank=True)
+    last_github_event_id = models.CharField(max_length=150, null=True, blank=True)
     fqid = models.TextField(
         blank=True, editable=False, unique=True
     )  # New field for fqid

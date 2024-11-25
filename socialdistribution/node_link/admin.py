@@ -65,6 +65,7 @@ class NodeAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         authors_url = obj.url.rstrip("/") + "/authors/"
+        local_node = Node.objects.filter(is_remote=False).first()
         if not obj.pk:
             obj.created_by = request.user
 
@@ -98,7 +99,10 @@ class NodeAdmin(admin.ModelAdmin):
             auth = (obj.username, obj.raw_password)
 
             try:
-                response = requests.get(authors_url, auth=auth, timeout=10)
+                headers = {"X-original-host": local_node.url}
+                response = requests.get(
+                    authors_url, auth=auth, timeout=10, headers=headers
+                )
                 print(response)
                 response.raise_for_status()
             except requests.RequestException as e:
