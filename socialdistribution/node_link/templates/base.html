@@ -19,9 +19,9 @@
     <nav class="navbar navbar-expand-lg navbar">
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+            <span class="navbar-toggler-icon">TOggle</span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="navbar-collapse" id="navbarNav">
             <ul class="navbar">
                 <li>        <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}">Navajo <br>White</a>
                 </li>
@@ -89,6 +89,10 @@
             console.log(nav_bar.classList)
 
         })
+        function toggleNavbar() {
+        const navbar = document.querySelector("ul.navbar");
+        navbar.classList.toggle("show");
+    }
     </script>
 </body>
 
