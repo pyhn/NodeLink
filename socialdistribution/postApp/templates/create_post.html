@@ -1,6 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Friends - SocialDistribution{% endblock %}
+
+{% block content %}
+
+  <!--   <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Create New Post</title>
@@ -89,7 +93,7 @@
                 background-color: #218838;
             }
         </style>
-    </head>
+    </head> -->
     <body>
         <h1>Create a New Post</h1>
 
@@ -269,4 +273,4 @@
             // Optionally, you can add more JavaScript for enhanced functionality
         </script>
     </body>
-</html>
+    {% endblock %}
