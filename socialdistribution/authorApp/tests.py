@@ -6,12 +6,14 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 
 from .models import AuthorProfile, User, Friends, Follower
 from node_link.models import Node
 from postApp.models import Post
+
+import base64
 
 
 # Set up the User model
@@ -580,3 +582,171 @@ class AuthorAppTests(APITestCase):
                 and friend_data["user2"]["displayName"] == self.user1.display_name
             )
         )
+
+
+class InboxAPITestCase(APITestCase):
+    def setUp(self):
+
+        # Create a user and author profile
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass",
+            display_name="Test User",
+            user_serial="testuser",
+        )
+
+        self.remote_user = User.objects.create_user(
+            username="remoteuser",
+            password="testpass",
+            display_name="Test User",
+            user_serial="remoteuser",
+        )
+
+        # Create a local node (assuming this is the node we are testing)
+        self.local_node = Node.objects.create(
+            url="http://testserver/api/",  # testserver is the default domain in Django tests
+            username="local_node_user",
+            raw_password="local_node_pass",
+            is_remote=False,
+            is_active=True,
+            created_by=self.user,
+        )
+        self.local_node.set_password("local_node_pass")
+        self.local_node.save()
+
+        # Create a remote node (the one sending the request)
+        self.remote_node = Node.objects.create(
+            url="http://remote-node.com/api/",
+            username="remote_node_user",
+            raw_password="remote_node_pass",
+            is_remote=True,
+            is_active=True,
+            created_by=self.user,
+        )
+
+        self.remote_node.set_password("remote_node_pass")
+        self.remote_node.save()
+
+        self.remote_user.local_node = self.remote_node
+        self.remote_user.save()
+
+        self.user.local_node = self.local_node
+        self.user.save()
+
+        self.author = AuthorProfile.objects.create(
+            user=self.user,
+            github="https://github.com/testuser",
+        )
+
+    def test_unauthorized(self):
+        """Test unauthorized node access"""
+        url = reverse("authorApp:author-inbox", args=[self.user.username])
+
+        username = "local_node_user22"
+        password = "local_node_pass2"
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
+        auth_header = f"Basic {encoded_credentials}"
+
+        response = self.client.post(url, HTTP_AUTHORIZATION=auth_header)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_authorized(self):
+        """Test authorized node access"""
+        url = reverse("authorApp:author-inbox", args=[self.user.username])
+
+        username = "local_node_user"
+        password = "local_node_pass"
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
+        auth_header = f"Basic {encoded_credentials}"
+
+        response = self.client.post(url, HTTP_AUTHORIZATION=auth_header)
+        self.assertNotEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_follow_invalid_data(self):
+        """Test follow request but no user"""
+        url = reverse("authorApp:author-inbox", args=[self.user.username])
+
+        username = "local_node_user"
+        password = "local_node_pass"
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
+        auth_header = f"Basic {encoded_credentials}"
+
+        # Prepare the data to send (e.g., a "follow" activity)
+        data = {
+            "type": "follow",
+            "summary": "Remote User wants to follow Test User",
+            "actor": {
+                "type": "author",
+                "id": f"{self.remote_node.url}authors/remoteuser",
+                "host": self.remote_node.url,
+                "displayName": "Remote User",
+                "url": f"{self.remote_node.url}authors/remoteuser",
+                "github": "",
+                "profileImage": "",
+            },
+            "object": {
+                "type": "author",
+                "id": f"{self.local_node.url}authors/{self.user.user_serial}",
+                "host": self.local_node.url,
+                "displayName": self.user.display_name,
+                "url": f"{self.local_node.url}authors/{self.user.user_serial}",
+                "github": self.author.github,
+                "profileImage": self.user.profileImage,
+            },
+        }
+
+        response = self.client.post(
+            url, data, HTTP_AUTHORIZATION=auth_header, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_post_bad_request(self):
+        """Test post request but bad request"""
+        url = reverse("authorApp:author-inbox", args=[self.user.username])
+
+        username = "local_node_user"
+        password = "local_node_pass"
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
+        auth_header = f"Basic {encoded_credentials}"
+        # Prepare the data to send (e.g., a "follow" activity)
+        data = {
+            "type": "post",
+        }
+
+        response = self.client.post(
+            url, data, HTTP_AUTHORIZATION=auth_header, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unknown_type(self):
+        """Test like request but bad request"""
+        url = reverse("authorApp:author-inbox", args=[self.user.username])
+
+        username = "local_node_user"
+        password = "local_node_pass"
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode("utf-8")).decode(
+            "utf-8"
+        )
+        auth_header = f"Basic {encoded_credentials}"
+        # Prepare the data to send (e.g., a "follow" activity)
+        data = {
+            "type": "video",
+        }
+
+        response = self.client.post(
+            url, data, HTTP_AUTHORIZATION=auth_header, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
