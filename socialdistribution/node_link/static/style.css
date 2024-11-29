@@ -7,7 +7,87 @@
     --button_hover:#0056b3;
     --button_back:#007BFF;
     --comment_back:#f8f9fa;
+    --background_dark:#241623;
+    --background_dark_g1:#3a2338;
+
+    --main_color_1:#CA12EB;
+    --main_color_1_g1:rgb(229, 153, 243);
   }
+
+a{
+    text-decoration: underline solid var(--main_color_1);
+    color: var(--main_color_1);
+}
+a:hover{
+    color: var(--main_color_1_g1);
+}
+
+ /* Navbar */
+.navbar-brand{
+    font-family: 'Gugi';
+    text-decoration: none;
+}
+.navbar-brand:hover{
+    font-family: 'Gugi';
+    text-decoration: none;
+    text-shadow: 0px 0px 25px var(--main_color_1_g1);
+}
+
+.navbar-dark {
+    color: var(--white);
+    border-bottom: 2px solid var(--main_color_1);
+    background-color:var(--background_dark);
+
+}
+ .navbar-dark .navbar-nav .nav-link.icon_info{
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    text-decoration: none;
+
+}
+.navbar-dark .navbar-nav .nav-item:hover {
+    background-color: var(--background_dark_g1);
+    border-radius: 1em;
+    color: var(--white);
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    align-content: end;
+    gap: 1em;
+    color: var(--white);
+    text-decoration: none;
+}
+@media (max-width: 991px) {
+    .navbar-dark .navbar-nav .nav-link {
+        flex-direction: column;
+        gap: 0.5em;
+        font-size: 0.9rem;
+    }
+
+    .navbar-dark .navbar-nav .nav-item {
+        margin-bottom: 0.5em;
+
+    }
+
+    .navbar-dark {
+        border-bottom: 1px solid var(--main_color_1);
+        padding: 0.5em;
+    }
+
+    .navbar-brand {
+        font-size: 1.2rem;
+
+    }
+
+    a {
+        font-size: 0.9rem;
+    }
+}
 
 
 .post-container {
