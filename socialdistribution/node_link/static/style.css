@@ -30,16 +30,18 @@
 .post.info {
     display: flex;
     align-items:center;
-    height: 15vh;
+    height: 100%;
     padding:1vh 1vw;
     border-bottom: 1px solid var(--border);
     flex-basis: fit-content;
+    overflow: hidden;
 }
 .post-info-container {
     display: flex;
     width: 100%;
     justify-content: space-between;
     padding: 0 1vw;
+    max-height: 100%;
 }
 .post.info h1{
     font-size:1.25rem ;
