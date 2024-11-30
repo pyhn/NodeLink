@@ -1,4 +1,18 @@
 :root {
+
+    --background:#011640;
+    --accent-blue-dark:#2044bc;
+    --accent-blue-light:#23a2f6;
+    --accent-orange-dark:#ff512f;
+    --accent-orange-light:#f09819;
+    --text-white:#ffffff;
+    --text-black:#080710;
+    --transparent-card-bg:rgba(255, 255, 255, 0.07);
+    --transparent-card-border:rgba(255, 255, 255, 0.1);
+    --transparent-card-bs: rgba(8, 7, 16, 0.6);
+    --off-white-bg:#e5e5e5;
+
+
     --border: #b0b0b0;
     --white: #ffffff;
     --subcolor:#959595;
@@ -8,8 +22,13 @@
     --button_back:#007BFF;
     --comment_back:#f8f9fa;
   }
+  body{
+    background-color: var(--background);
+
+  }
 
 
+/*Post styling*/
 .post-container {
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -21,8 +40,6 @@
 .post{
     padding: 2vh 1vw 1vh 1vw;
 }
-
-
 .post.info {
     display: flex;
     align-items:center;
@@ -66,8 +83,6 @@
     height: 3vh;
     width: 3vh;
 }
-
-
 .post-meta{
     font-size : 1rem;
     color:var(--subcolor);
@@ -92,7 +107,6 @@
     padding:1vh 1vw;
 
 }
-
 .post.bottom_bar {
     display: flex;
     flex-direction: row;
@@ -278,4 +292,146 @@ span.user_icon img {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+}
+
+/*post-edit*/
+.tab-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: transparent;
+    border: none;
+    padding: 20px;
+    border-radius: 8px;
+
+}
+/* Tab buttons */
+.tabs {
+    overflow: hidden;
+    display: flex;
+}
+.tabs button {
+    background-color: inherit;
+    margin: 0px;
+    outline: none;
+    border-radius: 0.5vw  0.5vw 0vw 0vw ;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: background-color 0.3s;
+    font-size: 17px;
+    color: var(--text-white);
+}
+.tabs button:hover {
+    background-color: var(--transparent-card-bg);
+}
+.tabs button.active {
+    background-color: var(--transparent-card-bg);
+}
+/* Tab content */
+.tab-content {
+    display: none;
+    padding: 20px 0;
+}
+.tab-content.active {
+    display: flex;
+    align-self: center;
+    flex-direction: column;
+}
+.tab-content.active>* {
+    margin: 5px;
+}
+/* Common form styles */
+
+
+
+form {
+    height: auto;
+    width: 40vw;
+    min-width: 30vw;
+    background-color: var(--transparent-card-bg);
+    position:static;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border:2px solid var(--transparent-card-border);
+    box-shadow: 0 0 40px var(--transparent-card-bs);
+    padding: 50px 35px;
+}
+
+form * {
+    font-family: "Poppins", sans-serif;
+    color: var(--text-white);
+    letter-spacing: 0.5px;
+    outline: none;
+    border: none;
+
+}
+
+form h3 {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 42px;
+    text-align: center;
+}
+
+label {
+    display: block;
+    margin-top: 30px;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-top: 1.5vh;
+}
+
+input,
+select,
+textarea {
+    display: block;
+    height: 3em;
+    width: 100%;
+    background-color: var(--transparent-card-bg);
+    border-radius: 3px;
+    padding: 0 10px;
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 300;
+}
+textarea {
+    height: 10em;
+}
+::placeholder {
+    color: var(--off-white-bg);
+}
+
+button {
+    width: 100%;
+    background-color:var(--text-white);
+    color: var(--text-black);
+    padding: 15px 0;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 0.5vw;
+    cursor: pointer;
+}
+.existing-image img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--transparent-card-border);
+}
+.message {
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
