@@ -10,6 +10,8 @@
     --transparent-card-border:rgba(255, 255, 255, 0.1);
     --transparent-card-bs: rgba(8, 7, 16, 0.6);
     --off-white-bg:#e5e5e5;
+    --breakpoint-lg:992px;
+    --nav_width: 6vw;
 
 
     --border: #b0b0b0;
@@ -27,31 +29,29 @@ body{
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 15vh 0vw 25vh 0vw;
+    padding: 5vh 0vw 5vh 0vw;
 
     --nav_width:6vw;
   }
+
+
+ /* Navbar */
+body {
+    transition: var(--nav_width) 0.3s ease-in-out;
+}
   body.nav-expanded{
-    --nav_width:min-content;
+    --nav_width:30vw;
 
   }
 
 
+div.container.main{
+    display: flex;
+    flex-direction: column;
+    padding: .5vh 2vw .5vh 2vw;
 
- /* Navbar */
- body {
-    --nav_width: 6vw;
-    transition: var(--nav_width) 0.3s ease-in-out;
-}
-body.nav-expanded {
-    --nav_width: min-content;
 }
 
-a.nav-link {
-    text-decoration: underline solid var(--text-white);
-    color: var(--text-white);
-    transition: color 0.3s ease, text-decoration-color 0.3s ease;
-}
 
 .navbar-brand {
     font-family: 'Gugi';
@@ -73,6 +73,8 @@ a.nav-link {
     border-right: 2px solid var(--transparent-card-border);
     background-color: var(--transparent-card-bg);
     text-decoration: none;
+    backdrop-filter: blur(30px);
+
 }
 
 ul.sidebar {
@@ -117,7 +119,75 @@ a.nav-link {
     gap: 0px 10px;
     text-decoration: none;
     transition: gap 0.3s ease;
+    color: var(--text-white);
+
 }
+@media (max-width: 1200px) {
+    div.container.main{
+        padding: .5vh 5vw .5vh 5vw;
+
+    }
+
+
+}
+@media (max-width: 768px) {
+    body{
+        flex-direction: column;
+        padding-top: 0px;
+    }
+    #navbarNav{
+        position: sticky;
+        top :.25vh;
+        right:5vw;
+        width: 100%;
+        border-bottom: 2px solid var(--transparent-card-border);
+        background-color: var(--transparent-card-bg);
+        backdrop-filter: blur(30px);
+    }
+    #navbarNav>div{
+        visibility: hidden;
+    }
+    .hamburger-menu {
+        z-index: 1000;
+    }
+
+    #hamburger-btn {
+        font-size: 1.5em;
+        background: none;
+        border: none;
+        color: var(--text-white);
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+
+
+
+    #navbarNav.open {
+        visibility: visible;
+
+    }
+
+
+
+    #navbarNav.open span.nav-label{
+        width: 100%;
+        visibility: visible;
+        opacity: 1;
+    }
+    #navbarNav.open .sidebar{
+        height: min-content;
+        border-bottom: 2px solid var(--transparent-card-border);
+        background-color: var(--transparent-card-bg);
+        backdrop-filter: blur(30px);
+    }
+
+
+
+
+}
+
+
 
 
 

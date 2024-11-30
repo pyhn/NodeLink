@@ -16,12 +16,11 @@
 </head>
 
 <body >
-    <nav class="navbar navbar-expand-lg navbar">
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon">TOggle</span>
+    <nav class="navbar navbar-expand-lg navbar" id="navbarNav">
+        <button class="hamburger-menu" id ='hamburger-btn'>
+            <span class="navbar-toggler-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18v-2h18v2zm0-5v-2h18v2zm0-5V6h18v2z"/></svg></span>
         </button>
-        <div class="navbar-collapse" id="navbarNav">
+        <div class="navbar-collapse" >
             <ul class="sidebar">
                 <li>        <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}">Navajo <br>White</a>
                 </li>
@@ -66,7 +65,7 @@
             </ul>
         </div>
     </nav>
-    <div class="container mt-4  ">{% block content %} {% endblock %}</div>
+    <div class="container main ">{% block content %} {% endblock %}</div>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -87,10 +86,13 @@
             console.log(nav_bar.classList)
 
         })
-        function toggleNavbar() {
-        const navbar = document.querySelector("ul.sidebar");
-        navbar.classList.toggle("show");
-    }
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const sidebar = document.getElementById('navbarNav');
+
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
     </script>
 </body>
 
