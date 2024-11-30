@@ -61,6 +61,7 @@
     overflow: auto;
 }
 .post-visibility  {
+    font-size: 0.9rem;
     flex-shrink: 0;
     padding: 0vh 1vw 0vh 1vw;
     white-space: nowrap;
@@ -75,6 +76,11 @@
     align-items: center;
     padding:1vh 1vw;
     border-bottom: 1px solid var(--border);
+}
+
+.post-date {
+    font-size: 0.70rem;
+    color: var(--subcolor);
 }
 .user_info{
     flex-grow: 1;
