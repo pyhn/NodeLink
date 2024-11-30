@@ -6,13 +6,17 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="{% static 'signup.css' %}" />
+        <link rel="stylesheet" href="{% static 'login.css' %}" />
         <!--Stylesheet-->
     </head>
     <body>
         <div class="background">
-            <div class="shape"></div>
-            <div class="shape"></div>
+            <div class="shape" style="background: linear-gradient(var(--accent-blue-dark), var(--accent-blue-light));
+            left: -5vw;
+            top: -15vh;"></div>
+            <div class="shape"style="background: linear-gradient(to right, var(--accent-orange-dark), var(--accent-orange-light));
+            right: -10vw;
+            bottom: -60vh;"></div>
         </div>
         <form method="post" novalidate>
             {% csrf_token %} {{ form.non_field_errors }}

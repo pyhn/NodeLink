@@ -1,15 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-    {% extends 'base.html' %} {% block title %}Home - SocialDistribution{% endblock %} {% block content %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Friends - SocialDistribution{% endblock %}
 
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>SocialDistribution</title>
-        <!-- Bootstrap CSS for modal styling -->
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" />
-    </head>
-
+{% block content %}
     <body>
         <div class="personal_profile">
             <div id="user_info">
@@ -175,4 +168,3 @@
 
     </body>
     {% endblock %}
-</html>
