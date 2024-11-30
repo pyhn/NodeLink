@@ -40,8 +40,10 @@
         <div id="comment_create_block">
             <div class="create-comment-button">
                 <button class="icon" type="button" hx-get="{%url 'postApp:create_comment' request.user.username  post.uuid %}" hx-trigger="click"
-                    hx-target="#comment_create_block" hx-swap="innerHTML">Add a Comment<img
-                        src="{% static 'icons/plus.svg' %}"></button>
+                    hx-target="#comment_create_block" hx-swap="innerHTML">
+                    <img src="{% static 'icons/plus.svg' %}">
+                    <span>Add a Comment</span>
+                </button>
             </div>
         </div>
         <!-- Comments Section -->
@@ -57,7 +59,7 @@
                                 <div class="user_img small"><img src="{{ comment.author.user.profileImage }}" alt="Profile Image">
                                 </div>
                             </a>
-                            <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">{{ comment.author.user.username }}</a>
+                            <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">{{ comment.author.user.username }} from {{comment.author.user.local_node}} </a>
                         </span>:
                         {{ comment.content|linebreaks }}
                         <span class="comment-date">

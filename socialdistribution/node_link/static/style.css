@@ -118,6 +118,8 @@
     align-items: center;
     justify-content: center;
     height: fit-content;
+    min-height:fit-content;
+    min-width: fit-content;
 
 }
 .post.body img{
@@ -128,7 +130,8 @@
 .post.body a{
     all: inherit;
     padding:1vh 1vw;
-
+    /* min-height: fit-content; */
+    /* min-width: fit-content; */
 }
 
 .post.bottom_bar {
@@ -181,7 +184,7 @@ button.icon :hover{
 
 }
 .comments-section {
-    margin-top: 40px;
+    padding: 1vh 1vw;
 }
 .comments-section ul {
     list-style-type: none;
@@ -194,12 +197,22 @@ button.icon :hover{
     border-radius: 5px;
     word-wrap: break-word;
 }
+.comments-section li:hover {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+.comments-section p {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
 .comment-author {
     font-weight: bold;
 }
 .comment-date {
     display: block;
     margin-top: 5px;
+    font-size: 12px;
+}
+.comment-author-local-node {
     font-size: 12px;
 }
 /* Button Styles */
@@ -215,7 +228,8 @@ button.icon :hover{
     height:5vh;
     margin:1vh 1vw;
 }
-.create-comment-button button:hover, .like-button button:hover {
+.create-comment-button button:hover,.create-comment-button button span:hover,
+.create-comment-button button img:hover, .like-button button:hover {
     background-color: var(--button_hover);
 }
 .back-link a {
@@ -318,4 +332,40 @@ span.user_icon img {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+}
+
+
+@media (max-width: 600px) {
+    .create-comment-button button, .like-button button {
+        padding: 8px 16px;
+        font-size: 14px;
+        height: 4vh;
+    }
+}
+
+@media (max-width: 400px) {
+    .create-comment-button button, .like-button button {
+        padding: 8px;
+        /* hide the text and just use the plus button */
+        font-size: 0;
+        width: 30px;
+        height: 30px;
+    }
+
+    /* when the screen is too small, it will just be the plus */
+    .create-comment-button button img, .like-button button img {
+        width: 100%;
+        height: 100%;
+    }
+    /* comments text in h2  */
+    .comments-section h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 200px) {
+    /* comments text in h2  */
+    .comments-section h2 {
+        font-size: 1rem;
+    }
 }
