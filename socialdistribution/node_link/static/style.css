@@ -361,7 +361,7 @@ span.user_icon img {
 
 form {
     height: auto;
-    width: 40vw;
+    width: 100%;
     min-width: 30vw;
     background-color: var(--transparent-card-bg);
     position:static;

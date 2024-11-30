@@ -14,14 +14,6 @@
         bottom: -10vh;"></div>
     </div>
 
-    <!-- Display Messages -->
-    {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <div class="message {{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-    {% endif %}
 
     <div class="tab-container">
         <form method="POST" enctype="multipart/form-data" action="{% url 'postApp:submit_edit_post' post.author.user.username post.uuid %}">
