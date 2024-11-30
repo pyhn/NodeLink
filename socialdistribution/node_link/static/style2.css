@@ -1,4 +1,17 @@
 :root {
+    --background:#011640;
+    --accent-blue-dark:#2044bc;
+    --accent-blue-light:#23a2f6;
+    --accent-orange-dark:#ff512f;
+    --accent-orange-light:#f09819;
+    --text-white:#ffffff;
+    --text-black:#080710;
+    --transparent-card-bg:rgba(255, 255, 255, 0.07);
+    --transparent-card-border:rgba(255, 255, 255, 0.1);
+    --transparent-card-bs: rgba(8, 7, 16, 0.6);
+    --off-white-bg:#e5e5e5;
+
+
     --border: #b0b0b0;
     --white: #ffffff;
     --subcolor:#959595;
@@ -7,13 +20,15 @@
     --button_hover:#0056b3;
     --button_back:#007BFF;
     --comment_back:#f8f9fa;
-    --background_dark:#241623;
-    --background_dark_g1:#3a2338;
-
-    --main_color_1:#CA12EB;
-    --main_color_1_g1:rgb(229, 153, 243);
   }
-  body{
+body{
+
+    background-color: var(--background);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15vh 0vw 25vh 0vw;
+
     --nav_width:6vw;
   }
   body.nav-expanded{
@@ -21,13 +36,7 @@
 
   }
 
-a{
-    text-decoration: underline solid var(--main_color_1);
-    color: var(--main_color_1);
-}
-a:hover{
-    color: var(--main_color_1_g1);
-}
+
 
  /* Navbar */
  body {
@@ -38,13 +47,10 @@ body.nav-expanded {
     --nav_width: min-content;
 }
 
-a {
-    text-decoration: underline solid var(--main_color_1);
-    color: var(--main_color_1);
+a.nav-link {
+    text-decoration: underline solid var(--text-white);
+    color: var(--text-white);
     transition: color 0.3s ease, text-decoration-color 0.3s ease;
-}
-a:hover {
-    color: var(--main_color_1_g1);
 }
 
 .navbar-brand {
@@ -53,10 +59,10 @@ a:hover {
     transition: text-shadow 0.3s ease-in-out;
 }
 .navbar-brand:hover {
-    text-shadow: 0px 0px 25px var(--main_color_1_g1);
+    text-shadow: 0px 0px 25px var(--transparent-card-bs);
 }
 
-.navbar {
+.sidebar {
     inset: 0 auto 0 0;
     width: var(--nav_width);
     transition: width 0.3s ease-in-out;
@@ -64,16 +70,17 @@ a:hover {
     padding: 10px;
     height: 100%;
     color: var(--white);
-    border-right: 2px solid var(--main_color_1);
-    background-color: var(--background_dark);
+    border-right: 2px solid var(--transparent-card-border);
+    background-color: var(--transparent-card-bg);
     text-decoration: none;
 }
 
-ul.navbar {
+ul.sidebar {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     padding: 8px;
+    padding-bottom:3vh;
     list-style: none;
 }
 
@@ -83,15 +90,15 @@ span.nav-label {
     transition: visibility 0.3s ease, opacity 0.3s ease;
 }
 
-ul.navbar li:last-child {
+ul.sidebar li:last-child {
     margin-top: auto;
 }
-ul.navbar li.nav-item {
+ul.sidebar li.nav-item {
     height: 40px;
     transition: background-color 0.3s ease, border-radius 0.3s ease;
 }
-ul.navbar li.nav-item:hover {
-    background-color: var(--background_dark_g1);
+ul.sidebar li.nav-item:hover {
+    background-color: var(--transparent-card-bg);
     border-radius: 0.25em;
     width: 100%;
 }
@@ -112,40 +119,7 @@ a.nav-link {
     transition: gap 0.3s ease;
 }
 
-@media (max-width: 991px) {
-    .navbar-toggler{
-        visibility: visible;
-    }
-    .navbar {
-        width: 100%;
-        height: auto;
-        top:0;
-        position: sticky;
-        border-right: none;
-    }
 
-    ul.navbar {
-        flex-direction: column;
-        align-items: center;
-        display: none; /* Initially hidden */
-    }
-
-    ul.navbar.show {
-        display: flex; /* Show when toggled */
-    }
-
-    .navbar-toggler {
-        display: block; /* Show toggle button */
-        margin-left: auto;
-        margin-right: auto;
-        cursor: pointer;
-    }
-
-    .navbar-brand {
-        text-align: center;
-        margin-bottom: 10px;
-    }
-}
 
 .post-container {
     border: 1px solid var(--border);
@@ -196,9 +170,12 @@ a.nav-link {
     overflow: hidden;
 
 }
-.user_img img{
-    max-height: 100%;
+.user_img_icon{
+    width :1em;
+    height:1em;
+    border-radius: 100%;
 }
+
 .user_img.small{
     height: 3vh;
     width: 3vh;

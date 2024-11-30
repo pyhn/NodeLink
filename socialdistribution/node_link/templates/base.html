@@ -22,7 +22,7 @@
             <span class="navbar-toggler-icon">TOggle</span>
         </button>
         <div class="navbar-collapse" id="navbarNav">
-            <ul class="navbar">
+            <ul class="sidebar">
                 <li>        <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}">Navajo <br>White</a>
                 </li>
                 <li class="nav-item ">
@@ -59,12 +59,10 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link"
-                            href="{% url 'authorApp:profile_display' request.user.username%}"><img class=" user_img small" src={{request.user.profileImage}}> <span class = "nav-label">{{ request.user.username}} </span>
+                            href="{% url 'authorApp:profile_display' request.user.username%}"><img class=" user_img_icon" src={{request.user.profileImage}}> <span class = "nav-label">{{ request.user.username}} </span>
                         </a>
                 </li>
-                <!-- <li class="nav-item">
-                        <a class="nav-link" href="{% url 'authorApp:logout' %}">Logout</a>
-                    </li> -->
+
             </ul>
         </div>
     </nav>
@@ -90,7 +88,7 @@
 
         })
         function toggleNavbar() {
-        const navbar = document.querySelector("ul.navbar");
+        const navbar = document.querySelector("ul.sidebar");
         navbar.classList.toggle("show");
     }
     </script>
