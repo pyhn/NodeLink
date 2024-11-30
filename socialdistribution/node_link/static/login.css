@@ -19,47 +19,57 @@
     margin: 0;
     box-sizing: border-box;
 }
+
 body {
     background-color: var(--background);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15vh 0vw 25vh 0vw;
+
 }
+
 .background {
-    width: 430px;
-    height: 520px;
+    width: 40vw;
+    height: 50vh;
     position: absolute;
     transform: translate(-50%, -50%);
     left: 50%;
     top: 50%;
 }
+
 .background .shape {
-    height: 200px;
-    width: 200px;
+    height: 15vw;
+    width: 15vw;
     position: absolute;
     border-radius: 50%;
 }
+
 .shape:first-child {
     background: linear-gradient(var(--accent-blue-dark), var(--accent-blue-light));
     left: -80px;
     top: -80px;
 }
+
 .shape:last-child {
-    background: linear-gradient(to right, var(--accent-orange-dark) var(--accent-orange-light));
+    background: linear-gradient(to right, var(--accent-orange-dark), var(--accent-orange-light));
     right: -80px;
     bottom: -80px;
 }
+
 form {
-    height: 520px;
-    width: 400px;
-    background-color:var(--transparent-card-bg);
-    position: absolute;
-    transform: translate(-50%, -50%);
-    top: 50%;
-    left: 50%;
+    height: auto;
+    width: 40vw;
+    min-width: 30vw;
+    background-color: var(--transparent-card-bg);
+    position:static;
     border-radius: 10px;
     backdrop-filter: blur(10px);
-    border: 2px solid var(--transparent-card-bs);
+    border:2px solid var(--transparent-card-border);
     box-shadow: 0 0 40px var(--transparent-card-bs);
     padding: 50px 35px;
 }
+
 form * {
     font-family: "Poppins", sans-serif;
     color: var(--text-white);
@@ -67,6 +77,7 @@ form * {
     outline: none;
     border: none;
 }
+
 form h3 {
     font-size: 32px;
     font-weight: 500;
@@ -80,9 +91,16 @@ label {
     font-size: 16px;
     font-weight: 500;
 }
-input {
+
+.form-group {
+    margin-top: 1.5vh;
+}
+
+input,
+select,
+textarea {
     display: block;
-    height: 50px;
+    height: 3em;
     width: 100%;
     background-color: var(--transparent-card-bg);
     border-radius: 3px;
@@ -91,9 +109,13 @@ input {
     font-size: 14px;
     font-weight: 300;
 }
+textarea {
+    height: 5em;
+}
 ::placeholder {
     color: var(--off-white-bg);
 }
+
 button {
     margin-top: 50px;
     width: 100%;
@@ -102,19 +124,23 @@ button {
     padding: 15px 0;
     font-size: 18px;
     font-weight: 600;
-    border-radius: 5px;
+    border-radius: 0.5vw;
     cursor: pointer;
 }
+
 .mt-3 {
-    margin-top: 20px;
+    margin-top: 2vh;
 }
+
 .text-center {
     text-align: center;
 }
+
 a {
     color: var(--text-white);
     text-decoration: none;
 }
+
 a:hover {
     text-decoration: underline;
 }
