@@ -3,6 +3,10 @@
     --white: #ffffff;
     --subcolor:#959595;
     --hover_color:#e9e9e9;
+    --submit_button_normal:#03A66A;
+    --submit_button_hover:#006842;
+    --cancel_button_normal:#bb5e5e;
+    --cancel_button_hover:#ff0000;
     --button_back:#007BFF;
     --button_hover:#0056b3;
     --button_back:#007BFF;
@@ -318,4 +322,24 @@ span.user_icon img {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+}
+
+.confirm-btn {
+    background-color: var(--submit_button_normal);
+    color: var(--white);
+    cursor: pointer;
+}
+
+.confirm-btn:hover {
+    background-color: var(--submit_button_hover);
+}
+
+.cancel-btn {
+    background-color: var(--cancel_button_normal);
+    color: var(--white);
+    cursor: pointer;
+}
+
+.cancel-btn:hover {
+    background-color: var(--cancel_button_hover);
 }
