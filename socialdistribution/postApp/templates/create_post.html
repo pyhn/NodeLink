@@ -1,8 +1,7 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Friends - SocialDistribution{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}Create Post{% endblock %} {% block content%} {% load static%}
+{% block head %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'post_creation.css' %}" />
+{% endblock %}
  <body>
     <div class="background">
         <div class="shape" style="    background: linear-gradient(var(--accent-blue-dark), var(--accent-blue-light));
