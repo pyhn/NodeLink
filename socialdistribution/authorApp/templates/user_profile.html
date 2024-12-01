@@ -1,129 +1,112 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Friends - SocialDistribution{% endblock %}
+<!-- prettier-ignore -->
+{% extends 'base.html' %} {% block title %}Friends - SocialDistribution{% endblock %} {% block content%} {% load static%}
+{% block head %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'profile.css' %}" />
+{% endblock %}
+<body>
+    <div class="personal_profile">
+        <div id="user_info">
+            <span class="user_icon large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
+            <h1>{{ author.user.display_name }}</h1>
+            <h4>@{{ author.user.username }}</h4>
+            <h4>Github: {{ author.user.github_user }}</h4>
+            <h5>Description: {{ author.user.description }}</h5>
 
-{% block content %}
-    <body>
-        <div class="personal_profile">
-            <div id="user_info">
-                <span class="user_icon large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
-                <h1>{{ author.user.display_name }}</h1>
-                <h4>@{{ author.user.username }}</h4>
-                <h4>Github: {{ author.user.github_user }}</h4>
-                <h5>Description: {{ author.user.description }}</h5>
+            <span id="user_stats">
+                <h2>{{ num_friends }} friends</h2>
+                <h2>{{ num_followers }} followers</h2>
+                <h2>{{ num_following }} following</h2>
+            </span>
 
-                <span id="user_stats">
-                    <h2>{{ num_friends }} friends</h2>
-                    <h2>{{ num_followers }} followers</h2>
-                    <h2>{{ num_following }} following</h2>
-                </span>
-
-
-                {% if request.user == author.user %}
-                <!-- Edit Profile Button -->
-                <button class="btn btn-primary" data-toggle="modal" data-target="#editProfileModal">
-                    Edit Profile
-                </button>
-                {% endif %}
-
-                <div id="user_posts">
-                    {% if user.author_profile != author %} {% if button_type == "unfriend" %}
-                    <span id="user_fri/fol">
-                        <form method="post" action="{% url 'authorApp:unfriend' author.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Unfriend</button>
-                        </form>
-                    </span>
-                    {% elif button_type == "unfollow/accept_or_deny" %}
-                    <span id="user_fri/fol">
-                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Unfollow</button>
-                        </form>
-                        <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Accept</button>
-                        </form>
-                        <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Deny</button>
-                        </form>
-                    </span>
-                    {% elif button_type == "unfollow" %}
-                    <span id="user_fri/fol">
-                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Unfollow</button>
-                        </form>
-                    </span>
-                    {% elif button_type == "accept_or_deny" %}
-                    <span id="user_fri/fol">
-                        <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Accept</button>
-                        </form>
-                        <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Deny</button>
-                        </form>
-                    </span>
-                    {% elif button_type == "pending" %}
-                    <span id="user_fri/fol">
-                        <button disabled>Pending</button>
-                    </span>
-                    {% else %}
-                    <span id="user_fri/fol">
-                        <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
-                            {% csrf_token %}
-                            <button type="submit">Follow</button>
-                        </form>
-                    </span>
-                    {% endif %} {%endif%}
-                </div>
-            </div>
+            {% if request.user == author.user %}
+            <!-- Edit Profile Button -->
+            <button id="openModalButton" class="custom-button" data-toggle="modal" data-target="#editProfileModal">Edit Profile</button>
+            {% endif %}
 
             <div id="user_posts">
-                <main>
-                    {% for p in all_ids %}
-                    <div
-                        hx-get="{% url 'postApp:one_post' request.user.username p.uuid %}"
-                        hx-trigger="load"
-                        hx-target="#number-{{ p.uuid }}"
-                        hx-swap="innerHTML"
-                    >
-                        <div class="post-container">
-                            <p id="number-{{ p.uuid }}"></p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </main>
+                {% if user.author_profile != author %} {% if button_type == "unfriend" %}
+                <span id="user_fri/fol">
+                    <form method="post" action="{% url 'authorApp:unfriend' author.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Unfriend</button>
+                    </form>
+                </span>
+                {% elif button_type == "unfollow/accept_or_deny" %}
+                <span id="user_fri/fol">
+                    <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Unfollow</button>
+                    </form>
+                    <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Deny</button>
+                    </form>
+                </span>
+                {% elif button_type == "unfollow" %}
+                <span id="user_fri/fol">
+                    <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Unfollow</button>
+                    </form>
+                </span>
+                {% elif button_type == "accept_or_deny" %}
+                <span id="user_fri/fol">
+                    <form method="post" action="{% url 'authorApp:accept_follow_request' ff_request.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'authorApp:deny_follow_request' ff_request.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Deny</button>
+                    </form>
+                </span>
+                {% elif button_type == "pending" %}
+                <span id="user_fri/fol">
+                    <button disabled>Pending</button>
+                </span>
+                {% else %}
+                <span id="user_fri/fol">
+                    <form method="post" action="{% url 'authorApp:follow_author' author.id %}">
+                        {% csrf_token %}
+                        <button type="submit">Follow</button>
+                    </form>
+                </span>
+                {% endif %} {%endif%}
             </div>
         </div>
 
-<!-- Edit Profile Modal -->
-<div
-    class="modal fade"
-    id="editProfileModal"
-    tabindex="-1"
-    aria-labelledby="editProfileModalLabel"
-    aria-hidden="true"
->
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form method="post" action="{% url 'authorApp:edit_profile' %}">
-                {% csrf_token %}
-                <div class="modal-body">
+        <div id="user_posts">
+            <main>
+                {% for p in all_ids %}
+                <div
+                    hx-get="{% url 'postApp:one_post' request.user.username p.uuid %}"
+                    hx-trigger="load"
+                    hx-target="#number-{{ p.uuid }}"
+                    hx-swap="innerHTML"
+                >
+                    <div class="post-container">
+                        <p id="number-{{ p.uuid }}"></p>
+                    </div>
+                </div>
+                {% endfor %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+        <div id="editProfileModal" class="custom-modal">
+            <div class="custom-modal-content">
+                <h3>Edit Profile</h3>
+                <form method="post" action="{% url 'authorApp:edit_profile' %}">
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="display_name">Display Name</label>
                         <input
                             type="text"
-                            class="form-control"
                             id="display_name"
                             name="display_name"
                             value="{{ author.user.display_name }}"
@@ -133,7 +116,6 @@
                         <label for="github_user">GitHub Username</label>
                         <input
                             type="text"
-                            class="form-control"
                             id="github_user"
                             name="github_user"
                             value="{{ author.user.github_user }}"
@@ -141,11 +123,19 @@
                     </div>
                     <div class="form-group">
                         <label for="description">Description</label>
-                        <textarea class="form-control" id="description" name="description">{{ author.user.description }}</textarea>
+                        <textarea
+                            id="description"
+                            name="description"
+                        >{{ author.user.description }}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="profile_image">Profile Image</label>
-                        <input type="text" class="form-control" id="profile_image"   name="profile_image"/>
+                        <input
+                            type="text"
+                            id="profile_image"
+                            name="profile_image"
+                            value="{{ author.user.profileImage }}"
+                        />
                         <img
                             id="preview_image"
                             src="{{ author.user.profileImage }}"
@@ -153,18 +143,30 @@
                             style="max-width: 100%; margin-top: 10px;"
                         />
                     </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save changes</button>
-                </div>
-            </form>
+                    <button type="submit">Save Changes</button>
+                </form>
+            </div>
         </div>
+
     </div>
-</div>
+    <script>
+        // Get modal elements
+        var modal = document.getElementById('editProfileModal');
+        var openModalBtn = document.getElementById('openModalButton');
+
+        // Open modal
+        openModalBtn.onclick = function() {
+            modal.style.display = 'block';
+        }
+
+        // Close modal when clicking outside the modal content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
 
 
-
-    </body>
-    {% endblock %}
+{% endblock %}
