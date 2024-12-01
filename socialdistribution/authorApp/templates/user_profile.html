@@ -1,5 +1,8 @@
-{% extends 'base.html' %} {% block title %}Friends - SocialDistribution{% endblock %} {% block content%}{% load static
-%}
+<!-- prettier-ignore -->
+{% extends 'base.html' %} {% block title %}Friends - SocialDistribution{% endblock %} {% block content%} {% load static%}
+{% block head %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'profile.css' %}" />
+{% endblock %}
 <body>
     <div class="personal_profile">
         <div id="user_info">
@@ -17,7 +20,7 @@
 
             {% if request.user == author.user %}
             <!-- Edit Profile Button -->
-            <button class="btn btn-primary" data-toggle="modal" data-target="#editProfileModal">Edit Profile</button>
+            <button id="openModalButton" class="custom-button" data-toggle="modal" data-target="#editProfileModal">Edit Profile</button>
             {% endif %}
 
             <div id="user_posts">
@@ -95,68 +98,75 @@
     </div>
 
     <!-- Edit Profile Modal -->
-    <div
-        class="modal fade"
-        id="editProfileModal"
-        tabindex="-1"
-        aria-labelledby="editProfileModalLabel"
-        aria-hidden="true"
-    >
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+        <div id="editProfileModal" class="custom-modal">
+            <div class="custom-modal-content">
+                <h3>Edit Profile</h3>
                 <form method="post" action="{% url 'authorApp:edit_profile' %}">
                     {% csrf_token %}
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="display_name">Display Name</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="display_name"
-                                name="display_name"
-                                value="{{ author.user.display_name }}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="github_user">GitHub Username</label>
-                            <input
-                                type="text"
-                                class="form-control"
-                                id="github_user"
-                                name="github_user"
-                                value="{{ author.user.github_user }}"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea class="form-control" id="description" name="description">
-{{ author.user.description }}</textarea
-                            >
-                        </div>
-                        <div class="form-group">
-                            <label for="profile_image">Profile Image</label>
-                            <input type="text" class="form-control" id="profile_image" name="profile_image" />
-                            <img
-                                id="preview_image"
-                                src="{{ author.user.profileImage }}"
-                                alt="Profile Preview"
-                                style="max-width: 100%; margin-top: 10px"
-                            />
-                        </div>
+                    <div class="form-group">
+                        <label for="display_name">Display Name</label>
+                        <input
+                            type="text"
+                            id="display_name"
+                            name="display_name"
+                            value="{{ author.user.display_name }}"
+                        />
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    <div class="form-group">
+                        <label for="github_user">GitHub Username</label>
+                        <input
+                            type="text"
+                            id="github_user"
+                            name="github_user"
+                            value="{{ author.user.github_user }}"
+                        />
                     </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                        >{{ author.user.description }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile_image">Profile Image</label>
+                        <input
+                            type="text"
+                            id="profile_image"
+                            name="profile_image"
+                            value="{{ author.user.profileImage }}"
+                        />
+                        <img
+                            id="preview_image"
+                            src="{{ author.user.profileImage }}"
+                            alt="Profile Preview"
+                            style="max-width: 100%; margin-top: 10px;"
+                        />
+                    </div>
+                    <button type="submit">Save Changes</button>
                 </form>
             </div>
         </div>
+
     </div>
+    <script>
+        // Get modal elements
+        var modal = document.getElementById('editProfileModal');
+        var openModalBtn = document.getElementById('openModalButton');
+
+        // Open modal
+        openModalBtn.onclick = function() {
+            modal.style.display = 'block';
+        }
+
+        // Close modal when clicking outside the modal content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
 </body>
+
+
 {% endblock %}
