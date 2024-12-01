@@ -593,6 +593,15 @@ span.user_icon img {
 .cancel-btn:hover {
   background-color: var(--cancel_button_hover);
 }
+.red-btn{
+  margin-top: 15px;
+    width: min-content;
+    background-color: var(--cancel_button_normal);
+    color: var(--text-black);
+    padding: 1em 1em;
+    border-radius: 0.5vw;
+    cursor: pointer;
+}
 
 @media (max-width: 600px) {
   .create-comment-button button,
