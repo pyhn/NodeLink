@@ -1,15 +1,15 @@
-:root{
-    --background:#011640;
-    --accent-blue-dark:#2044bc;
-    --accent-blue-light:#23a2f6;
-    --accent-orange-dark:#ff512f;
-    --accent-orange-light:#f09819;
-    --text-white:#ffffff;
-    --text-black:#080710;
-    --transparent-card-bg:rgba(255, 255, 255, 0.07);
-    --transparent-card-border:rgba(255, 255, 255, 0.1);
+:root {
+    --background: #011640;
+    --accent-blue-dark: #2044bc;
+    --accent-blue-light: #23a2f6;
+    --accent-orange-dark: #ff512f;
+    --accent-orange-light: #f09819;
+    --text-white: #ffffff;
+    --text-black: #080710;
+    --transparent-card-bg: rgba(255, 255, 255, 0.07);
+    --transparent-card-border: rgba(255, 255, 255, 0.1);
     --transparent-card-bs: rgba(8, 7, 16, 0.6);
-    --off-white-bg:#e5e5e5;
+    --off-white-bg: #e5e5e5;
 }
 
 *,
@@ -26,7 +26,6 @@ body {
     justify-content: center;
     align-items: center;
     padding: 15vh 0vw 25vh 0vw;
-
 }
 
 .background {
@@ -59,13 +58,13 @@ body {
 
 form {
     height: auto;
-    width: 40vw;
+    width: 30vw;
     min-width: 30vw;
     background-color: var(--transparent-card-bg);
-    position:static;
+    position: static;
     border-radius: 10px;
     backdrop-filter: blur(10px);
-    border:2px solid var(--transparent-card-border);
+    border: 2px solid var(--transparent-card-border);
     box-shadow: 0 0 40px var(--transparent-card-bs);
     padding: 50px 35px;
 }
@@ -119,7 +118,7 @@ textarea {
 button {
     margin-top: 50px;
     width: 100%;
-    background-color:var(--text-white);
+    background-color: var(--text-white);
     color: var(--text-black);
     padding: 15px 0;
     font-size: 18px;
