@@ -31,32 +31,34 @@ body {
 /* Personal profile section */
 .personal_profile {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     padding: 2em;
+    align-items: flex-start;
+
 }
 
 /* User information */
 #user_info {
-    background-color: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 2em;
+    position: sticky;
     text-align: center;
-    width: 80%;
-    min-width: 30em; /* Added minimum width */
+    border: 1px solid var(--transparent-card-border);
+    border-radius: 20px;
+    margin: 2.5vh;
     height: fit-content;
     align-items: center;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 1vw 1vh;
-    box-shadow: 0 0 20px var(--box-shadow);
+    top: 20px;
+    width :60%;
+
 }
 
 .user_icon {
-    width: 250px;
-    height: 250px;
+    width: 8vw;
+    height: 8vw;
     overflow: hidden;
     border-radius: 50%;
     margin: auto;
@@ -194,6 +196,9 @@ button:hover {
 @media (max-width: 768px) {
     .custom-modal .modal-content {
         width: 80%;
+    }
+    #user_info{
+        top:65px;
     }
 }
 
