@@ -39,6 +39,10 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+# Formatter
+.prettierignore
+
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
