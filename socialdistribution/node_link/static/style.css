@@ -142,6 +142,7 @@ a.nav-link {
     position: sticky;
     top: 0;
     width: 100%;
+    z-index: 1000;
   }
   .sidebar {
     width: 100%;
