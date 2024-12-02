@@ -269,11 +269,6 @@ def accept_follow_request(request, request_id):
         follow_request.updated_by = current_author
         follow_request.save()
 
-        messages.success(
-            request,
-            f"You have accepted the follow request from {follow_request.actor.user.user_serial}.",
-        )
-
         # Check for mutual following
         mutual_follow = Follower.objects.filter(
             actor=current_author, object=follow_request.actor, status="a"
@@ -295,13 +290,13 @@ def accept_follow_request(request, request_id):
                     user2=user2,
                     created_by=current_author,  # Assuming 'created_by' refers to the initiator
                 )
-                messages.success(
+                print(
                     request,
                     f"You are now friends with {follow_request.actor.user.user_serial}.",
                 )
             except IntegrityError:
                 # Friendship already exists
-                messages.info(
+                print(
                     request,
                     f"You are already friends with {follow_request.actor.user.user_serial}.",
                 )
@@ -360,9 +355,6 @@ def unfriend(request, friend_id):
             following.delete()
 
             friendship.delete()
-            messages.success(request, f"You have unfriended {friend.user.user_serial}.")
-        else:
-            messages.info(request, "Friendship does not exist.")
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -382,7 +374,7 @@ def follow_author(request, author_id):
         if (
             current_author.id == author_id
         ):  #!!! PART 3 NOTE: the ID is not longer unique for multiple nodes
-            messages.warning(request, "You cannot follow or unfollow yourself.")
+            print(request, "You cannot follow or unfollow yourself.")
             return redirect("authorApp:friends_page")
 
         target_author = get_object_or_404(AuthorProfile, id=author_id)
@@ -394,7 +386,7 @@ def follow_author(request, author_id):
 
         if existing_relation:
             if existing_relation.status == "p":
-                messages.info(request, "A follow request is already pending.")
+                print(request, "A follow request is already pending.")
             elif existing_relation.status == "a":
                 # Unfollow the author
                 existing_relation.delete()
@@ -407,15 +399,6 @@ def follow_author(request, author_id):
 
                 if friendship:
                     friendship.delete()
-                    messages.success(
-                        request,
-                        f"You have unfollowed and unfriended {target_author.user.user_serial}.",
-                    )
-                else:
-                    messages.success(
-                        request,
-                        f"You have unfollowed {target_author.user.user_serial}.",
-                    )
 
                 # Optionally, you might want to delete the reciprocal follow if you want to completely sever the connection
                 # Uncomment the following lines if needed:
@@ -430,13 +413,11 @@ def follow_author(request, author_id):
                 existing_relation.status = "p"
                 existing_relation.created_at = datetime.now()
                 existing_relation.save()
-                messages.success(request, "Follow request has been re-sent.")
         else:
             # Create a new follow request
             new_follow = Follower.objects.create(
                 actor=current_author, object=target_author, created_by=current_author
             )
-            messages.success(request, "Follow create successfully.")
 
             if target_author.user.local_node.is_remote:
                 # send follow request to remote
@@ -446,7 +427,6 @@ def follow_author(request, author_id):
                 follow_request_json = follow_request.data
 
                 send_to_remote_inboxes(follow_request_json, target_author)
-                messages.success(request, "Follow request sent to remote successfully.")
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
 
@@ -1061,13 +1041,13 @@ def author_inbox_view(request, author_serial):
                                 user2=user2,
                                 created_by=remote_author,  # Assuming 'created_by' refers to the initiator
                             )
-                            messages.success(
+                            print(
                                 request,
                                 f"You are now friends with {author.user.user_serial}.",
                             )
                         except IntegrityError:
                             # Friendship already exists
-                            messages.info(
+                            print(
                                 request,
                                 f"You are already friends with {author.user.user_serial}.",
                             )
