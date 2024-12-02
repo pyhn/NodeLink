@@ -477,7 +477,7 @@ def edit_profile(request):
 @is_approved
 def explore_users(request):
     query = request.GET.get("q", "")  # Search query
-    sort_by = request.GET.get("sort", "user__user_serial")  # Sorting parameter
+    sort_by = request.GET.get("sort", "user__display_name")  # Sorting parameter
     direction = request.GET.get("direction", "asc")  # Sorting direction (asc/desc)
     fetch_remote_authors()
 
@@ -502,7 +502,7 @@ def explore_users(request):
 
     # Filter by search query
     if query:
-        all_authors = all_authors.filter(user__user_serial__icontains=query)
+        all_authors = all_authors.filter(user__display_name__icontains=query)
 
     # Sorting logic
 

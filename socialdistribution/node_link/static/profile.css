@@ -52,7 +52,7 @@ body {
     justify-content: space-between;
     padding: 1vw 1vh;
     top: 20px;
-    width :60%;
+    width :min-content;
 
 }
 
