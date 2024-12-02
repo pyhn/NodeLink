@@ -31,8 +31,12 @@
         <table class="table table-striped table-dark">
             <thead>
                 <tr>
-                    <th>Name</th>
-                    <th>Node</th>
+                    <th>
+                        <a href="?sort=user__display_name&direction={{direction}}&q={{ search_query }}">Name</a>
+                    </th>
+                    <th>
+                        <a href="?sort=user__local_node&direction={{direction}}&q={{ search_query }}">Node</a>
+                    </th>
                     <th>Follow</th>
                 </tr>
             </thead>
