@@ -1,5 +1,5 @@
 :root {
-  --background: #011640;
+  --background: #1b2e54;
   --accent-blue-dark: #2044bc;
   --accent-blue-light: #23a2f6;
   --accent-orange-dark: #ff512f;
@@ -256,7 +256,7 @@ img {
 }
 
 .post-container {
-  border: 1px solid var(--transparent-card-border);
+  border: 1px solid rgba(0, 0, 0, 0.9);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -278,7 +278,7 @@ img {
   align-items: center;
   height: 100%;
   padding: 1vh 1vw;
-  border-bottom: 1px solid var( --transparent-card-border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.9);
   flex-basis: fit-content;
   overflow: hidden;
   color: var(--text-grey);
@@ -350,7 +350,7 @@ img {
   flex-direction: column;
   align-items: center;
   padding: 1vh 1vw;
-  border-bottom: 1px solid var( --transparent-card-border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.9);
 }
 
 .post-date {
@@ -415,7 +415,7 @@ img {
   flex-direction: row;
   align-items: center;
   padding: 1vh 1vw;
-  border-top: 1px solid var( --transparent-card-border);
+  border-top: 1px solid rgba(0, 0, 0, 0.9);
 }
 
 .icon {
