@@ -16,7 +16,7 @@ def notify_followers_on_new_post(sender, instance, created, **kwargs):
         author = instance.author
         followers = Follower.objects.filter(object=author)
         for follower in followers:
-            message = f"{author.user.user_serial} has made a new post."
+            message = f"{author.user.display_name} has made a new post."
             link_url = reverse(
                 "postApp:post_detail", args=[author.user.username, instance.uuid]
             )
@@ -37,7 +37,7 @@ def notify_author_on_new_follow_request(sender, instance, created, **kwargs):
         print("Follow request created. notifying the followee")
         author = instance.actor
         target_author = instance.object
-        message = f"{author.user.user_serial} wants to follow you."
+        message = f"{author.user.display_name} wants to follow you."
         Notification.objects.create(
             user=target_author,
             message=message,
@@ -57,7 +57,7 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
             related_object_id=str(instance.id),
             user=instance.object,
         ).update(
-            message=f"{instance.actor.user.user_serial} is now following you.",
+            message=f"{instance.actor.user.display_name} is now following you.",
             notification_type="accepted_follow_request",
             author_picture_url=instance.actor.user.profileImage,
         )
@@ -67,7 +67,7 @@ def update_notification_on_follow_request_status_change(sender, instance, **kwar
             related_object_id=str(instance.id),
             user=instance.object,
         ).update(
-            message=f"You have denied the follow request from {instance.actor.user.user_serial}.",
+            message=f"You have denied the follow request from {instance.actor.user.display_name}.",
             notification_type="denied_follow_request",
             author_picture_url=instance.actor.user.profileImage,
         )
@@ -123,7 +123,7 @@ def notify_author_on_new_like(sender, instance, created, **kwargs):
         author = instance.author
         if post.author != author:
             print("Like created, notifying author via notification")
-            message = f"{author.user.user_serial} liked your post."
+            message = f"{author.user.display_name} liked your post."
             link_url = reverse(
                 "postApp:post_detail", args=[author.user.username, post.uuid]
             )
