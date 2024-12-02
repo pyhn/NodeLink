@@ -1,5 +1,5 @@
 :root {
-  --background: #1b2e54;
+  --background: #011640;
   --accent-blue-dark: #2044bc;
   --accent-blue-light: #23a2f6;
   --accent-orange-dark: #ff512f;
@@ -617,6 +617,11 @@ span.user_icon img {
     padding: 1em 1em;
     border-radius: 0.5vw;
     cursor: pointer;
+}
+
+.container.mt-5 h2 {
+  /* Your styles here */
+  color: var(--text-white);
 }
 
 @media (max-width: 600px) {
