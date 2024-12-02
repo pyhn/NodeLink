@@ -35,6 +35,9 @@ body {
 
   --nav_width: 6vw;
 }
+h2.card-title.text-center{
+  color: var(--text-white);
+}
 
 /* Navbar */
 body {

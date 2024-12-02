@@ -1,17 +1,14 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}Friends - SocialDistribution{% endblock %}
-
-{% block content %}
-
-
+{% extends 'base.html' %} {% block title %}Friends{% endblock %} {% block content%} {% load static%}
+{% block head %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'table_tabs.css' %}" />
+{% endblock %}
 <ul class="nav nav-pills">
     <li class="nav-item pill "> <a class="nav-link active" aria-current="page"  href="#">Your Friends</a></li>
     <li class="nav-item"><a class="nav-link" href="{% url 'authorApp:user_list' %}">Explore People</a></li>
 
 </ul>
-
-<ul class="nav nav-tabs" id="friendsTabs" role="tablist">
+<div class="container">
+    <ul class="nav nav-tabs" id="friendsTabs" role="tablist">
     <li class="nav-item ">
         <a class="nav-link active" id="requests-tab" data-toggle="tab" href="#Requests" role="tab"
             aria-controls="Requests" aria-selected="true">Requests</a>
@@ -35,9 +32,9 @@
         <!-- REQUESTS-->
         <div>
             <h2 class="card-title text-center">Requests</h2>
-            <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered">
-                    <thead class="table-light">
+            <div class="table-responsive mt-4">
+                <table class="table table-striped table-dark">
+                    <thead>
                         <tr>
                             <th scope="col" style="width: 50px;">Image</th>
                             <th scope="col">Username</th>
@@ -108,8 +105,8 @@
         <div>
             <h2 class="card-title text-center">Followers</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered">
-                    <thead class="table-light">
+                <table class="table table-striped table-dark">
+                    <thead >
                         <tr>
                             <th scope="col" style="width: 50px;">Image</th>
                             <th scope="col">Username</th>
@@ -146,8 +143,8 @@
         <div class="card-body p-2">
             <h2 class="card-title text-center">Following</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered">
-                    <thead class="table-light">
+                <table class="table table-striped table-dark">
+                    <thead >
                         <tr>
                             <th scope="col" style="width: 50px;">Image</th>
                             <th scope="col">Username</th>
@@ -189,10 +186,10 @@
 
         <!-- Your Friends -->
         <div class="card-body p-2">
-            <h2 class="card-title text-center">Friends</h2>
+            <h2 class="card-title text-center light">Friends</h2>
             <div class="table-responsive">
-                <table class="table table-striped table-sm table-bordered">
-                    <thead class="table-light">
+                <table class="table table-striped table-dark">
+                    <thead >
                         <tr>
                             <th scope="col" style="width: 50px;">Image</th>
                             <th scope="col">Username</th>
@@ -231,6 +228,6 @@
 
     </div>
 </div>
-
+</div>
 
 {% endblock %}

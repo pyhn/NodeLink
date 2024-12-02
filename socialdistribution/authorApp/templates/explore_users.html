@@ -2,7 +2,6 @@
 {% block head %} {{ block.super }}
 <link rel="stylesheet" href="{% static 'table_tabs.css' %}" />
 {% endblock %}
-<div class="navbar mb-4">
     <ul class="nav nav-pills">
         <li class="nav-item">
             <a class="nav-link" href="{% url 'authorApp:friends_page' %}">Your Friends</a>
@@ -11,7 +10,6 @@
             <a class="nav-link active" aria-current="page" href="#">Explore People</a>
         </li>
     </ul>
-</div>
 
 <div class="container">
     <!-- Search Bar -->
@@ -46,8 +44,8 @@
                             src="{{ author.user.profileImage }}"
                             alt="{{ author.user.username }}'s profile image"
                             class="profile-img"
-                            onerror="this.onerror=null;this.src='{% static 'icons/user_icon.svg' %}';"
-                        />
+                            onerror="this.onerror=null; this.src='https://s3.amazonaws.com/37assets/svn/765-default-avatar.png';"
+                            />
                         <a href="{% url 'authorApp:profile_display' author.user.username %}">
                             {{ author.user.display_name }}
                         </a>
