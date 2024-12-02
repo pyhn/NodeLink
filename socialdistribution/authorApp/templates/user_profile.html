@@ -6,7 +6,7 @@
 <body>
     <div class="personal_profile">
         <div id="user_info">
-            <span class="user_icon large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
+            <span id="user_icon_large"><img src="{{ author.user.profileImage }}" alt="Profile Image" /></span>
             <h1>{{ author.user.display_name }}</h1>
             <h4>@{{ author.user.username }}</h4>
             <h4>Github: {{ author.user.github_user }}</h4>
@@ -21,6 +21,7 @@
             {% if request.user == author.user %}
             <!-- Edit Profile Button -->
             <button id="openModalButton" class="custom-button" data-toggle="modal" data-target="#editProfileModal">Edit Profile</button>
+            <a class="red-btn " href="{% url 'authorApp:logout' %}">Logout</a>
             {% endif %}
 
             <div id="user_posts">
