@@ -62,7 +62,7 @@
                                 <div class="user_img small"><img src="{{ comment.author.user.profileImage }}" alt="Profile Image">
                                 </div>
                             </a>
-                            <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">{{ comment.author.user.username }} from {{comment.author.user.local_node}} </a>
+                            <a href="{% url 'authorApp:profile_display' comment.author.user.username %}">{{ comment.author.user.user_serial }} from {{comment.author.user.local_node}} </a>
                         </span>
                         {{ comment.content|linebreaks }}
                         <span class="comment-date">
