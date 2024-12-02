@@ -267,6 +267,7 @@ img {
   width: 100%;
   background-color: var(--off-white-transparent-bg);
   color: var(--text-black);
+  max-width: 70vw;
 }
 .post-container:hover {
   box-shadow:var(--transparent-card-bs);
@@ -296,18 +297,7 @@ img {
 .post.info h1 {
   font-size: 1.25rem;
 }
-.post-title {
-  overflow: hidden;
-  padding: 1vh 1vw;
 
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.post-title:hover {
-  overflow: auto;
-  white-space: normal;
-}
 .post-meta {
   /* smaller fond size that title found in post.info h1 */
   font-size: 0.875rem;
@@ -326,6 +316,7 @@ img {
 .post-title {
   overflow: hidden;
   white-space: nowrap;
+  max-width: 50vw;
   text-overflow: ellipsis;
 }
 
