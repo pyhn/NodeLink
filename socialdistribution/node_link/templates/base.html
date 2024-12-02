@@ -7,7 +7,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %} Django App {% endblock %}</title>
-    <link href='https://fonts.googleapis.com/css?family=Gugi' rel='stylesheet'>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         rel="stylesheet" />
     <link rel="stylesheet" href="{% static 'style.css' %}">
@@ -20,7 +19,7 @@
 
         <div class="navbar-collapse" >
             <ul class="sidebar">
-                <li>        <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}">Navajo <br>White</a>
+                <li>        <a class="navbar-brand" href="{% url 'node_link:home' request.user.username %}"> <img class = 'navbar-brand'src="{% static 'icons/NodeLink2.svg' %}" alt="edit post button"></a>
                 </li>
                 <li class="nav-item ">
                     <a class="nav-link" href="{% url 'node_link:home' request.user.username %}"><svg
