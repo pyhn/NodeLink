@@ -312,7 +312,6 @@ def submit_edit_post(request, username, post_uuid):
             # Server-Side Validation: Check file size (e.g., max 2MB)
             MAX_UPLOAD_SIZE = 2 * 1024 * 1024  # 2 MB
             if img.size > MAX_UPLOAD_SIZE:
-                messages.error(request, "Image file too large ( > 2MB ).")
                 return redirect(
                     "postApp:edit_post", username=username, post_uuid=post_uuid
                 )  # Early exit
@@ -437,7 +436,6 @@ def post_detail(request, username, post_uuid: str):
                 user_has_liked = post.postliked.filter(author=author).exists()
             except AuthorProfile.DoesNotExist:
                 # Handle the case where the Author profile does not exist
-                messages.error(request, "Author profile not found.")
                 # Optionally, redirect or set user_has_liked to False
                 redirect("post_list")
 

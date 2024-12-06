@@ -1,97 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Create New Post</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 20px;
-                background-color: #f4f4f4;
-            }
-            h1 {
-                text-align: center;
-            }
-            /* Tab container */
-            .tab-container {
-                max-width: 700px;
-                margin: 0 auto;
-                background-color: rgb(230, 230, 230);
-                padding: 20px;
-                border-radius: 8px;
-            }
-            /* Tab buttons */
-            .tabs {
-                overflow: hidden;
-                border-bottom: 1px solid #ccc;
-            }
-            .tabs button {
-                background-color: inherit;
-                border: none;
-                outline: none;
-                cursor: pointer;
-                padding: 14px 16px;
-                transition: background-color 0.3s;
-                font-size: 17px;
-            }
-            .tabs button:hover {
-                background-color: #ddd;
-            }
-            .tabs button.active {
-                background-color: #ccc;
-            }
-            /* Tab content */
-            .tab-content {
-                display: none;
-                padding: 20px 0;
-            }
-            .tab-content.active {
-                display: block;
-            }
-            /* Common form styles */
-            input[type="text"],
-            textarea,
-            select {
-                width: 95%;
-                padding: 10px;
-                margin-bottom: 20px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                font-size: 16px;
-            }
-            input[type="file"] {
-                display: block;
-                padding: 10px;
-                font-size: 16px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                background-color: #fff;
-                cursor: pointer;
-                width: 95%;
-                max-width: 95%;
-                margin-bottom: 20px;
-            }
-            input[type="file"]:hover {
-                border-color: #888;
-            }
-            button.submit-btn {
-                background-color: #28a745;
-                color: white;
-                padding: 10px 20px;
-                border: none;
-                border-radius: 4px;
-                font-size: 16px;
-                cursor: pointer;
-            }
-            button.submit-btn:hover {
-                background-color: #218838;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Create a New Post</h1>
+{% extends 'base.html' %} {% block title %}Create Post{% endblock %} {% block content%} {% load static%}
+{% block head %} {{ block.super }}
+<link rel="stylesheet" href="{% static 'post_creation.css' %}" />
+{% endblock %}
+ <body>
+    <div class="background">
+        <div class="shape" style="    background: linear-gradient(var(--accent-blue-dark), var(--accent-blue-light));
+        left: -8vw;
+        top: -6vh;"></div>
+        <div class="shape" style="    background: linear-gradient(to right, var(--accent-orange-dark), var(--accent-orange-light));
+        right: -8vw;
+        bottom: -10vh;"></div>
+    </div>
+
 
         <div class="tab-container">
             <form
@@ -100,6 +20,7 @@
                 action="{% url 'postApp:submit_post'  request.user.username %}"
             >
                 {% csrf_token %}
+                <h3>Create a New Post</h3>
 
                 <!-- Tab Buttons -->
                 <div class="tabs">
@@ -269,4 +190,4 @@
             // Optionally, you can add more JavaScript for enhanced functionality
         </script>
     </body>
-</html>
+    {% endblock %}
